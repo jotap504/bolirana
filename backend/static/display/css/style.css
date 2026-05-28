@@ -1,0 +1,689 @@
+/* ══════════════════════════════════════════════════════════════════
+   BOLIRANA — Argentina Cyber League Stadium Pro v7
+   Estética: Estadio de Fútbol Pixel Art, Obelisco de Buenos Aires,
+   Paneles Cyberpunk Biselados (Chamfered), Botones Octagonales,
+   Doble Borde Neon (Cian Exterior / Oro Interior) como la imagen.
+   ══════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root {
+  --bg:         #00050d;
+  --bg2:        #020b1e;
+  --cyan:       #00e5ff;
+  --cyan2:      #80efff;
+  --cyan-glow:  rgba(0, 229, 255, 0.4);
+  --gold:       #f5c000;
+  --gold2:      #ffe566;
+  --gold-glow:  rgba(245, 192, 0, 0.45);
+  --green:      #00ff88;
+  --red:        #ff2233;
+  --panel:      rgba(0, 10, 28, 0.82);
+  --panel-active: rgba(0, 16, 44, 0.90);
+  --text:       #ffffff;
+  --label:      #7baedb;
+  
+  /* Colores de Jugadores */
+  --p0: #ff4455; --p1: #44aaff; --p2: #00ff88;
+  --p3: #ffaa00; --p4: #dd44ff; --p5: #00ffee;
+}
+
+html, body { width:100%; height:100%; overflow:hidden; background-color: var(--bg); }
+body { font-family:'Orbitron', sans-serif; color:var(--text); }
+
+/* ══════════════════════════════════════════════════════════════
+   DOUBLE NEON FRAME — Cian exterior grueso + Oro interior delgado
+   ══════════════════════════════════════════════════════════════════ */
+body::before {
+  content:''; position:fixed; inset:0; z-index:9999; pointer-events:none;
+  box-shadow:
+    inset 0 0 0 10px var(--cyan),
+    inset 0 0 0 13px var(--bg),
+    inset 0 0 0 17px var(--gold),
+    inset 0 0 100px rgba(0, 229, 255, 0.15);
+  border-radius:14px;
+  animation: neon-breathing 4s ease-in-out infinite alternate;
+}
+
+@keyframes neon-breathing {
+  0% {
+    box-shadow:
+      inset 0 0 0 10px var(--cyan),
+      inset 0 0 0 13px var(--bg),
+      inset 0 0 0 17px var(--gold),
+      inset 0 0 50px rgba(0, 229, 255, 0.1);
+  }
+  100% {
+    box-shadow:
+      inset 0 0 0 10px var(--cyan),
+      inset 0 0 0 13px var(--bg),
+      inset 0 0 0 17px var(--gold2),
+      inset 0 0 110px rgba(0, 229, 255, 0.28);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ESTADIO DE FÚTBOL PIXEL ART — Con Obelisco en perspectiva
+   ══════════════════════════════════════════════════════════════════ */
+#app {
+  width:100vw; height:100vh; position:relative; overflow:hidden;
+  background-image: url('../assets/attract_background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: background-image 0.4s ease-in-out;
+}
+
+/* Cambiar fondo a la tribuna del Estadio Nacional cuando estén jugando */
+#app:has(#screen-playing.active) {
+  background-image: url('../assets/playing_background.jpg') !important;
+}
+
+/* Oscurecimiento aditivo de fondo para contraste con HUD */
+#app::before {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(180deg, rgba(0, 3, 10, 0.72) 0%, rgba(1, 10, 25, 0.5) 45%, rgba(0, 5, 12, 0.65) 100%);
+  pointer-events:none; z-index:0;
+}
+
+/* Scanlines + Rejilla CRT Arcade */
+#app::after {
+  content:''; position:absolute; inset:0; z-index:998; pointer-events:none;
+  background:
+    repeating-linear-gradient(0deg,
+      transparent 0px, transparent 3px,
+      rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px);
+  opacity: 0.75;
+}
+
+/* ── Screens ─────────────────────────────────────────────────── */
+.screen {
+  position:absolute; inset:0; z-index:1;
+  display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start;
+  padding:32px 40px 24px;
+}
+.screen.active { display:flex; animation:screen-in .45s cubic-bezier(.16, 1, 0.3, 1); }
+
+@keyframes screen-in {
+  from { opacity:0; transform:scale(.96) translateY(10px); }
+  to   { opacity:1; transform:none; }
+}
+
+/* ── Keyframes globales ──────────────────────────────────────── */
+@keyframes blink        { 0%,49%{opacity:1} 50%,100%{opacity:.15} }
+@keyframes btn-shine    { 0%{left:-100%} 50%,100%{left:160%} }
+@keyframes float-up     { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+@keyframes bounce-in    { 0%{transform:scale(0.85) rotate(-1deg);opacity:0} 70%{transform:scale(1.03) rotate(0.5deg);opacity:1} 100%{transform:none} }
+@keyframes stripe-scroll{ from{background-position:0 0} to{background-position:200px 0} }
+@keyframes bump         { 0%{transform:scale(1.22);color:var(--gold)} 100%{transform:scale(1);color:var(--text)} }
+@keyframes pulse-cyan   { 0%,100%{box-shadow:0 0 20px rgba(0,229,255,.4)} 50%{box-shadow:0 0 50px rgba(0,229,255,.8)} }
+@keyframes glow-cyan    { 0%,100%{text-shadow:0 0 12px rgba(0,229,255,.8),0 0 35px rgba(0,229,255,.3)} 50%{text-shadow:0 0 24px rgba(0,229,255,1),0 0 65px rgba(0,229,255,.5)} }
+@keyframes frog-bounce  { 0%,100%{transform:translateY(0) rotate(-1deg) scale(1)} 50%{transform:translateY(-8px) rotate(1deg) scale(1.03)} }
+@keyframes glitch {
+  0%,93%,100% { text-shadow:none; transform:none; clip-path:none; }
+  94%  { text-shadow:-2px 0 #ff00cc, 2px 0 var(--cyan); transform:skewX(-2deg); }
+  96%  { text-shadow: 2px 0 #ff00cc,-2px 0 var(--cyan); transform:skewX( 1.5deg); }
+}
+
+/* ── Botón START Premium — Piloto de Neón con barras laterales ── */
+.btn-start-big {
+  background: rgba(0, 229, 255, 0.08);
+  border:3px solid var(--cyan); border-radius:50px;
+  color:var(--cyan); font-family:'Orbitron',sans-serif;
+  font-weight:900; cursor:pointer; letter-spacing:4px;
+  text-shadow:0 0 15px var(--cyan);
+  box-shadow:0 0 30px rgba(0,229,255,.45), inset 0 0 20px rgba(0,229,255,.2);
+  transition:all 0.2s ease-out;
+  position:relative; overflow:hidden;
+  backdrop-filter: blur(8px);
+  font-size:clamp(20px,3.2vw,36px); padding:16px 80px;
+  border-width:4px; margin-top:16px;
+  
+  /* Efecto de barras laterales del botón START de la imagen */
+  border-left: 10px double var(--cyan);
+  border-right: 10px double var(--cyan);
+}
+.btn-start-big::after {
+  content:''; position:absolute; top:0; left:-100%; width:60%; height:100%;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,.45),transparent);
+  animation:btn-shine 2.5s ease-in-out infinite;
+}
+.btn-start-big:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow:0 0 45px rgba(0,229,255,.75), inset 0 0 25px rgba(0,229,255,.3);
+  background: rgba(0, 229, 255, 0.18);
+  border-left-color: var(--cyan2);
+  border-right-color: var(--cyan2);
+}
+.btn-start-big:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-ok {
+  background: rgba(0, 229, 255, 0.06);
+  border:2.5px solid var(--cyan); border-radius:50px;
+  color:var(--cyan); font-family:'Orbitron',sans-serif;
+  font-weight:900; cursor:pointer; letter-spacing:3px;
+  text-shadow:0 0 12px var(--cyan);
+  box-shadow:0 0 22px rgba(0,229,255,.3), inset 0 0 12px rgba(0,229,255,.1);
+  transition:all 0.18s;
+  position:relative; overflow:hidden;
+  backdrop-filter: blur(6px);
+  font-size:clamp(15px,2.2vw,24px); padding:12px 36px; margin-top:12px;
+}
+.btn-ok:hover {
+  transform: translateY(-1.5px);
+  box-shadow:0 0 35px rgba(0,229,255,.6), inset 0 0 18px rgba(0,229,255,.2);
+  background: rgba(0, 229, 255, 0.12);
+}
+
+.btn-back {
+  background: rgba(255,70,34,.04);
+  border:2.5px solid rgba(255,70,34,.55); border-radius:50px;
+  color:#ff6644; font-family:'Orbitron',sans-serif;
+  font-size:clamp(11px,1.5vw,15px); font-weight:700;
+  padding:10px 28px; cursor:pointer; letter-spacing:2px;
+  box-shadow:0 0 12px rgba(255,50,0,.12);
+  transition:all 0.2s;
+  margin-top:10px;
+  backdrop-filter: blur(6px);
+}
+.btn-back:hover {
+  background: rgba(255,70,34,.12);
+  border-color: #ff5533;
+  box-shadow:0 0 22px rgba(255,50,0,.3);
+}
+
+.nav-btn {
+  background:rgba(0,8,24,0.9);
+  border:2.5px solid var(--cyan); border-radius:50%;
+  width:clamp(45px,5vw,55px); height:clamp(45px,5vw,55px);
+  font-size:clamp(16px,2vw,22px); color:var(--cyan); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 0 15px rgba(0,229,255,.3), inset 0 0 8px rgba(0,229,255,.05);
+  transition:all 0.15s; flex-shrink:0;
+}
+.nav-btn:hover {
+  box-shadow:0 0 25px rgba(0,229,255,.6);
+  transform: scale(1.06);
+}
+.nav-hint {
+  font-size:clamp(8px,1.1vw,11px); color:var(--label);
+  letter-spacing:2px; text-align:center; margin-top:8px;
+}
+.blink { animation:blink 1.2s step-end infinite; }
+
+/* ══════════════════════════════════════════════════════════════
+   ARGENTINA CYBER LEAGUE BANNERS
+   ══════════════════════════════════════════════════════════════ */
+.attract-topbadge, .sel-topbadge {
+  font-size:clamp(9px,1.2vw,14px); letter-spacing:5px; color:var(--cyan);
+  border:2px solid var(--cyan);
+  border-radius:6px;
+  padding:7px 26px; background:rgba(0,6,22,.94); white-space:nowrap;
+  margin-bottom:clamp(12px,1.6vh,18px); flex-shrink:0;
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.35);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  
+  /* Forma biselada de la insignia superior en la imagen */
+  clip-path: polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ATTRACT SCREEN
+   ══════════════════════════════════════════════════════════════ */
+#screen-attract {
+  padding:0; justify-content:center;
+}
+.attract-content {
+  display:flex; flex-direction:column; align-items:center;
+  gap:clamp(16px,3vh,28px); z-index:2;
+}
+.logo {
+  font-family:'Press Start 2P', monospace;
+  font-size:clamp(30px,8vw,80px); color:var(--cyan);
+  letter-spacing:4px; line-height:1.1;
+  text-shadow:0 0 35px rgba(0,229,255,.9), 4px 4px 0 #001f30, 0 0 70px rgba(0,229,255,.4);
+  animation:glitch 6s step-end infinite;
+}
+.logo-frog {
+  font-style:normal; display:inline-block;
+  margin: 0 8px;
+  animation:frog-bounce 2.6s ease-in-out infinite;
+}
+.attract-sub {
+  font-size:clamp(9px,1.3vw,15px); color:var(--label);
+  letter-spacing:6px; margin-top:-6px; text-align:center;
+}
+.attract-actions { display:flex; flex-direction:column; align-items:center; gap:12px; }
+.insert-coin, .insert-coin-sub {
+  background: rgba(0, 229, 255, 0.08);
+  border-top: 3px solid var(--cyan);
+  border-bottom: 3px solid var(--cyan);
+  border-left: 8px double var(--cyan);
+  border-right: 8px double var(--cyan);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-shadow: 0 0 12px var(--cyan);
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.45), inset 0 0 15px rgba(0, 229, 255, 0.15);
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+  text-align: center;
+  margin: 10px 0;
+  display: block;
+}
+.insert-coin {
+  font-size: clamp(16px, 2.5vw, 26px);
+  padding: 16px 60px;
+}
+.insert-coin-sub {
+  font-size: clamp(13px, 2vw, 20px);
+  padding: 12px 48px;
+  background: rgba(0, 229, 255, 0.04);
+  text-shadow: 0 0 10px var(--cyan2);
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.25), inset 0 0 10px rgba(0, 229, 255, 0.1);
+  border-left: 6px double var(--cyan);
+  border-right: 6px double var(--cyan);
+}
+.insert-coin:hover, .insert-coin-sub:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 45px rgba(0, 229, 255, 0.7), inset 0 0 25px rgba(0, 229, 255, 0.25);
+  background: rgba(0, 229, 255, 0.15);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CHAMFERED CYBERPUNK PANELS — Forma biselada de la imagen
+   ══════════════════════════════════════════════════════════════ */
+.sel-columns {
+  display:grid;
+  grid-template-columns:5fr 7fr;
+  gap:clamp(12px,1.8vw,20px);
+  width:100%; flex:1; min-height:0;
+  max-width:960px;
+}
+
+.sel-panel {
+  border: 2px solid var(--cyan);
+  background: var(--panel);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display:flex; flex-direction:column;
+  gap:clamp(10px,1.2vh,15px); overflow:hidden; min-height:0;
+  
+  /* Biselado cyberpunk angular de la imagen (Chamfered edge) */
+  clip-path: polygon(
+    22px 0%, 
+    100% 0%, 
+    100% calc(100% - 22px), 
+    calc(100% - 22px) 100%, 
+    0% 100%, 
+    0% 22px
+  );
+  
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 0 25px rgba(0, 229, 255, 0.08);
+  transition: all 0.25s ease-out;
+  padding: 24px 18px 18px;
+}
+.sel-panel-active {
+  border-color: rgba(0,229,255,0.85);
+  background: var(--panel-active);
+  box-shadow: 0 0 35px rgba(0,229,255,.28), inset 0 0 30px rgba(0,229,255,.12);
+}
+.sel-panel-dim { opacity:.38; pointer-events:none; }
+
+.sel-panel-title {
+  font-size:clamp(10px,1.3vw,14px); font-weight:900; letter-spacing:4px;
+  color:var(--cyan2); text-align:center;
+  padding-bottom:clamp(8px,1vh,10px);
+  border-bottom:1.5px solid rgba(0,229,255,.25); flex-shrink:0;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+/* ── Botones octogonales de selección (Player Octagons) ───────── */
+.player-hex-grid {
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:clamp(6px,.9vw,12px);
+  flex:1; min-height:0;
+  align-items: center;
+}
+
+.player-hex-cell {
+  aspect-ratio:1;
+  
+  /* Octágono perfecto de alta fidelidad */
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Orbitron', sans-serif;
+  font-size:clamp(14px,2.2vw,26px); font-weight:900;
+  color:rgba(0, 229, 255, 0.25);
+  background:rgba(0,229,255,.03);
+  border: 1.5px solid rgba(0,229,255,0.15);
+  transition:all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.player-hex-cell.active {
+  background:rgba(0,229,255,.2); color:var(--cyan2);
+  border-color: var(--cyan);
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.45));
+}
+.player-hex-cell.current {
+  background:rgba(0,229,255,.45); color:#fff;
+  border-color: #fff;
+  filter:drop-shadow(0 0 18px rgba(0,229,255,0.9));
+  animation:pulse-cyan .9s ease-in-out infinite;
+}
+
+.sel-nav-row {
+  display:flex; align-items:center; justify-content:center; gap:clamp(10px,1.6vw,20px);
+  flex-shrink:0;
+}
+.sel-count-big {
+  font-family:'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size:clamp(36px,6vw,66px); color:var(--cyan); line-height:1;
+  text-shadow:0 0 25px rgba(0,229,255,.8), 3px 3px 0 #002235;
+  min-width:60px; text-align:center;
+}
+.sel-count-locked {
+  font-size:clamp(11px,1.5vw,14px); color:var(--cyan2);
+  text-align:center; letter-spacing:3px; flex-shrink:0;
+}
+.sel-cost {
+  font-size:clamp(10px,1.4vw,14px); color:var(--cyan);
+  font-weight:700; text-align:center; letter-spacing:2px; flex-shrink:0;
+}
+
+/* ── Modo items de fútbol de la imagen ───────────────────────── */
+.mode-list {
+  display:flex; flex-direction:column; gap:clamp(8px,1vh,12px);
+  overflow-y:auto; flex:1; min-height:0;
+}
+.mode-item {
+  display:flex; align-items:center; gap:14px;
+  padding:clamp(12px,1.5vh,16px) clamp(14px,1.6vw,20px);
+  border:2.5px solid rgba(0,229,255,.18); border-radius:14px;
+  background:rgba(0,8,22,.7); cursor:pointer;
+  transition:all 0.22s; animation:float-up .4s ease-out both; flex-shrink:0;
+}
+.mode-item:hover   { border-color:rgba(0,229,255,.6); background:rgba(0,229,255,.12); transform: translateX(5px); }
+.mode-item.selected {
+  border-color:var(--cyan); background:rgba(0,229,255,.2);
+  box-shadow:0 0 25px rgba(0,229,255,.45), inset 0 0 15px rgba(0,229,255,.1);
+}
+.mode-item.selected .mode-name::before { content:'⚽ '; color:var(--cyan); }
+.mode-icon { font-size:clamp(20px,2.4vw,28px); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.mode-info { flex:1; min-width:0; }
+.mode-name { font-size:clamp(12px,1.6vw,17px); font-weight:900; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:1px; }
+.mode-desc { font-size:clamp(8px,1vw,11px); color:var(--label); margin-top:4px; line-height:1.4; }
+.mode-extra {
+  font-size:clamp(9px,1vw,12px); color:var(--gold);
+  background:rgba(245,192,0,.15); border:1px solid rgba(245,192,0,.45);
+  border-radius:6px; padding:3px 9px; white-space:nowrap; flex-shrink:0;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PAYMENT SCREEN
+   ══════════════════════════════════════════════════════════════ */
+#screen-payment { gap:10px; padding:20px 24px 18px; }
+.payment-body {
+  display:grid;
+  grid-template-columns:1fr 1.1fr 1fr;
+  gap:clamp(15px,1.8vw,24px);
+  flex:1; width:100%; max-width:980px; min-height:0;
+  align-items:center;
+}
+.payment-frog {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation:frog-bounce 2.5s ease-in-out infinite;
+  align-self:center;
+}
+.payment-center {
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+}
+.pay-option-title {
+  font-size:clamp(12px,1.6vw,18px); color:var(--cyan);
+  font-weight:700; letter-spacing:2px; text-align:center; flex-shrink:0;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+#qr-canvas {
+  border:3px solid var(--cyan); border-radius:12px;
+  box-shadow:0 0 35px rgba(0,229,255,.45);
+  background:white;
+  padding: 6px;
+  width:clamp(130px,17vw,190px); height:clamp(130px,17vw,190px);
+}
+.pay-credits-pill {
+  border:3px solid var(--cyan); border-radius:40px;
+  padding:10px 30px; font-size:clamp(14px,2.2vw,22px); font-weight:900;
+  color:var(--cyan); text-shadow:0 0 12px var(--cyan);
+  box-shadow:0 0 25px rgba(0,229,255,.4);
+  white-space:nowrap; letter-spacing:3px;
+  background: rgba(0, 229, 255, 0.08);
+}
+.progress-bar {
+  width:90%; height:16px; background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(0,229,255,.35); border-radius:8px; overflow:hidden;
+}
+.progress-fill {
+  height:100%; width:0%;
+  background:linear-gradient(90deg, var(--cyan), var(--green));
+  border-radius:8px; transition:width .4s ease-out;
+  box-shadow:0 0 15px rgba(0,229,255,.8);
+}
+.payment-fichas {
+  display:flex; flex-direction:column; align-items:center; gap:16px;
+}
+.fichas-slot {
+  border:2.5px solid rgba(0,229,255,.45); border-radius:14px;
+  padding:14px 32px; background:rgba(0,229,255,.06);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  box-shadow:0 0 20px rgba(0,229,255,.2);
+}
+.fichas-slot-label { font-size:clamp(11px,1.5vw,15px); color:var(--label); letter-spacing:6px; }
+.fichas-arrow      { font-size:clamp(20px,2.6vw,26px); color:var(--cyan); animation:blink 1.2s step-end infinite; }
+.payment-summary-mini { text-align:center; }
+.pay-row-mini  { font-size:clamp(10px,1.3vw,14px); color:var(--label); padding:3px 0; }
+.pay-total-mini { font-size:clamp(13px,1.8vw,18px); color:var(--cyan); font-weight:700; margin-top:6px; }
+
+/* ══════════════════════════════════════════════════════════════
+   PLAYING SCREEN
+   ══════════════════════════════════════════════════════════════ */
+#screen-playing { padding:12px 16px; justify-content:flex-start; gap:12px; }
+
+.game-header {
+  display:flex; align-items:center; gap:12px; width:100%;
+  padding:10px 20px; background:rgba(0, 4, 18, 0.88);
+  border:2px solid rgba(0,229,255,.4); border-radius:14px; flex-shrink:0;
+  backdrop-filter: blur(10px);
+}
+.game-mode-badge {
+  font-size:clamp(11px,1.4vw,15px); color:var(--cyan); font-weight:700;
+  background:rgba(0,229,255,.15); border:1.5px solid var(--cyan);
+  border-radius:8px; padding:4px 14px; letter-spacing:2px;
+}
+.game-timer { font-size:clamp(22px,3.4vw,36px); color:var(--red); font-weight:900; margin:0 auto; text-shadow:0 0 20px var(--red); }
+.game-credits { font-size:clamp(12px,1.6vw,18px); color:var(--gold); margin-left:auto; }
+
+.scores-wrap { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; width:100%; flex:1; min-height:0; align-items: center; }
+
+.score-card {
+  flex:1; min-width:115px; max-width:180px;
+  border:3px solid rgba(255,255,255,.12); border-radius:16px;
+  background: rgba(0, 6, 22, 0.72);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation:float-up .5s cubic-bezier(0.25, 0.8, 0.25, 1) both;
+  position: relative;
+  transform-origin: bottom center;
+}
+.score-card.current-turn { transform:scale(1.6) translateY(-15px); z-index: 10; }
+
+/* Posición grande del puesto por detrás del marcador */
+.rank-badge-backdrop {
+  position: absolute;
+  bottom: 0px;
+  right: 8px;
+  font-size: clamp(48px, 6vw, 76px);
+  font-weight: 900;
+  font-family: 'Orbitron', sans-serif;
+  color: rgba(0, 229, 255, 0.08); /* Muy tenue de fondo */
+  z-index: 0;
+  pointer-events: none;
+  line-height: 1;
+}
+.score-value {
+  position: relative;
+  z-index: 2; /* Por delante de la posición de fondo */
+}
+.score-card-header {
+  padding:10px 12px; font-size:clamp(10px,1.2vw,13px); font-weight:900;
+  text-align:center; letter-spacing:1.5px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+.score-card-body { padding:14px 16px 16px; text-align:center; }
+.score-value { font-family:'Press Start 2P', monospace; font-size:clamp(22px,4vw,44px); color:var(--text); line-height:1.1; }
+.score-value.bump { animation:bump .22s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+/* Colores personalizados por tarjeta de jugador */
+.score-card-header-0{background:rgba(255,68,85,.26);  color:var(--p0); text-shadow:0 0 10px var(--p0);}
+.score-card-header-1{background:rgba(68,170,255,.26); color:var(--p1); text-shadow:0 0 10px var(--p1);}
+.score-card-header-2{background:rgba(0,255,136,.18);  color:var(--p2); text-shadow:0 0 10px var(--p2);}
+.score-card-header-3{background:rgba(255,170,0,.22);  color:var(--p3); text-shadow:0 0 10px var(--p3);}
+.score-card-header-4{background:rgba(221,68,255,.20); color:var(--p4); text-shadow:0 0 10px var(--p4);}
+.score-card-header-5{background:rgba(0,255,238,.18);  color:var(--p5); text-shadow:0 0 10px var(--p5);}
+
+.score-card.player-0{border-color:var(--p0);}
+.score-card.player-1{border-color:var(--p1);}
+.score-card.player-2{border-color:var(--p2);}
+.score-card.player-3{border-color:var(--p3);}
+.score-card.player-4{border-color:var(--p4);}
+.score-card.player-5{border-color:var(--p5);}
+
+.score-card.current-turn.player-0{box-shadow:0 0 50px var(--p0), 0 0 90px rgba(255,68,85,.55);}
+.score-card.current-turn.player-1{box-shadow:0 0 50px var(--p1), 0 0 90px rgba(68,170,255,.55);}
+.score-card.current-turn.player-2{box-shadow:0 0 50px var(--p2), 0 0 90px rgba(0,255,136,.55);}
+.score-card.current-turn.player-3{box-shadow:0 0 50px var(--p3), 0 0 90px rgba(255,170,0,.55);}
+.score-card.current-turn.player-4{box-shadow:0 0 50px var(--p4), 0 0 90px rgba(221,68,255,.55);}
+.score-card.current-turn.player-5{box-shadow:0 0 50px var(--p5), 0 0 90px rgba(0,255,238,.55);}
+
+/* Flecha neón flotante sobre el jugador activo */
+.score-card.current-turn::after {
+  content: '▼';
+  position: absolute;
+  top: -56px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 39px;
+  font-family: 'Orbitron', sans-serif;
+  animation: arrow-bounce-neon 0.8s ease-in-out infinite alternate;
+  z-index: 100;
+  pointer-events: none;
+}
+.score-card.current-turn.player-0::after { color: var(--p0); text-shadow: 0 0 10px var(--p0), 0 0 25px var(--p0); }
+.score-card.current-turn.player-1::after { color: var(--p1); text-shadow: 0 0 10px var(--p1), 0 0 25px var(--p1); }
+.score-card.current-turn.player-2::after { color: var(--p2); text-shadow: 0 0 10px var(--p2), 0 0 25px var(--p2); }
+.score-card.current-turn.player-3::after { color: var(--p3); text-shadow: 0 0 10px var(--p3), 0 0 25px var(--p3); }
+.score-card.current-turn.player-4::after { color: var(--p4); text-shadow: 0 0 10px var(--p4), 0 0 25px var(--p4); }
+.score-card.current-turn.player-5::after { color: var(--p5); text-shadow: 0 0 10px var(--p5), 0 0 25px var(--p5); }
+
+@keyframes arrow-bounce-neon {
+  0% {
+    transform: translateX(-50%) translateY(0);
+    filter: drop-shadow(0 0 5px currentColor);
+  }
+  100% {
+    transform: translateX(-50%) translateY(-6px);
+    filter: drop-shadow(0 0 15px currentColor) brightness(1.3);
+  }
+}
+
+.turn-indicator {
+  width:100%; display:flex; align-items:center; gap:16px; padding:10px 20px;
+  background:rgba(0, 4, 18, 0.88); border:2px solid rgba(0,229,255,.4); border-radius:14px; flex-shrink:0;
+  backdrop-filter: blur(10px);
+}
+.turn-arrow { font-size:20px; color:var(--cyan); animation:blink 1.2s infinite; }
+.turn-name  { font-size:clamp(13px,2vw,20px); font-weight:700; flex:1; }
+.balls-left { font-size:clamp(15px,2vw,22px); letter-spacing: 2px; }
+
+.score-popup {
+  position:absolute; pointer-events:none; z-index:100;
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(20px, 3.5vw, 48px);
+  text-shadow: 0 0 25px currentColor, 3px 3px 0 #000;
+  transform: translate(-50%, -50%) scale(0.6);
+  opacity: 0;
+  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease-out;
+}
+.score-popup.show {
+  opacity: 1;
+  transform: translate(-50%, -100%) scale(1.1);
+}
+
+#fx-canvas   { position:absolute; inset:0; pointer-events:none; z-index:5; width:100%; height:100%; }
+.btn-pause   {
+  position:absolute; top:16px; right:16px;
+  background:rgba(0,5,20,.82); border:2px solid rgba(0,229,255,.5);
+  border-radius:50%; width:48px; height:48px; font-size:20px; color:var(--cyan);
+  cursor:pointer; z-index:20; display:flex; align-items:center; justify-content:center;
+  transition: all 0.2s;
+  backdrop-filter: blur(5px);
+}
+.btn-pause:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 25px rgba(0,229,255,.5);
+}
+
+/* ── TURN CHANGE ─────────────────────────────────────────────── */
+.turn-change-content { text-align:center; display:flex; flex-direction:column; align-items:center; gap:26px; }
+.turn-change-label  { font-size:clamp(14px,2vw,22px); color:var(--label); letter-spacing:6px; }
+.turn-change-name   {
+  font-family:'Press Start 2P', monospace; font-size:clamp(26px,5vw,56px); color:var(--cyan);
+  text-shadow:0 0 35px rgba(0,229,255,.95), 4px 4px 0 #002235;
+  animation:bounce-in .65s cubic-bezier(.175, 0.885, 0.32, 1.275);
+}
+
+/* ── PAUSED ──────────────────────────────────────────────────── */
+#screen-paused { background:rgba(0,0,10,.85); backdrop-filter:blur(15px); }
+.pause-overlay {
+  text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px;
+  background: var(--panel);
+  border:3px solid var(--cyan); border-radius:24px; padding:40px 60px;
+  box-shadow:0 0 65px rgba(0,229,255,.32);
+}
+.pause-title   { font-family:'Press Start 2P',monospace; font-size:clamp(24px,4.5vw,48px); color:var(--cyan); }
+.pause-credits { font-size:clamp(12px,1.8vw,18px); color:var(--label); }
+.pause-btns    { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+
+/* ── GAME OVER ───────────────────────────────────────────────── */
+.gameover-content { display:flex; flex-direction:column; align-items:center; gap:16px; width:100%; max-width:680px; }
+.gameover-title {
+  font-family:'Press Start 2P',monospace; font-size:clamp(20px,4.2vw,48px); color:var(--cyan);
+  text-shadow:0 0 40px rgba(0,229,255,.95), 3px 3px 0 #002235;
+  letter-spacing:3px; text-align:center;
+}
+.winner-announce { font-size:clamp(14px,2vw,22px); color:var(--green); text-shadow:0 0 20px var(--green); text-align:center; font-weight: 900; }
+.final-scores {
+  display:flex; flex-direction:column; width:100%;
+  background: var(--panel); border:2px solid rgba(0,229,255,.35);
+  border-radius:16px; overflow:hidden;
+  backdrop-filter: blur(10px);
+}
+.final-score-card {
+  display:flex; align-items:center; gap:16px; padding:14px 24px;
+  border-bottom:1.5px solid rgba(0,229,255,.08);
+}
+.final-score-card.winner      { background:rgba(0,229,255,.09); border-left: 4px solid var(--gold); }
+.final-rank { font-size:clamp(16px,2vw,24px); min-width:32px; }
+.final-name { flex:1; font-size:clamp(12px,1.6vw,19px); font-weight:700; }
+.final-pts  { font-size:clamp(16px,2.2vw,24px); color:var(--cyan); font-weight:700; }
+.gameover-actions { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }

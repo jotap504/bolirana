@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Bolirana Player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#07070f;--neon:#f0e000;--neon2:#00ffcc;--text:#e8e8ff;--muted:#5566aa;--card:rgba(255,255,255,0.06)}
+    html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif}
+    h1,h2,h3{font-family:monospace}
+
+    .screen{display:none;flex-direction:column;align-items:center;justify-content:center;
+      min-height:100vh;padding:24px;text-align:center;gap:20px}
+    .screen.active{display:flex}
+
+    .logo{font-size:28px;color:var(--neon);text-shadow:0 0 12px var(--neon);letter-spacing:4px;margin-bottom:4px}
+    .subtitle{font-size:12px;color:var(--muted);letter-spacing:3px}
+
+    input[type=text]{
+      width:100%;max-width:280px;padding:14px 16px;font-size:18px;
+      background:rgba(255,255,255,0.08);border:2px solid var(--muted);
+      border-radius:10px;color:var(--text);text-align:center;letter-spacing:2px;
+      outline:none;transition:border-color 0.2s}
+    input:focus{border-color:var(--neon)}
+
+    .btn{width:100%;max-width:280px;padding:16px;border:none;border-radius:10px;
+      font-size:16px;font-weight:700;cursor:pointer;letter-spacing:2px;transition:all 0.15s}
+    .btn-primary{background:var(--neon);color:#000}
+    .btn-primary:active{transform:scale(0.97)}
+    .btn-ghost{background:transparent;border:2px solid var(--muted);color:var(--muted)}
+
+    .card{background:var(--card);border-radius:14px;padding:20px;width:100%;max-width:340px}
+    .score-big{font-size:56px;font-weight:900;color:var(--neon);text-shadow:0 0 20px var(--neon);
+      transition:transform 0.15s}
+    .score-big.bump{transform:scale(1.3)}
+    .score-label{font-size:12px;color:var(--muted);letter-spacing:2px;margin-bottom:8px}
+    .player-tag{font-size:14px;color:var(--neon2);margin-bottom:4px}
+    .turn-badge{
+      padding:8px 20px;border-radius:20px;font-size:13px;letter-spacing:2px;
+      background:rgba(240,224,0,0.15);border:1px solid var(--neon);color:var(--neon);
+    }
+    .other-scores{display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px}
+    .other-row{display:flex;justify-content:space-between;
+      padding:10px 16px;background:var(--card);border-radius:8px;font-size:14px}
+    .other-name{color:var(--muted)}
+    .other-score{color:var(--text);font-weight:700}
+    .waiting-msg{font-size:14px;color:var(--muted);line-height:1.8}
+    .waiting-spinner{font-size:36px;animation:spin 1s linear infinite}
+    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    .event-log{width:100%;max-width:340px;font-size:12px;color:var(--muted);
+      text-align:left;max-height:80px;overflow:hidden}
+    
+    .btn-tab{transition:all 0.2s;}
+    .btn-tab.active{background:rgba(0, 255, 204, 0.15) !important; border-color:var(--neon2) !important; color:var(--neon2) !important;}
+    .ranking-row{display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:8px; font-size:13px; width:100%;}
+    .ranking-pos{font-weight:bold; color:var(--neon); font-family:monospace; min-width:24px;}
+    .ranking-name{flex:1; text-align:left; padding-left:8px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+    .ranking-score{font-family:monospace; font-weight:bold; color:var(--neon2);}
+    .ranking-zone{font-size:10px; color:var(--muted); display:block; margin-top:2px;}
+  </style>
+</head>
+<body>
+
+<!-- Sumarse a la partida -->
+<div id="scr-join-game" class="screen active">
+  <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; font-size: 36px; color:var(--neon); text-shadow: 0 0 12px var(--neon);">FUTSPO</div>
+  <div class="subtitle" style="margin-bottom:24px; letter-spacing: 2px;">MÁQUINA RECREATIVA</div>
+  
+  <div class="card" style="margin-bottom:20px; padding:24px; width:100%; max-width:320px; border: 1px solid rgba(255, 255, 255, 0.1);">
+    <div style="font-size:16px; font-weight:bold; color:var(--neon2); margin-bottom:8px;">Partida Detectada</div>
+    <div style="font-size:12px; color:var(--muted); line-height:1.6;">Estás a punto de unirte a la sesión de juego en esta máquina.</div>
+  </div>
+
+  <button class="btn btn-primary" id="join-game-btn" style="background:var(--neon2); color:#000; font-weight:bold; font-size:16px; padding:18px; box-shadow:0 0 20px rgba(0, 255, 204, 0.4); width:100%; max-width:280px; letter-spacing:2px; border-radius:12px; border:none; cursor:pointer;">
+    🎮 SUMARSE A LA PARTIDA
+  </button>
+</div>
+
+<!-- Conectando -->
+<div id="scr-connecting" class="screen">
+  <div class="waiting-spinner">🎱</div>
+  <div class="logo">BOLIRANA</div>
+  <div class="subtitle">conectando...</div>
+</div>
+
+<!-- Esperando partida / Rankings -->
+<div id="scr-waiting" class="screen" style="justify-content:flex-start; padding-top:40px; overflow-y:auto;">
+  <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; font-size: 24px; color:var(--neon2); text-shadow: 0 0 10px var(--neon2);">FUTSPO</div>
+  <div class="turn-badge" id="waiting-status-badge" style="margin-bottom:12px;">CONECTADO</div>
+  
+  <div class="card" style="margin-bottom:12px; padding:16px; width:100%; max-width:340px;">
+    <div class="waiting-msg" id="waiting-msg-text" style="font-size:13px;">La máquina está en configuración.<br>Aguardá a que inicie la partida.</div>
+  </div>
+
+  <div class="logo" style="font-size:14px; color:var(--neon); letter-spacing: 2px; margin-top:10px; margin-bottom:10px; text-shadow:0 0 8px rgba(240,224,0,0.4);">🏆 LEAGUE RANKINGS</div>
+  
+  <!-- Selector de Pestañas de Rankings -->
+  <div style="display:flex; gap:6px; width:100%; max-width:340px; margin-bottom:12px;">
+    <button class="btn btn-tab active" data-rank-tab="machine" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:rgba(255,255,255,0.06); border:1px solid var(--muted); border-radius:8px; color:var(--text); cursor:pointer;">MÁQUINA</button>
+    <button class="btn btn-tab" data-rank-tab="zonal" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:transparent; border:1px solid transparent; border-radius:8px; color:var(--muted); cursor:pointer;">MI ZONA</button>
+    <button class="btn btn-tab" data-rank-tab="global" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:transparent; border:1px solid transparent; border-radius:8px; color:var(--muted); cursor:pointer;">MUNDIAL</button>
+  </div>
+  
+  <!-- Contenedor de la Tabla de Rankings -->
+  <div id="ranking-list" style="width:100%; max-width:340px; display:flex; flex-direction:column; gap:8px;">
+    <!-- Se rellena dinámicamente con JS -->
+  </div>
+</div>
+
+<!-- Ingresar nombre / Login -->
+<div id="scr-enter-name" class="screen">
+  <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; font-size: 32px; color:var(--neon2); text-shadow: 0 0 12px var(--neon2);">FUTSPO</div>
+  <div class="subtitle" style="margin-bottom:16px;">ÚNETE A LA PARTIDA</div>
+  
+  <!-- Botón Google Login -->
+  <button class="btn" id="google-login" style="background:#ffffff; color:#111122; display:flex; align-items:center; justify-content:center; gap:10px; font-weight:bold; font-size:14px; width:100%; max-width:280px; box-shadow: 0 4px 15px rgba(255,255,255,0.15);">
+    <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1-.8 1.9-1.6 2.5v2.1h2.6c1.5-1.4 2.8-3.5 2.8-6.2z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.6-2.1c-.7.5-1.6.8-2.6.8-2 0-3.7-1.4-4.3-3.2H2.8v2.2C4.3 16.5 6.5 18 9 18z"/><path fill="#FBBC05" d="M4.7 11.3c-.2-.5-.3-1-.3-1.6s.1-1.1.3-1.6V5.9H2.8C2.2 7.1 2 8.5 2 10s.2 2.9.8 4.1l1.9-2.8z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.4 3.4 1.3l2.6-2.5C13.5 1.1 11.4 0 9 0 6.5 0 4.3 1.5 2.8 3.7l1.9 2.8c.6-1.8 2.3-3.2 4.3-3.2z"/></svg>
+    ACCEDER CON GOOGLE
+  </button>
+  
+  <div id="google-separator" style="font-size:12px; color:var(--muted); margin: 12px 0; letter-spacing: 2px;">— O INGRESA COMO INVITADO —</div>
+  
+  <div style="font-size:11px; color:var(--muted); margin-bottom: 6px; letter-spacing: 2px;">SELECCIONÁ TU AVATAR</div>
+  <div id="avatar-selector-grid" style="display:flex; gap:10px; justify-content:center; margin-bottom:14px; width:100%; max-width:280px;">
+    <img class="avatar-opt" data-avatar-seed="Cat" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Cat" style="width:50px; height:50px; border-radius:10px; border:2px solid var(--neon2); cursor:pointer; background:#07070f;" onclick="selectAvatar('Cat')">
+    <img class="avatar-opt" data-avatar-seed="Dog" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Dog" style="width:50px; height:50px; border-radius:10px; border:2px solid transparent; opacity:0.6; cursor:pointer; background:#07070f;" onclick="selectAvatar('Dog')">
+    <img class="avatar-opt" data-avatar-seed="Frog" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Frog" style="width:50px; height:50px; border-radius:10px; border:2px solid transparent; opacity:0.6; cursor:pointer; background:#07070f;" onclick="selectAvatar('Frog')">
+    <img class="avatar-opt" data-avatar-seed="Robot" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Robot" style="width:50px; height:50px; border-radius:10px; border:2px solid transparent; opacity:0.6; cursor:pointer; background:#07070f;" onclick="selectAvatar('Robot')">
+  </div>
+
+  <input type="text" id="name-input" placeholder="Tu Apodo" maxlength="12" autocomplete="off" autocorrect="off" style="margin-bottom:8px;">
+  <button class="btn btn-ghost" id="name-ok" style="border-color:var(--neon2); color:var(--neon2); width:100%; max-width:280px;">JUGAR COMO INVITADO ▶</button>
+</div>
+
+<!-- En juego -->
+<div id="scr-playing" class="screen">
+  <div class="player-tag" id="my-name">Jugador</div>
+  <div class="card">
+    <div class="score-label">MI PUNTAJE</div>
+    <div class="score-big" id="my-score">0</div>
+    <div id="my-balls" style="font-size:18px;margin-top:8px">⚫⚫⚫⚫⚫</div>
+  </div>
+  <div id="my-turn-badge" class="turn-badge" style="display:none">▶ TU TURNO</div>
+  <div class="other-scores" id="other-scores"></div>
+  <div class="event-log" id="event-log"></div>
+</div>
+
+<!-- Game Over -->
+<div id="scr-gameover" class="screen">
+  <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; color:var(--neon2);">FIN DE PARTIDA</div>
+  <div id="go-winner" style="font-size:18px;color:var(--neon);margin-bottom:12px; font-weight:bold; text-shadow:0 0 10px rgba(240,224,0,0.3);"></div>
+  <div class="other-scores" id="go-scores" style="margin-bottom:16px;"></div>
+  
+  <!-- Contenedor Revancha Móvil -->
+  <div id="go-rematch-container" style="display:none; width:100%; max-width:340px; margin-bottom:12px;">
+    <button class="btn btn-primary" id="go-rematch" style="background:var(--neon); color:#000; box-shadow:0 0 20px var(--neon); width:100%; font-weight:900; font-size:16px; border:2px solid #fff; border-radius:12px; padding:18px; letter-spacing:2px;">
+      🔁 ACEPTAR REVANCHA
+    </button>
+  </div>
+
+  <button class="btn btn-ghost" id="go-back" style="width:100%; max-width:340px;">⏏ SALIR</button>
+</div>
+
+<script>
+const urlParams = new URLSearchParams(location.search);
+const hasIndexParam = urlParams.get("p") !== null;
+let playerIndex = hasIndexParam ? parseInt(urlParams.get("p")) : -1;
+let arcadeId = urlParams.get("arcade_id") || "FUTSPO_01";
+let sessionId = urlParams.get("session_id") || "";
+let myName  = "";
+let myScore = 0;
+let myZone = "Buenos Aires, AR";
+let supabaseClient = null;
+
+// ── Supabase & Geolocalización ────────────────────────────────────────────────
+async function initCloud() {
+  // 1. Detectar ubicación por IP de forma silenciosa
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
+    if (data && data.city && data.region_code) {
+      myZone = `${data.city}, ${data.region_code}`;
+      console.log("Zona detectada:", myZone);
+    }
+  } catch (e) {
+    console.warn("Error detectando IP:", e);
+  }
+
+  // 2. Inicializar cliente Supabase desde el endpoint seguro
+  try {
+    const res = await fetch("/api/supabase-config");
+    const config = await res.json();
+    if (config.enabled && window.supabase) {
+      supabaseClient = window.supabase.createClient(config.url, config.anon_key);
+      console.log("Supabase inicializado correctamente.");
+      
+      // Chequear si hay sesión de Google activa
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session && session.user) {
+        const user = session.user;
+        myName = user.user_metadata.full_name || user.user_metadata.name || user.email.split("@")[0];
+        console.log("Sesión activa recuperada:", myName);
+        
+        const avatarUrl = user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
+        // Registrar en backend local
+        send({ type: "player_name", name: myName, google_id: user.id, avatar: avatarUrl });
+        showScreen("scr-waiting");
+        document.getElementById("my-name").textContent = myName;
+        
+        // Intentar registrar perfil en la tabla de Supabase profiles
+        await supabaseClient.from("profiles").upsert({
+          id: user.id,
+          name: myName,
+          avatar_url: user.user_metadata.avatar_url || "",
+          zone: myZone
+        });
+      }
+    } else {
+      // Ocultar botones e interfaces de Google en modo offline
+      const googleBtn = document.getElementById("google-login");
+      if (googleBtn) googleBtn.style.display = "none";
+      const separator = document.getElementById("google-separator");
+      if (separator) separator.style.display = "none";
+
+      const zonalTab = document.querySelector('[data-rank-tab="zonal"]');
+      if (zonalTab) zonalTab.style.display = "none";
+      const globalTab = document.querySelector('[data-rank-tab="global"]');
+      if (globalTab) globalTab.style.display = "none";
+    }
+  } catch (e) {
+    console.warn("Error en initCloud:", e);
+  }
+  
+  // Cargar rankings iniciales
+  loadRankings();
+}
+
+// ── Google Login click ────────────────────────────────────────────────────────
+document.getElementById("google-login").addEventListener("click", async () => {
+  if (!supabaseClient) {
+    alert("Supabase Cloud no está habilitado o configurado en esta máquina.");
+    return;
+  }
+  
+  // Google OAuth requiere origen seguro (HTTPS, localhost o 127.0.0.1)
+  const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  if (!window.isSecureContext && !isLocalhost) {
+    alert("🔒 Seguridad de Google:\n\nEl inicio de sesión con Google requiere una conexión segura (HTTPS o localhost).\n\nPara jugar desde el celular en red local, por favor usa 'JUGAR COMO INVITADO' (ingresando tu apodo abajo), o configura un túnel seguro (como ngrok) para habilitar Google en móviles.");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.href
+    }
+  });
+  if (error) alert("Error al conectar con Google: " + error.message);
+});
+
+// ── Rankings con pestañas ──────────────────────────────────────────────────────
+let activeRankTab = "machine";
+document.querySelectorAll(".btn-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".btn-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    activeRankTab = tab.dataset.rankTab;
+    loadRankings();
+  });
+});
+
+async function loadRankings() {
+  const list = document.getElementById("ranking-list");
+  if (!list) return;
+  list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Cargando rankings...</div>`;
+
+  try {
+    let data = [];
+    if (activeRankTab === "machine") {
+      // Rankings locales de la base de datos de esta máquina particular
+      const res = await fetch("/api/state");
+      const state = await res.json();
+      data = (state.players || [])
+        .map((p, i) => ({ name: p.name || `Jugador ${i+1}`, score: p.score, zone: "Local" }))
+        .sort((a,b) => b.score - a.score);
+    } else if (activeRankTab === "zonal") {
+      if (!supabaseClient) {
+        list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px;">Nube no disponible en esta máquina.</div>`;
+        return;
+      }
+      // Consultar Supabase tabla rankings filtrando por zona
+      const { data: scores, error } = await supabaseClient
+        .from("rankings")
+        .select("player_name, score, zone")
+        .eq("zone", myZone)
+        .order("score", { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      data = scores.map(s => ({ name: s.player_name, score: s.score, zone: s.zone }));
+    } else if (activeRankTab === "global") {
+      if (!supabaseClient) {
+        list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px;">Nube no disponible en esta máquina.</div>`;
+        return;
+      }
+      // Consultar Supabase tabla rankings global ordenada
+      const { data: scores, error } = await supabaseClient
+        .from("rankings")
+        .select("player_name, score, zone")
+        .order("score", { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      data = scores.map(s => ({ name: s.player_name, score: s.score, zone: s.zone }));
+    }
+
+    if (data.length === 0) {
+      list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Sin puntajes aún. ¡Sé el primero!</div>`;
+      return;
+    }
+
+    list.innerHTML = data.map((r, idx) => `
+      <div class="ranking-row">
+        <span class="ranking-pos">#${idx+1}</span>
+        <div class="ranking-name">
+          <div style="font-weight:bold; color:var(--text);">${r.name}</div>
+          <span class="ranking-zone">📍 ${r.zone || "Desconocida"}</span>
+        </div>
+        <span class="ranking-score">${r.score} pts</span>
+      </div>
+    `).join("");
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Rankings no disponibles temporalmente.</div>`;
+  }
+}
+
+// ── WebSocket ────────────────────────────────────────────────────────────────
+let sock = null;
+let connectionRejected = false;
+function connect() {
+  if (connectionRejected) return;
+  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  const url = `${protocol}//${location.host}/ws/player/${playerIndex}?session_id=${sessionId}`;
+  sock = new WebSocket(url);
+  sock.onopen    = () => {
+    showScreen("scr-waiting");
+    initCloud();
+  };
+  sock.onclose   = () => { 
+    if (!connectionRejected) {
+      setTimeout(connect, 2000); 
+      showScreen("scr-connecting"); 
+    }
+  };
+  sock.onerror   = () => {};
+  sock.onmessage = ({data}) => {
+    try { handle(JSON.parse(data)); } catch(e){}
+  };
+}
+function send(msg){ if(sock?.readyState===1) sock.send(JSON.stringify(msg)); }
+function btn(id){ send({type:"btn",id}); }
+
+// ── Pantallas ────────────────────────────────────────────────────────────────
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id)?.classList.add("active");
+}
+
+// ── Manejo de mensajes ───────────────────────────────────────────────────────
+function handle(msg) {
+  if (msg.type === "error") {
+    connectionRejected = true;
+    sock.close();
+    showScreen("scr-waiting");
+    document.getElementById("waiting-status-badge").textContent = "SESIÓN VENCIDA";
+    document.getElementById("waiting-msg-text").innerHTML = `<strong style="color:var(--neon)">${msg.message}</strong>`;
+    return;
+  }
+
+  if (msg.type === "state") {
+    const st = msg.state;
+    if (st === "attract" || st === "select_players" || st === "select_mode" || st === "payment") {
+      showScreen("scr-waiting");
+      document.getElementById("waiting-status-badge").textContent = "CONECTADO";
+      document.getElementById("waiting-msg-text").innerHTML = "La máquina está en modo espera.<br>Aguardá a que inicie la partida.";
+    }
+    else if (st === "connect_phone" || st === "waiting_start") {
+      if (!myName) {
+        showScreen("scr-enter-name");
+      } else {
+        showScreen("scr-waiting");
+        document.getElementById("waiting-status-badge").textContent = "LOBBY LISTO";
+        document.getElementById("waiting-msg-text").innerHTML = `¡Hola, <strong>${myName}</strong>!<br>Esperando que pulsen START en la máquina.`;
+      }
+    }
+    else if (st === "playing" || st === "turn_change") {
+      showScreen("scr-playing");
+      renderPlayersState(msg);
+    }
+    else if (st === "game_over") {
+      showScreen("scr-gameover");
+      // Mostrar botón de revancha rápida si el servidor lo ofrece
+      const rematchEl = document.getElementById("go-rematch-container");
+      if (rematchEl) rematchEl.style.display = "block";
+    }
+  }
+
+  if (msg.type === "score") {
+    if (msg.player_index === playerIndex) {
+      myScore = msg.total;
+      const el = document.getElementById("my-score");
+      el.textContent = myScore;
+      el.classList.add("bump");
+      setTimeout(()=>el.classList.remove("bump"),200);
+    }
+    logEvent(`+${msg.delta} en ${msg.zone_name}`);
+  }
+
+  if (msg.type === "turn") {
+    const badge = document.getElementById("my-turn-badge");
+    badge.style.display = msg.current_player === playerIndex ? "block" : "none";
+    const balls = msg.balls_left || 0;
+    if (msg.current_player === playerIndex) {
+      document.getElementById("my-balls").textContent = "⚫".repeat(balls) + "⚪".repeat(5-balls);
+    }
+  }
+
+  if (msg.type === "game_over") renderGameOver(msg);
+}
+
+function renderPlayersState(msg) {
+  const players = msg.players || [];
+  const me = players[playerIndex];
+  if (me) {
+    document.getElementById("my-name").textContent  = me.name || `Jugador ${playerIndex+1}`;
+    document.getElementById("my-score").textContent = me.score;
+    myScore = me.score;
+  }
+  const others = document.getElementById("other-scores");
+  others.innerHTML = "";
+  players.forEach((p, i) => {
+    if (i === playerIndex) return;
+    const d = document.createElement("div");
+    d.className = "other-row";
+    d.innerHTML = `<span class="other-name">${p.name||"J"+(i+1)}</span><span class="other-score">${p.score}</span>`;
+    others.appendChild(d);
+  });
+}
+
+function renderGameOver(msg) {
+  showScreen("scr-gameover");
+  const scores = msg.scores || [];
+  document.getElementById("go-winner").textContent = scores[0] ? `🏆 GANADOR: ${scores[0].name}` : "";
+  const wrap = document.getElementById("go-scores");
+  wrap.innerHTML = "";
+  const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
+  scores.forEach((s,i)=>{
+    const d = document.createElement("div");
+    d.className = "other-row";
+    d.innerHTML = `<span class="other-name">${medals[i]} ${s.name}</span><span class="other-score">${s.score}</span>`;
+    wrap.appendChild(d);
+  });
+}
+
+function logEvent(text) {
+  const el = document.getElementById("event-log");
+  if (!el) return;
+  el.innerHTML = `<div>${text}</div>` + el.innerHTML;
+  if (el.children.length > 4) el.removeChild(el.lastChild);
+}
+
+// ── UI events ────────────────────────────────────────────────────────────────
+let selectedAvatarSeed = "Cat";
+function selectAvatar(seed) {
+  selectedAvatarSeed = seed;
+  document.querySelectorAll(".avatar-opt").forEach(img => {
+    const isSelected = img.dataset.avatarSeed === seed;
+    img.style.borderColor = isSelected ? "var(--neon2)" : "transparent";
+    img.style.opacity = isSelected ? "1" : "0.6";
+  });
+}
+
+document.getElementById("name-ok").addEventListener("click", () => {
+  const val = document.getElementById("name-input").value.trim();
+  if (!val) return;
+  myName = val;
+  const avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${selectedAvatarSeed}`;
+  send({ type: "player_name", name: myName, avatar: avatarUrl });
+  showScreen("scr-waiting");
+  document.getElementById("my-name").textContent = myName;
+});
+document.getElementById("name-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("name-ok").click();
+});
+document.getElementById("go-back").addEventListener("click", () => {
+  showScreen("scr-waiting");
+});
+document.getElementById("go-rematch").addEventListener("click", () => {
+  btn("start");
+  console.log("Revancha enviada");
+});
+
+document.getElementById("join-game-btn").addEventListener("click", async () => {
+  try {
+    const res = await fetch("/api/state");
+    const state = await res.json();
+    const players = state.players || [];
+    
+    // Buscar el primer slot disponible (no conectado)
+    let availableIndex = -1;
+    for (let i = 0; i < players.length; i++) {
+      if (!players[i].connected) {
+        availableIndex = i;
+        break;
+      }
+    }
+    
+    if (availableIndex === -1) {
+      alert("La partida está llena o no tiene slots de celular libres.");
+      return;
+    }
+    
+    playerIndex = availableIndex;
+    showScreen("scr-connecting");
+    connect();
+  } catch (e) {
+    alert("Error al unirse a la partida: " + e.message);
+  }
+});
+
+if (playerIndex !== -1) {
+  showScreen("scr-connecting");
+  connect();
+} else {
+  showScreen("scr-join-game");
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bolirana Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=120">
+  <style>
+    /* Estilos para el Scoreboard Vertical Premium */
+    .scores-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      align-items: stretch; /* Asegura el mismo ancho exacto para todas las filas */
+    }
+    
+    .score-row {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 12, 32, 0.85);
+      border: 2px solid rgba(0, 229, 255, 0.2);
+      border-radius: 16px;
+      padding: 16px 24px;
+      gap: 20px;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      width: 100%; /* Forzar ancho completo */
+    }
+    
+    /* Bordes e Identificación por Colores de Jugadores */
+    .score-row.player-0 { border-color: rgba(255, 68, 85, 0.3); }
+    .score-row.player-1 { border-color: rgba(68, 170, 255, 0.3); }
+    .score-row.player-2 { border-color: rgba(0, 255, 136, 0.25); }
+    .score-row.player-3 { border-color: rgba(255, 170, 0, 0.28); }
+    .score-row.player-4 { border-color: rgba(221, 68, 255, 0.28); }
+    .score-row.player-5 { border-color: rgba(0, 255, 238, 0.28); }
+    
+    /* Resaltado del Turno Actual según Color del Jugador */
+    .score-row.player-0.current-turn { border-color: var(--p0); box-shadow: 0 0 20px rgba(255, 68, 85, 0.4); background: rgba(255, 68, 85, 0.06); transform: scale(1.02); }
+    .score-row.player-1.current-turn { border-color: var(--p1); box-shadow: 0 0 20px rgba(68, 170, 255, 0.4); background: rgba(68, 170, 255, 0.06); transform: scale(1.02); }
+    .score-row.player-2.current-turn { border-color: var(--p2); box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); background: rgba(0, 255, 136, 0.06); transform: scale(1.02); }
+    .score-row.player-3.current-turn { border-color: var(--p3); box-shadow: 0 0 20px rgba(255, 170, 0, 0.4); background: rgba(255, 170, 0, 0.06); transform: scale(1.02); }
+    .score-row.player-4.current-turn { border-color: var(--p4); box-shadow: 0 0 20px rgba(221, 68, 255, 0.4); background: rgba(221, 68, 255, 0.06); transform: scale(1.02); }
+    .score-row.player-5.current-turn { border-color: var(--p5); box-shadow: 0 0 20px rgba(0, 255, 238, 0.4); background: rgba(0, 255, 238, 0.06); transform: scale(1.02); }
+    
+    .turn-arrow-indicator {
+      font-size: 24px;
+      width: 30px;
+      text-align: center;
+      opacity: 0;
+      transform: translateX(-10px);
+      transition: all 0.3s ease;
+    }
+    
+    .score-row.current-turn .turn-arrow-indicator {
+      opacity: 1;
+      transform: translateX(0);
+      animation: pulseArrow 1s infinite alternate;
+    }
+    
+    /* Color de flecha de turno por jugador */
+    .score-row.player-0.current-turn .turn-arrow-indicator { color: var(--p0); text-shadow: 0 0 10px var(--p0); }
+    .score-row.player-1.current-turn .turn-arrow-indicator { color: var(--p1); text-shadow: 0 0 10px var(--p1); }
+    .score-row.player-2.current-turn .turn-arrow-indicator { color: var(--p2); text-shadow: 0 0 10px var(--p2); }
+    .score-row.player-3.current-turn .turn-arrow-indicator { color: var(--p3); text-shadow: 0 0 10px var(--p3); }
+    .score-row.player-4.current-turn .turn-arrow-indicator { color: var(--p4); text-shadow: 0 0 10px var(--p4); }
+    .score-row.player-5.current-turn .turn-arrow-indicator { color: var(--p5); text-shadow: 0 0 10px var(--p5); }
+    
+    @keyframes pulseArrow {
+      from { transform: translateX(-3px); }
+      to { transform: translateX(3px); }
+    }
+    
+    .player-avatar-container {
+      width: 70px;
+      height: 70px;
+      border-radius: 12px;
+      border: 2.5px solid var(--cyan);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+      overflow: hidden;
+      background: #061026;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    /* Contenedor del Avatar coloreado según jugador */
+    .score-row.player-0 .player-avatar-container { border-color: var(--p0); box-shadow: 0 0 10px rgba(255, 68, 85, 0.3); }
+    .score-row.player-1 .player-avatar-container { border-color: var(--p1); box-shadow: 0 0 10px rgba(68, 170, 255, 0.3); }
+    .score-row.player-2 .player-avatar-container { border-color: var(--p2); box-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
+    .score-row.player-3 .player-avatar-container { border-color: var(--p3); box-shadow: 0 0 10px rgba(255, 170, 0, 0.3); }
+    .score-row.player-4 .player-avatar-container { border-color: var(--p4); box-shadow: 0 0 10px rgba(221, 68, 255, 0.3); }
+    .score-row.player-5 .player-avatar-container { border-color: var(--p5); box-shadow: 0 0 10px rgba(0, 255, 238, 0.3); }
+    
+    .score-row.current-turn .player-avatar-container {
+      box-shadow: 0 0 15px currentColor;
+    }
+    
+    .player-avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .player-name-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+      text-align: left;
+      letter-spacing: 2px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    
+    .player-score-val {
+      font-family: monospace;
+      font-size: 42px;
+      font-weight: 900;
+      color: var(--neon);
+      text-shadow: 0 0 15px rgba(240, 224, 0, 0.6);
+      min-width: 180px;
+      text-align: right;
+      letter-spacing: 1px;
+    }
+    
+    .player-rank-badge {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 32px;
+      font-weight: 900;
+      min-width: 80px;
+      text-align: right;
+    }
+    
+    /* Badge de posición coloreada por jugador */
+    .score-row.player-0 .player-rank-badge { color: var(--p0); text-shadow: 0 0 12px rgba(255, 68, 85, 0.5); }
+    .score-row.player-1 .player-rank-badge { color: var(--p1); text-shadow: 0 0 12px rgba(68, 170, 255, 0.5); }
+    .score-row.player-2 .player-rank-badge { color: var(--p2); text-shadow: 0 0 12px rgba(0, 255, 136, 0.5); }
+    .score-row.player-3 .player-rank-badge { color: var(--p3); text-shadow: 0 0 12px rgba(255, 170, 0, 0.5); }
+    .score-row.player-4 .player-rank-badge { color: var(--p4); text-shadow: 0 0 12px rgba(221, 68, 255, 0.5); }
+    .score-row.player-5 .player-rank-badge { color: var(--p5); text-shadow: 0 0 12px rgba(0, 255, 238, 0.5); }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── ATTRACT ─────────────────────────────────────────────────────── -->
+    <div id="screen-attract" class="screen active">
+      <div class="attract-topbadge">ARGENTINA CYBER LEAGUE</div>
+      <div class="attract-content">
+        <h1 class="logo">FUTS<span class="logo-frog"><svg class="logo-frog-svg" viewBox="0 0 100 100" width="130" height="130" style="vertical-align: middle; filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.95));"><defs><filter id="neon-glow-logo-attract" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="2.5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><circle cx="76" cy="22" r="13" fill="rgba(0, 5, 20, 0.95)" stroke="#00e5ff" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 76,9 L 76,35 M 63,22 L 89,22 M 67,13 L 85,31 M 67,31 L 85,13" stroke="#00e5ff" stroke-width="1.5" opacity="0.8" /><path d="M 32,44 Q 38,32 45,40 Q 52,32 58,44 Q 60,52 30,52 Z" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><circle cx="38" cy="38" r="4.5" fill="none" stroke="#00ff88" stroke-width="2" /><circle cx="38" cy="38" r="1.5" fill="#00ff88" /><circle cx="52" cy="38" r="4.5" fill="none" stroke="#00ff88" stroke-width="2" /><circle cx="52" cy="38" r="1.5" fill="#00ff88" /><path d="M 36,48 Q 45,53 54,48" fill="none" stroke="#00ff88" stroke-width="2" /><path d="M 34,51 Q 26,68 45,74 Q 64,68 56,51" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 52,54 Q 64,48 70,33" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 38,54 Q 28,52 24,42" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 32,62 Q 18,65 28,78" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 58,62 Q 72,65 62,78" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 34,74 L 28,82 M 45,74 L 45,84 M 56,74 L 62,82" stroke="#00ff88" stroke-width="2" /></svg></span>PO</h1>
+        <div class="attract-actions">
+          <div class="insert-coin blink">PRENSA START PARA JUGAR</div>
+          <div class="insert-coin-sub">MODO TORNEO</div>
+        </div>
+      </div>
+      <video id="attract-video" class="attract-video" muted loop playsinline></video>
+    </div>
+
+    <!-- ── SELECT PLAYERS ─────────────────────────────────────────────── -->
+    <div id="screen-select_players" class="screen">
+      <div class="sel-topbadge">ARGENTINA CYBER LEAGUE</div>
+      <div class="sel-columns">
+
+        <!-- IZQUIERDA: jugadores (activo) -->
+        <div class="sel-panel sel-panel-active">
+          <div class="sel-panel-title">CANTIDAD JUGADORES</div>
+          <div class="player-hex-grid" id="player-hex-grid-a"></div>
+          <div class="sel-nav-row">
+            <button class="nav-btn" id="players-prev">◄</button>
+            <div class="sel-count-big" id="player-count-num">1</div>
+            <button class="nav-btn" id="players-next">►</button>
+          </div>
+          <div class="sel-cost" id="cost-preview-val">1 ficha · $200</div>
+        </div>
+
+        <!-- DERECHA: modos (preview, bloqueado) -->
+        <div class="sel-panel sel-panel-dim">
+          <div class="sel-panel-title">TIPO DE JUEGO</div>
+          <div class="mode-list">
+            <div class="mode-item" data-mode="classic">
+              <div class="mode-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px var(--cyan));"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line><circle cx="12" cy="12" r="4"></circle></svg></div>
+              <div class="mode-info">
+                <div class="mode-name">TRADICIONAL 3000</div>
+                <div class="mode-desc">Genera un acumulativo de los 3000.</div>
+              </div>
+            </div>
+            <div class="mode-item" data-mode="timed">
+              <div class="mode-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f5c000" stroke-width="2" style="filter: drop-shadow(0 0 4px var(--gold));"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg></div>
+              <div class="mode-info">
+                <div class="mode-name">GOLES RÁPIDOS</div>
+                <div class="mode-desc">Goles más rápidos para un desempate en torneo de combo.</div>
+              </div>
+            </div>
+            <div class="mode-item" data-mode="battle">
+              <div class="mode-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" style="filter: drop-shadow(0 0 4px var(--green));"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-3 8c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm6 0c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm-3 7c-2.3 0-4.1-1.4-4.9-3h9.8c-.8 1.6-2.6 3-4.9 3z"></path></svg></div>
+              <div class="mode-info">
+                <div class="mode-name">SAPO EXTREMO</div>
+                <div class="mode-desc">Como una partida de sapo extremo, completo más sumatoria extrema.</div>
+              </div>
+            </div>
+            <div class="mode-item" data-mode="team">
+              <div class="mode-icon">🤝</div>
+              <div class="mode-info">
+                <div class="mode-name">EQUIPO</div>
+                <div class="mode-desc">Suma acumulativa de todos</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <button class="btn-start-big" id="players-ok">▶▶ START ◀◀</button>
+      <div class="nav-hint">◄ ► elegir cantidad &nbsp;|&nbsp; START confirmar</div>
+    </div>
+
+    <!-- ── SELECT MODE ─────────────────────────────────────────────────── -->
+    <div id="screen-select_mode" class="screen">
+      <div class="sel-topbadge">ARGENTINA CYBER LEAGUE</div>
+      <div class="sel-columns">
+
+        <!-- IZQUIERDA: jugadores (bloqueado) -->
+        <div class="sel-panel sel-panel-dim">
+          <div class="sel-panel-title">CANTIDAD JUGADORES</div>
+          <div class="player-hex-grid" id="player-hex-grid-b"></div>
+          <div class="sel-count-locked" id="mode-player-count">1 JUGADOR</div>
+        </div>
+
+        <!-- DERECHA: modos (activo) -->
+        <div class="sel-panel sel-panel-active">
+          <div class="sel-panel-title">TIPO DE JUEGO</div>
+          <div class="mode-list" id="mode-list">
+            <div class="mode-item" data-mode="classic">
+              <div class="mode-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px var(--cyan));"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line><circle cx="12" cy="12" r="4"></circle></svg></div>
+              <div class="mode-info">
+                <div class="mode-name">TRADICIONAL 3000</div>
+                <div class="mode-desc">Genera un acumulativo de los 3000.</div>
+              </div>
+              <div class="mode-extra">base</div>
+            </div>
+            <div class="mode-item" data-mode="timed">
+              <div class="mode-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f5c000" stroke-width="2" style="filter: drop-shadow(0 0 4px var(--gold));"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg></div>
+              <div class="mode-info">
+                <div class="mode-name">GOLES RÁPIDOS</div>
+                <div class="mode-desc">Goles más rápidos para un desempate en torneo de combo.</div>
+              </div>
+              <div class="mode-extra">base</div>
+            </div>
+            <div class="mode-item" data-mode="battle">
+              <div class="mode-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" style="filter: drop-shadow(0 0 4px var(--green));"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-3 8c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm6 0c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm-3 7c-2.3 0-4.1-1.4-4.9-3h9.8c-.8 1.6-2.6 3-4.9 3z"></path></svg></div>
+              <div class="mode-info">
+                <div class="mode-name">SAPO EXTREMO</div>
+                <div class="mode-desc">Como una partida de sapo extremo, completo más sumatoria extrema.</div>
+              </div>
+              <div class="mode-extra">+1</div>
+            </div>
+            <div class="mode-item" data-mode="team">
+              <div class="mode-icon">🤝</div>
+              <div class="mode-info">
+                <div class="mode-name">EQUIPO</div>
+                <div class="mode-desc">Suma acumulativa de todos</div>
+              </div>
+              <div class="mode-extra">base</div>
+            </div>
+          </div>
+          <div class="sel-cost" id="mode-cost-val">1 ficha · $200</div>
+        </div>
+
+      </div>
+      <div class="nav-hint">◄ ► navegar &nbsp;|&nbsp; START confirmar</div>
+    </div>
+
+    <!-- ── PAYMENT ─────────────────────────────────────────────────────── -->
+    <div id="screen-payment" class="screen">
+      <div class="sel-topbadge">TOTAL A ABONAR</div>
+      <div class="payment-body">
+
+        <!-- Izquierda: rana cyber -->
+        <div class="payment-frog">
+          <svg class="cyber-frog-heavy" viewBox="0 0 200 200" width="180" height="180" style="filter: drop-shadow(0 0 25px rgba(0,255,136,0.6));">
+            <defs>
+              <linearGradient id="cyber-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00e5ff" />
+                <stop offset="100%" stop-color="#00ff88" />
+              </linearGradient>
+              <filter id="neon-glow-heavy" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <polygon points="100,20 160,70 140,170 60,170 40,70" fill="rgba(0,12,32,0.92)" stroke="url(#cyber-grad)" stroke-width="5" filter="url(#neon-glow-heavy)" />
+            <path d="M 60,120 L 100,150 L 140,120" fill="none" stroke="#f5c000" stroke-width="3" opacity="0.8" />
+            <circle cx="65" cy="75" r="22" fill="none" stroke="#00e5ff" stroke-width="4" filter="url(#neon-glow-heavy)" />
+            <circle cx="65" cy="75" r="10" fill="#010b1e" stroke="#00ff88" stroke-width="2" />
+            <circle cx="65" cy="75" r="4" fill="#00ff88" />
+            <circle cx="135" cy="75" r="22" fill="none" stroke="#00e5ff" stroke-width="4" filter="url(#neon-glow-heavy)" />
+            <circle cx="135" cy="75" r="10" fill="#010b1e" stroke="#00ff88" stroke-width="2" />
+            <circle cx="135" cy="75" r="4" fill="#00ff88" />
+            <polygon points="50,110 65,120 55,130" fill="#ff2233" opacity="0.8" />
+            <polygon points="150,110 135,120 145,130" fill="#ff2233" opacity="0.8" />
+            <polygon points="90,30 110,30 100,45" fill="#f5c000" filter="url(#neon-glow-heavy)" />
+            <path d="M 75,130 Q 100,155 125,130" fill="none" stroke="url(#cyber-grad)" stroke-width="5" filter="url(#neon-glow-heavy)" />
+          </svg>
+        </div>
+
+        <!-- Centro: QR + créditos -->
+        <div class="payment-center">
+          <div class="pay-option-title">📱 ESCANEE PARA PAGAR</div>
+          <img id="qr-canvas" src="" width="200" height="200" style="border: 3px solid var(--cyan); border-radius: 12px; box-shadow: 0 0 20px var(--cyan);" alt="Código QR de Pago">
+          <div class="pay-credits-pill">
+            CRÉDITOS: <span id="credits-loaded">0</span> / <span id="credits-needed">1</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- Derecha: fichas + resumen -->
+        <div class="payment-fichas">
+          <div class="pay-option-title">💰 O INSERTE FICHAS</div>
+          <div class="fichas-slot">
+            <div class="fichas-slot-label">FICHAS</div>
+            <div class="fichas-arrow">▲</div>
+          </div>
+          <div class="payment-summary-mini">
+            <div class="pay-row-mini"><span id="pay-players">2</span> jugadores</div>
+            <div class="pay-row-mini">Modo: <span id="pay-mode">Clásico</span></div>
+            <div class="pay-row-mini pay-total-mini">TOTAL: <span id="pay-total">$400</span></div>
+          </div>
+        </div>
+
+      </div>
+      <button class="btn-back" id="payment-back">◄ CAMBIAR</button>
+    </div>
+
+    <!-- ── CONNECT PHONE ───────────────────────────────────────────────── -->
+    <div id="screen-connect_phone" class="screen">
+      <div class="screen-header">
+        <span class="screen-title">CONECTAR CELULAR</span>
+        <span class="screen-subtitle">OPCIONAL</span>
+      </div>
+      <div class="connect-content">
+        <div class="connect-info">
+          <p>Escaneá el QR con tu celular para:<br>
+          • Ingresar tu nombre<br>
+          • Ver tu puntaje en tiempo real</p>
+          <div class="connect-network">
+            📶 Red: <strong id="net-name">BOLIRANA-01</strong><br>
+            🌐 Web: <strong>192.168.4.1/player</strong>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+          <img id="connect-qr" src="" width="180" height="180" style="border: 3px solid var(--cyan); border-radius: 12px; box-shadow: 0 0 20px var(--cyan);" alt="Código QR de Conexión">
+          <div class="connect-url-text" id="connect-url-val" style="font-size: 10px; color: var(--gold); font-family: monospace; word-break: break-all; max-width: 220px; text-align: center; border: 1px dashed var(--gold); padding: 4px 8px; border-radius: 4px; user-select: all; background: rgba(245, 192, 0, 0.05);">Cargando enlace...</div>
+        </div>
+      </div>
+      <div class="connect-players" id="connect-players"></div>
+      <button class="btn-ok" id="connect-skip">SALTAR  ▶</button>
+      <div class="skip-timer">Auto-inicio en <span id="skip-countdown">30</span>s</div>
+    </div>
+
+    <!-- ── WAITING START ───────────────────────────────────────────────── -->
+    <div id="screen-waiting_start" class="screen">
+      <div class="screen-header">
+        <span class="screen-title">¿LISTOS?</span>
+      </div>
+      <div class="connect-content" style="gap: 40px; margin-bottom: 20px;">
+        <div class="waiting-players" id="waiting-players" style="flex: 1;"></div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+          <img id="waiting-start-qr" src="" width="140" height="140" style="border: 3px solid var(--cyan); border-radius: 12px; box-shadow: 0 0 15px var(--cyan);" alt="Código QR de Conexión">
+          <div style="font-size: 10px; color: var(--muted); font-weight: bold; letter-spacing: 1px;">Escaneá para sumarte 📱</div>
+          <div class="connect-url-text" id="waiting-url-val" style="font-size: 9px; color: var(--gold); font-family: monospace; word-break: break-all; max-width: 180px; text-align: center; border: 1px dashed var(--gold); padding: 4px; border-radius: 4px; user-select: all; background: rgba(245, 192, 0, 0.05);">Cargando enlace...</div>
+        </div>
+      </div>
+      <button class="btn-ok btn-start pulse" id="waiting-start">
+        ▶ INICIAR PARTIDA
+      </button>
+      <div class="nav-hint">Presioná START para comenzar</div>
+    </div>
+
+    <!-- ── PLAYING ─────────────────────────────────────────────────────── -->
+    <div id="screen-playing" class="screen">
+      <div class="game-header">
+        <div class="game-mode-badge" id="game-mode-badge">CLÁSICO</div>
+        <div class="game-timer" id="game-timer" style="display:none">
+          <span id="timer-val">120</span>s
+        </div>
+        <div class="game-credits">
+          💰 <span id="game-credits">0</span>
+        </div>
+      </div>
+
+      <div class="scores-wrap" id="scores-wrap"></div>
+
+      <div class="turn-indicator" id="turn-indicator">
+        <div class="turn-arrow">▼</div>
+        <div class="turn-name" id="turn-name">Jugador 1</div>
+        <div class="balls-left" id="balls-left">
+          <span class="ball-icon" id="ball-icons">⚫⚫⚫⚫⚫</span>
+        </div>
+      </div>
+
+      <div class="score-popup" id="score-popup"></div>
+      <canvas id="fx-canvas"></canvas>
+      <button class="btn-pause" id="btn-pause">⏸</button>
+    </div>
+
+    <!-- ── TURN CHANGE ─────────────────────────────────────────────────── -->
+    <div id="screen-turn_change" class="screen">
+      <div class="turn-change-content">
+        <div class="turn-change-label">PRÓXIMO JUGADOR</div>
+        <div class="turn-change-name" id="tc-name">Jugador 2</div>
+        <div class="turn-change-scores" id="tc-scores"></div>
+      </div>
+    </div>
+
+    <!-- ── PAUSED ──────────────────────────────────────────────────────── -->
+    <div id="screen-paused" class="screen">
+      <div class="pause-overlay">
+        <div class="pause-title">⏸ PAUSA</div>
+        <div class="pause-credits">Créditos: <span id="pause-credits">0</span></div>
+        <div class="pause-btns">
+          <button class="btn-ok" id="pause-resume">▶ CONTINUAR</button>
+          <button class="btn-back" id="pause-end">✖ TERMINAR</button>
+        </div>
+        <div class="pause-hint">Insertá fichas para cargar más créditos</div>
+      </div>
+    </div>
+
+    <!-- ── GAME OVER ────────────────────────────────────────────────────── -->
+    <div id="screen-game_over" class="screen">
+      <div class="gameover-content">
+        <div class="gameover-title">FIN DE JUEGO</div>
+        <div class="winner-announce" id="winner-announce"></div>
+        <div class="final-scores" id="final-scores"></div>
+        <div class="gameover-actions">
+          <button class="btn-ok" id="go-again">▶ JUGAR DE NUEVO</button>
+          <button class="btn-back" id="go-attract">⏏ SALIR</button>
+        </div>
+        <div class="gameover-credits" id="gameover-credits"></div>
+      </div>
+    </div>
+
+    <!-- ── PERSISTENT CREDITS WIDGET ── -->
+    <div id="persistent-credits-widget" style="position: absolute; bottom: 24px; right: 24px; background: rgba(0, 12, 32, 0.95); border: 2px solid var(--neon2); box-shadow: 0 0 15px rgba(0, 255, 204, 0.4); border-radius: 12px; padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: bold; letter-spacing: 2px; z-index: 9999; pointer-events: none; transition: transform 0.2s;">
+      <span style="color: var(--muted); font-size: 11px;">CRÉDITOS DISPONIBLES:</span>
+      <span id="persistent-credits-val" style="color: var(--neon2); font-size: 20px; font-weight: 900; text-shadow: 0 0 8px var(--neon2);">0</span>
+    </div>
+
+  </div><!-- #app -->
+
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
+  <script src="js/ws.js?v=120"></script>
+  <script src="js/fx.js?v=120"></script>
+  <script src="js/audio.js?v=120"></script>
+  <script src="js/screens.js?v=120"></script>
+  <script src="js/app.js?v=120"></script>
+</body>
+</html>

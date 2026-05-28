@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+
+# Databases
+*.db
+*.sqlite
+
+# OS and Editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Backend local configurations
+backend/.env
+backend/bolirana.db
+
+# Agent/Claude workspace metadata (optional, keep if you want to avoid pushing AI configs)
+.agents/
+.claude/
+.gemini/
