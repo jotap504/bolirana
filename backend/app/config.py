@@ -42,6 +42,13 @@ DEFAULT_CONFIG = {
         "videos": [],
         "images": [],
     },
+    "anti_cheat": {
+        "front_enabled": True,
+        "left_enabled": False,
+        "right_enabled": False,
+        "alert_duration_seconds": 3,
+        "invalidate_throws": False,
+    },
 }
 
 _runtime: dict = {}

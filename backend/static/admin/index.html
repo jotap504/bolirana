@@ -329,6 +329,41 @@
       <div id="sensor-list"></div>
       <button class="btn btn-save" id="save-sensors" style="margin-top:12px">GUARDAR SENSORES</button>
     </div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-title" style="color:var(--red);border-left-color:var(--red)">SISTEMA ANTI-TRAMPAS (PROXIMIDAD)</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        Habilita o deshabilita los sensores de proximidad (frente y laterales) para alertar cuando un jugador intenta tirar de forma tramposa sobrepasando los límites del gabinete.
+      </p>
+      <div class="form-row">
+        <div>
+          <label>Sensor Principal (Frente)</label>
+          <button class="toggle" id="cfg-prox-front" onclick="this.classList.toggle('on'); this.textContent = this.classList.contains('on') ? 'ON' : 'OFF';">OFF</button>
+        </div>
+        <div>
+          <label>Sensor Lateral Izquierdo</label>
+          <button class="toggle" id="cfg-prox-left" onclick="this.classList.toggle('on'); this.textContent = this.classList.contains('on') ? 'ON' : 'OFF';">OFF</button>
+        </div>
+        <div>
+          <label>Sensor Lateral Derecho</label>
+          <button class="toggle" id="cfg-prox-right" onclick="this.classList.toggle('on'); this.textContent = this.classList.contains('on') ? 'ON' : 'OFF';">OFF</button>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:16px">
+        <div>
+          <label>Penalización de Tiro</label>
+          <select id="cfg-prox-invalidate">
+            <option value="false">Solo emitir alerta sonora/visual en pantalla</option>
+            <option value="true">Invalidar el tiro actual (Suma 0 puntos)</option>
+          </select>
+        </div>
+        <div>
+          <label>Duración Alerta (Segundos)</label>
+          <input type="number" id="cfg-prox-duration" min="1" max="10" value="3">
+        </div>
+      </div>
+      <button class="btn btn-save" id="save-anti-cheat" style="margin-top:12px">GUARDAR CONFIGURACIÓN</button>
+    </div>
   </div>
 
   <!-- ── PRECIOS ── -->
@@ -498,6 +533,16 @@ async function loadConfig() {
 
   renderSensors(cfg.sensors || []);
   renderSimSensors(cfg.sensors || []);
+
+  const ac = cfg.anti_cheat || {};
+  document.getElementById("cfg-prox-front").classList.toggle("on", !!ac.front_enabled);
+  document.getElementById("cfg-prox-front").textContent = ac.front_enabled ? "ON" : "OFF";
+  document.getElementById("cfg-prox-left").classList.toggle("on", !!ac.left_enabled);
+  document.getElementById("cfg-prox-left").textContent = ac.left_enabled ? "ON" : "OFF";
+  document.getElementById("cfg-prox-right").classList.toggle("on", !!ac.right_enabled);
+  document.getElementById("cfg-prox-right").textContent = ac.right_enabled ? "ON" : "OFF";
+  document.getElementById("cfg-prox-invalidate").value = ac.invalidate_throws ? "true" : "false";
+  document.getElementById("cfg-prox-duration").value = ac.alert_duration_seconds || 3;
 }
 
 function renderSensors(sensors) {
@@ -564,6 +609,20 @@ document.getElementById("save-sensors").addEventListener("click", async () => {
   cfg.sensors = sensors;
   renderSimSensors(sensors);
   toast("Sensores guardados");
+});
+
+document.getElementById("save-anti-cheat").addEventListener("click", async () => {
+  const patch = {
+    anti_cheat: {
+      front_enabled: document.getElementById("cfg-prox-front").classList.contains("on"),
+      left_enabled: document.getElementById("cfg-prox-left").classList.contains("on"),
+      right_enabled: document.getElementById("cfg-prox-right").classList.contains("on"),
+      invalidate_throws: document.getElementById("cfg-prox-invalidate").value === "true",
+      alert_duration_seconds: +document.getElementById("cfg-prox-duration").value,
+    }
+  };
+  await api("/api/admin/config", "PATCH", patch);
+  toast("Configuración anti-trampas guardada");
 });
 
 // ── Stats polling ─────────────────────────────────────────────────────────────
