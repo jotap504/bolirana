@@ -1,4 +1,4 @@
-﻿import json
+import json
 from fastapi import APIRouter, Request, HTTPException
 from ..config import get_config, update_config
 
@@ -62,3 +62,13 @@ async def get_stats(request: Request):
         "display_on":    request.app.state.ws.is_display_connected(),
         "phones_connected": request.app.state.ws.player_count(),
     }
+
+
+@router.post("/hardware/command")
+async def send_hardware_command(request: Request):
+    body = await request.json()
+    try:
+        await request.app.state.bridge.send(body)
+        return {"status": "ok", "command": body}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
