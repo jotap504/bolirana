@@ -114,7 +114,16 @@ const AudioFX = (() => {
     }, 600);
   }
 
-  return { init, playCoin, playTick, playStart, playPoint, playGameOver };
+  // Alarma de proximidad (Sirena oscilante de emergencia)
+  function playAlarm() {
+    _resume();
+    _playTone(200, 0.35, "sawtooth", 0.2, 800);
+    setTimeout(() => {
+      _playTone(800, 0.35, "sawtooth", 0.2, 200);
+    }, 180);
+  }
+
+  return { init, playCoin, playTick, playStart, playPoint, playGameOver, playAlarm };
 })();
 
 // Auto-inicializar cuando el usuario interactúa para saltar la política de reproducción
