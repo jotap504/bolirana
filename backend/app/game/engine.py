@@ -247,11 +247,11 @@ class GameEngine:
 
     async def _transition(self, new_state: GameState) -> None:
         # Si transicionamos a PAYMENT pero ya tenemos créditos acumulados suficientes,
-        # hacemos bypass directo a CONNECT_PHONE de manera silenciosa y segura.
+        # hacemos bypass directo a WAITING_START de manera silenciosa y segura.
         if new_state == GameState.PAYMENT and self.session.credits >= self.session.credits_required:
-            log.info("Bypass PAYMENT: Créditos suficientes (%s/%s). Transicionando a CONNECT_PHONE.", 
+            log.info("Bypass PAYMENT: Créditos suficientes (%s/%s). Transicionando a WAITING_START.", 
                      self.session.credits, self.session.credits_required)
-            await self._transition(GameState.CONNECT_PHONE)
+            await self._transition(GameState.WAITING_START)
             return
 
         log.info("State: %s → %s", self.session.state, new_state)
@@ -270,7 +270,7 @@ class GameEngine:
 
     async def _check_payment_complete(self) -> None:
         if self.session.credits >= self.session.credits_required:
-            await self._transition(GameState.CONNECT_PHONE)
+            await self._transition(GameState.WAITING_START)
 
     async def _start_game(self) -> None:
         self.session.credits -= self.session.credits_required
