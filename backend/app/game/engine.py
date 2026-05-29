@@ -23,6 +23,7 @@ class GameEngine:
         self.session.reset()
         self._attract_task: asyncio.Task | None = None
         self._timer_task:   asyncio.Task | None = None
+        self.proximity_active = False
 
     # ── API pública ──────────────────────────────────────────────────────────
 
@@ -128,6 +129,9 @@ class GameEngine:
     async def handle_sensor(self, zone_id: str) -> None:
         if self.session.state != GameState.PLAYING:
             return
+        if self.proximity_active:
+            log.warning("Sensor de puntaje ignorado: ¡Jugador cometiendo trampa!")
+            return
         cfg     = get_config()
         sensors = {s["id"]: s for s in cfg["sensors"]}
         zone    = sensors.get(zone_id)
@@ -207,6 +211,30 @@ class GameEngine:
                 p.balls_left = balls
             self.session.balls_per_player = balls
             await self._sync_state()
+
+    async def handle_proximity(self, active: bool) -> None:
+        cfg = get_config()
+        ac = cfg.get("anti_cheat", {})
+        if not (ac.get("front_enabled") or ac.get("left_enabled") or ac.get("right_enabled")):
+            return
+
+        if self.session.state != GameState.PLAYING and self.session.state != GameState.PAUSED:
+            return
+
+        if active:
+            if not self.proximity_active:
+                self.proximity_active = True
+                log.warning("¡ALERTA PROXIMIDAD ACTIVA! Jugador cometiendo trampa.")
+                await self._broadcast({"type": "proximity_alert", "active": True})
+                if self.session.state == GameState.PLAYING:
+                    await self._pause()
+        else:
+            if self.proximity_active:
+                self.proximity_active = False
+                log.info("Alerta de proximidad desactivada. Jugador en distancia reglamentaria.")
+                await self._broadcast({"type": "proximity_alert", "active": False})
+                if self.session.state == GameState.PAUSED:
+                    await self._resume()
 
     # ── internos ─────────────────────────────────────────────────────────────
 

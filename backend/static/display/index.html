@@ -460,6 +460,13 @@
       <span id="persistent-credits-val" style="color: var(--neon2); font-size: 20px; font-weight: 900; text-shadow: 0 0 8px var(--neon2);">0</span>
     </div>
 
+    <!-- ── PROXIMITY ANTI-CHEAT WARNING OVERLAY ── -->
+    <div id="proximity-cheat-overlay" style="position: absolute; inset: 0; background: rgba(18, 0, 0, 0.96); border: 10px solid var(--red); box-shadow: inset 0 0 100px rgba(255, 0, 0, 0.8); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100000; text-align: center; gap: 30px; font-family: 'Orbitron', sans-serif;">
+      <div style="font-size: 80px; animation: blink 0.8s infinite; filter: drop-shadow(0 0 20px var(--red));">🚨</div>
+      <h1 style="font-family: 'Press Start 2P', monospace; font-size: 32px; color: var(--red); text-shadow: 0 0 20px rgba(255, 0, 85, 0.8); line-height: 1.6;">ESTÁS MUY CERCA<br>DE LA MÁQUINA</h1>
+      <p style="font-size: 24px; font-weight: bold; color: var(--text); letter-spacing: 2px;">Aléjate para poder seguir jugando.</p>
+    </div>
+
   </div><!-- #app -->
 
   <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>

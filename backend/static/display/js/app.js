@@ -89,6 +89,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  WS.on("proximity_alert", (msg) => {
+    const overlay = document.getElementById("proximity-cheat-overlay");
+    if (overlay) {
+      if (msg.active) {
+        overlay.style.display = "flex";
+        if (typeof AudioFX !== 'undefined' && AudioFX.playAlarm) {
+          AudioFX.playAlarm();
+        }
+      } else {
+        overlay.style.display = "none";
+      }
+    }
+  });
+
   WS.on("turn", (msg) => {
     const nameEl = document.getElementById("turn-name");
     if (nameEl) nameEl.textContent = msg.player_name;

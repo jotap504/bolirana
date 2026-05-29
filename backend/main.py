@@ -48,6 +48,23 @@ async def lifespan(app: FastAPI):
 def _handle_hw_event(app):
     async def _handler(msg: dict) -> None:
         engine = app.state.engine
+        
+        # Normalizar mensajes del firmware de la ESP32
+        event = msg.get("event")
+        if event:
+            if event == "sensor":
+                msg["t"] = "sensor"
+                msg["id"] = msg.get("target")
+            elif event == "coin":
+                msg["t"] = "coin"
+                msg["count"] = msg.get("pulses", 1)
+            elif event == "button":
+                msg["t"] = "btn"
+                msg["id"] = msg.get("name")
+            elif event == "proximity":
+                msg["t"] = "proximity"
+                msg["active"] = msg.get("active", False)
+
         t = msg.get("t")
         if t == "sensor":
             await engine.handle_sensor(msg["id"])
@@ -57,6 +74,8 @@ def _handle_hw_event(app):
             await engine.handle_button(msg["id"])
         elif t == "ball":
             await engine.handle_ball_consumed()
+        elif t == "proximity":
+            await engine.handle_proximity(msg.get("active", False))
     return _handler
 
 
