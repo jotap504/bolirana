@@ -21,8 +21,12 @@ DEFAULT_CONFIG = {
         "group_discount": {"5": 1, "6": 2},
     },
     "sensors": [
-        {"id": f"zone_{i}", "name": f"Zona {i}", "points": i * 10, "enabled": True}
-        for i in range(1, 11)
+        {"id": "rana", "name": "Rana", "points": 1000, "enabled": True},
+        {"id": "sapo", "name": "Sapo", "points": 500, "enabled": True},
+        {"id": "fosa_1", "name": "Fosa 1", "points": 100, "enabled": True},
+        {"id": "fosa_2", "name": "Fosa 2", "points": 50, "enabled": True},
+        {"id": "fosa_3", "name": "Fosa 3", "points": 20, "enabled": True},
+        {"id": "fosa_4", "name": "Fosa 4", "points": 10, "enabled": True},
     ],
     "serial": {
         "port": "/dev/ttyUSB0",
