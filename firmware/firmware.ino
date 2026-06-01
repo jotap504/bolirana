@@ -22,7 +22,8 @@ const int PIN_BTN_START = 19;
 const int PIN_BTN_PAUSE = 21;
 
 // Actuadores de Salida
-const int PIN_BELL = 13; // Solenoide/Campana física
+const int PIN_BELL       = 13; // Solenoide/Campana física
+const int PIN_LED_PUNTOS = 16; // LED indicador de aciertos (titila al registrar puntos)
 
 // 🌈 CONFIGURACIÓN DE ILUMINACIÓN NEOPINDEX (WS2812B)
 const int PIN_NEOPIXEL = 4;   // Pin de datos para tira direccionable
@@ -93,6 +94,12 @@ void arrancarMotor(int dir) {
 void detenerMotor() {
   digitalWrite(PIN_MOTOR_IN1, LOW);
   digitalWrite(PIN_MOTOR_IN2, LOW);
+}
+
+void destelloLed() {
+  digitalWrite(PIN_LED_PUNTOS, HIGH);
+  delay(100);
+  digitalWrite(PIN_LED_PUNTOS, LOW);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -172,6 +179,8 @@ void setup() {
   // Actuadores y Motores
   pinMode(PIN_BELL, OUTPUT);
   digitalWrite(PIN_BELL, LOW);
+  pinMode(PIN_LED_PUNTOS, OUTPUT);
+  digitalWrite(PIN_LED_PUNTOS, LOW);
   
   pinMode(PIN_MOTOR_IN1, OUTPUT);
   pinMode(PIN_MOTOR_IN2, OUTPUT);
@@ -224,10 +233,12 @@ void loop() {
     Serial.println("{\"event\":\"sensor\",\"target\":\"rana\"}");
     ultimoDisparoRana = tiempoActual;
     
-    // Campana física instantánea
+    // Campana física y destello LED
     digitalWrite(PIN_BELL, HIGH);
+    digitalWrite(PIN_LED_PUNTOS, HIGH);
     delay(100);
     digitalWrite(PIN_BELL, LOW);
+    digitalWrite(PIN_LED_PUNTOS, LOW);
     
     // Disparar flash verde
     efectoActivo = "green_flash";
@@ -237,6 +248,7 @@ void loop() {
   if (digitalRead(PIN_SAPO) == LOW && (tiempoActual - ultimoDisparoSapo > TIEMPO_DEBOUNCE)) {
     Serial.println("{\"event\":\"sensor\",\"target\":\"sapo\"}");
     ultimoDisparoSapo = tiempoActual;
+    destelloLed();
     efmeta: efectoActivo = "green_flash";
     tiempoUltimoEfecto = tiempoActual;
   }
@@ -244,21 +256,25 @@ void loop() {
   if (digitalRead(PIN_FOSA_1) == LOW && (tiempoActual - ultimoDisparoF1 > TIEMPO_DEBOUNCE)) {
     Serial.println("{\"event\":\"sensor\",\"target\":\"fosa_1\"}");
     ultimoDisparoF1 = tiempoActual;
+    destelloLed();
   }
   
   if (digitalRead(PIN_FOSA_2) == LOW && (tiempoActual - ultimoDisparoF2 > TIEMPO_DEBOUNCE)) {
     Serial.println("{\"event\":\"sensor\",\"target\":\"fosa_2\"}");
     ultimoDisparoF2 = tiempoActual;
+    destelloLed();
   }
   
   if (digitalRead(PIN_FOSA_3) == LOW && (tiempoActual - ultimoDisparoF3 > TIEMPO_DEBOUNCE)) {
     Serial.println("{\"event\":\"sensor\",\"target\":\"fosa_3\"}");
     ultimoDisparoF3 = tiempoActual;
+    destelloLed();
   }
   
   if (digitalRead(PIN_FOSA_4) == LOW && (tiempoActual - ultimoDisparoF4 > TIEMPO_DEBOUNCE)) {
     Serial.println("{\"event\":\"sensor\",\"target\":\"fosa_4\"}");
     ultimoDisparoF4 = tiempoActual;
+    destelloLed();
   }
   
   if (digitalRead(PIN_CERO) == LOW && (tiempoActual - ultimoDisparoCero > TIEMPO_DEBOUNCE)) {
