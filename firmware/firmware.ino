@@ -352,6 +352,10 @@ void loop() {
         activarCampana(120); // Activación no bloqueante de campana
         Serial.println("{\"status\":\"ack\",\"message\":\"Campana activada\"}");
       }
+      else if (comandoRaw.indexOf("\"target\":\"led\"") != -1) {
+        activarLed(2000); // Enciende el LED por 2 segundos de forma no bloqueante
+        Serial.println("{\"status\":\"ack\",\"message\":\"LED de aciertos activado\"}");
+      }
     }
     // Forzar efectos de luz
     else if (comandoRaw.indexOf("\"cmd\":\"fx\"") != -1) {
