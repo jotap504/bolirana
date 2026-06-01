@@ -12,6 +12,7 @@ const int PIN_FOSA_1 = 27;
 const int PIN_FOSA_2 = 26;
 const int PIN_FOSA_3 = 25;
 const int PIN_FOSA_4 = 33;
+const int PIN_CERO   = 5;  // Sensor Cero Puntos / Bola no acertada (salida final)
 
 // Entrada de Fichas (Monedero)
 const int PIN_MONEDERO = 18;
@@ -51,6 +52,7 @@ unsigned long ultimoDisparoF1    = 0;
 unsigned long ultimoDisparoF2    = 0;
 unsigned long ultimoDisparoF3    = 0;
 unsigned long ultimoDisparoF4    = 0;
+unsigned long ultimoDisparoCero  = 0;
 unsigned long ultimoDisparoBtnS  = 0;
 unsigned long ultimoDisparoBtnP  = 0;
 unsigned long ultimoLimiteIzq    = 0;
@@ -155,6 +157,7 @@ void setup() {
   pinMode(PIN_FOSA_2, INPUT_PULLUP);
   pinMode(PIN_FOSA_3, INPUT_PULLUP);
   pinMode(PIN_FOSA_4, INPUT_PULLUP);
+  pinMode(PIN_CERO,   INPUT_PULLUP);
   
   // Botones e Interruptores de Límite (Fines de carrera)
   pinMode(PIN_BTN_START, INPUT_PULLUP);
@@ -256,6 +259,11 @@ void loop() {
   if (digitalRead(PIN_FOSA_4) == LOW && (tiempoActual - ultimoDisparoF4 > TIEMPO_DEBOUNCE)) {
     Serial.println("{\"event\":\"sensor\",\"target\":\"fosa_4\"}");
     ultimoDisparoF4 = tiempoActual;
+  }
+  
+  if (digitalRead(PIN_CERO) == LOW && (tiempoActual - ultimoDisparoCero > TIEMPO_DEBOUNCE)) {
+    Serial.println("{\"event\":\"sensor\",\"target\":\"cero\"}");
+    ultimoDisparoCero = tiempoActual;
   }
 
   // ── 3. Lectura de Botones Físicos ────────────────────────────────
