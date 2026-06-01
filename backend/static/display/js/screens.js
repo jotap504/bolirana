@@ -150,6 +150,7 @@ const Screens = (() => {
     // Re-crear celdas solo si cambia el número de jugadores
     if (wrap.children.length !== players.length) {
       wrap.innerHTML = "";
+      wrap.classList.toggle("many-players", players.length >= 4); // Activa rejilla de 2 columnas si son 4+ jugadores
       players.forEach((p, i) => {
         const card = document.createElement("div");
         card.className = `score-row player-${i}`;
