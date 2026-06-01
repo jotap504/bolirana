@@ -160,6 +160,9 @@ class GameEngine:
             target = get_config()["game"].get("battle_target", 500)
             if new_score >= target:
                 await self._end_game()
+                return
+
+        await self.handle_ball_consumed()
 
     async def handle_ball_consumed(self) -> None:
         """Llamado cuando el sensor detecta que la bola salió del campo."""

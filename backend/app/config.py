@@ -27,6 +27,7 @@ DEFAULT_CONFIG = {
         {"id": "fosa_2", "name": "Fosa 2", "points": 50, "enabled": True},
         {"id": "fosa_3", "name": "Fosa 3", "points": 20, "enabled": True},
         {"id": "fosa_4", "name": "Fosa 4", "points": 10, "enabled": True},
+        {"id": "cero", "name": "Cero Puntos", "points": 0, "enabled": True},
     ],
     "serial": {
         "port": "/dev/ttyUSB0",
