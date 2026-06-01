@@ -24,6 +24,7 @@ const int PIN_BTN_PAUSE = 21;
 // Actuadores de Salida
 const int PIN_BELL       = 13; // Solenoide/Campana física
 const int PIN_LED_PUNTOS = 2;  // LED indicador de aciertos (LED AZUL INTEGRADO EN ESP32 - GPIO 2)
+const int PIN_PROXIMIDAD = 16; // Pin de salida digital (OUT) del radar de proximidad HLK-LD2410C (Antitrampa)
 
 // 🌈 CONFIGURACIÓN DE ILUMINACIÓN NEOPINDEX (WS2812B)
 const int PIN_NEOPIXEL = 4;   // Pin de datos para tira direccionable
@@ -75,6 +76,10 @@ unsigned long ledOffTime = 0;
 unsigned long bellOffTime = 0;
 bool ledEncendido = false;
 bool bellEncendido = false;
+
+// Variables de estado para sensor de proximidad Radar HLK-LD2410C
+int ultimoEstadoProximidad = LOW;
+unsigned long ultimoCambioProximidad = 0;
 
 // ══════════════════════════════════════════════════════════════════
 // INTERRUPCIÓN MONEDERO (ISR)
@@ -181,6 +186,7 @@ void setup() {
   pinMode(PIN_FOSA_3, INPUT_PULLUP);
   pinMode(PIN_FOSA_4, INPUT_PULLUP);
   pinMode(PIN_CERO,   INPUT_PULLUP);
+  pinMode(PIN_PROXIMIDAD, INPUT_PULLDOWN); // Pulldown interno para asegurar 0V cuando no hay presencia en el radar HLK-LD2410C
   
   // Botones e Interruptores de Límite (Fines de carrera)
   pinMode(PIN_BTN_START, INPUT_PULLUP);
@@ -314,6 +320,18 @@ void loop() {
   if (digitalRead(PIN_BTN_PAUSE) == LOW && (tiempoActual - ultimoDisparoBtnP > TIEMPO_DEBOUNCE)) {
     Serial.println("{\"event\":\"button\",\"name\":\"pause\"}");
     ultimoDisparoBtnP = tiempoActual;
+  }
+
+  // ── 3.5. Lectura de Sensor de Proximidad Radar HLK-LD2410C (Antitrampa) ──
+  int estadoProximidad = digitalRead(PIN_PROXIMIDAD);
+  if (estadoProximidad != ultimoEstadoProximidad && (tiempoActual - ultimoCambioProximidad > 500)) {
+    ultimoEstadoProximidad = estadoProximidad;
+    ultimoCambioProximidad = tiempoActual;
+    if (estadoProximidad == HIGH) {
+      Serial.println("{\"event\":\"proximity\",\"active\":true}");
+    } else {
+      Serial.println("{\"event\":\"proximity\",\"active\":false}");
+    }
   }
 
   // ── 4. Lectura del Monedero (Monedas) ───────────────────────────
