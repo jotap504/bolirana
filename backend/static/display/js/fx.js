@@ -21,13 +21,20 @@ const FX = (() => {
     const canvas = document.getElementById("fx-canvas");
     if (!canvas || !window.PIXI) return;
 
+    // Detectar si el modo de bajo rendimiento (Low Spec) está activo
+    if (localStorage.getItem("lowSpecMode") === "true") {
+      canvas.style.display = "none";
+      console.log("Modo de bajo rendimiento activo: PixiJS deshabilitado.");
+      return;
+    }
+
     // Configurar aplicación PixiJS con WebGL habilitado y redimensionamiento automático
     app = new PIXI.Application({
       view: canvas,
       width: window.innerWidth,
       height: window.innerHeight,
       backgroundAlpha: 0,
-      antialias: true,
+      antialias: false, // Deshabilitar antialiasing para mejorar drásticamente los FPS en GPUs integradas
       resizeTo: window
     });
 
@@ -430,3 +437,16 @@ const FX = (() => {
 })();
 
 window.addEventListener("load", FX.init.bind(FX));
+
+// Tecla de acceso rápido (Shift + L) para alternar el modo de bajos recursos (deshabilita PixiJS)
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "l" && e.shiftKey) {
+    const isLow = localStorage.getItem("lowSpecMode") === "true";
+    localStorage.setItem("lowSpecMode", isLow ? "false" : "true");
+    alert(isLow 
+      ? "🚀 ¡Modo ALTO RENDIMIENTO activado!\n\nSe restablecieron los efectos visuales avanzados (PixiJS).\nSe recargará la página."
+      : "⚡ ¡Modo BAJO RENDIMIENTO activado!\n\nSe desactivaron los efectos pesados de fondo para máxima fluidez en tu Netbook.\nSe recargará la página."
+    );
+    window.location.reload();
+  }
+});
