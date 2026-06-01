@@ -23,7 +23,7 @@ const int PIN_BTN_PAUSE = 21;
 
 // Actuadores de Salida
 const int PIN_BELL       = 13; // Solenoide/Campana física
-const int PIN_LED_PUNTOS = 16; // LED indicador de aciertos (titila al registrar puntos)
+const int PIN_LED_PUNTOS = 23; // LED indicador de aciertos (titila al registrar puntos - GPIO 23 / D23)
 
 // 🌈 CONFIGURACIÓN DE ILUMINACIÓN NEOPINDEX (WS2812B)
 const int PIN_NEOPIXEL = 4;   // Pin de datos para tira direccionable
