@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
     "serial": {
         "port": "/dev/ttyUSB0",
         "baud": 115200,
-        "mock": True,
+        "mock": False,
     },
     "mercadopago": {
         "access_token": os.getenv("MP_ACCESS_TOKEN", ""),

@@ -43,19 +43,41 @@ class SerialBridge:
 
     # ── loops ─────────────────────────────────────────────────────────────────
 
+    def _detect_port(self) -> str:
+        import serial.tools.list_ports
+        try:
+            ports = list(serial.tools.list_ports.comports())
+            # Buscar descriptores comunes de placas de desarrollo ESP32 (CP210x o CH340)
+            for p in ports:
+                desc = p.description.lower()
+                if "cp210" in desc or "ch340" in desc or "usb-to-serial" in desc or "usb to uart" in desc or "ch341" in desc:
+                    log.info("🎯 ESP32 Auto-detectado: %s (%s)", p.device, p.description)
+                    return p.device
+            # Si no hay coincidencias exactas pero hay algún puerto serie activo, usar el primero
+            if ports:
+                log.info("🔌 Usando primer puerto USB-Serial disponible: %s (%s)", ports[0].device, ports[0].description)
+                return ports[0].device
+        except Exception as e:
+            log.warning("Fallo al listar puertos serie para auto-detección: %s", e)
+        return None
+
     async def _serial_loop(self, port: str, baud: int) -> None:
         import serial
         while self._running:
+            active_port = port
             try:
-                self._serial = serial.Serial(port, baud, timeout=1)
-                log.info("Serial abierto: %s @ %d", port, baud)
+                detected = self._detect_port()
+                if detected:
+                    active_port = detected
+                self._serial = serial.Serial(active_port, baud, timeout=1)
+                log.info("Serial abierto con éxito: %s @ %d", active_port, baud)
                 while self._running:
                     line = await asyncio.get_event_loop().run_in_executor(
                         None, self._serial.readline)
                     if line:
                         await self._parse(line.decode().strip())
             except Exception as e:
-                log.error("Serial error: %s — reintentando en 3s", e)
+                log.error("Serial error (Puerto: %s): %s — reintentando en 3s", active_port, e)
                 await asyncio.sleep(3)
 
     async def _parse(self, line: str) -> None:
