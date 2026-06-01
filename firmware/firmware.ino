@@ -70,6 +70,12 @@ const unsigned long ESPERA_MONEDERO = 500;
 unsigned long tiempoUltimoEfecto = 0;
 String efectoActivo = "rainbow"; // rainbow, gold_breath, green_flash, off
 
+// Temporizadores y estados no bloqueantes para LED y Campana
+unsigned long ledOffTime = 0;
+unsigned long bellOffTime = 0;
+bool ledEncendido = false;
+bool bellEncendido = false;
+
 // ══════════════════════════════════════════════════════════════════
 // INTERRUPCIÓN MONEDERO (ISR)
 // ══════════════════════════════════════════════════════════════════
@@ -96,10 +102,20 @@ void detenerMotor() {
   digitalWrite(PIN_MOTOR_IN2, LOW);
 }
 
-void destelloLed() {
+void activarLed(unsigned long duracion) {
   digitalWrite(PIN_LED_PUNTOS, HIGH);
-  delay(1000); // 1 segundo encendido para máxima visibilidad física
-  digitalWrite(PIN_LED_PUNTOS, LOW);
+  ledOffTime = millis() + duracion;
+  ledEncendido = true;
+}
+
+void activarCampana(unsigned long duracion) {
+  digitalWrite(PIN_BELL, HIGH);
+  bellOffTime = millis() + duracion;
+  bellEncendido = true;
+}
+
+void destelloLed() {
+  activarLed(1000); // 1 segundo encendido de manera no bloqueante
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -206,6 +222,16 @@ void setup() {
 // ══════════════════════════════════════════════════════════════════
 void loop() {
   unsigned long tiempoActual = millis();
+
+  // ── 0. Control No Bloqueante Asíncrono de Actuadores (LED y Campana) ──
+  if (ledEncendido && tiempoActual >= ledOffTime) {
+    digitalWrite(PIN_LED_PUNTOS, LOW);
+    ledEncendido = false;
+  }
+  if (bellEncendido && tiempoActual >= bellOffTime) {
+    digitalWrite(PIN_BELL, LOW);
+    bellEncendido = false;
+  }
   
   // ── 1. Movimiento del Arquero Físico (Puente H + Fines de Carrera) ──
   if (juegoEnEjecucion) {
@@ -233,13 +259,9 @@ void loop() {
     Serial.println("{\"event\":\"sensor\",\"target\":\"rana\"}");
     ultimoDisparoRana = tiempoActual;
     
-    // Campana física y destello LED
-    digitalWrite(PIN_BELL, HIGH);
-    digitalWrite(PIN_LED_PUNTOS, HIGH);
-    delay(100); // 100ms para golpear campana de manera segura
-    digitalWrite(PIN_BELL, LOW);
-    delay(900); // 900ms adicionales para completar 1 segundo del LED encendido
-    digitalWrite(PIN_LED_PUNTOS, LOW);
+    // Campana física y destello LED sin bloquear el procesador!
+    activarCampana(100); // 100ms para la campana de manera segura
+    activarLed(1000);    // 1 segundo completo para el LED indicador
     
     // Disparar flash verde
     efectoActivo = "green_flash";
@@ -327,9 +349,7 @@ void loop() {
     // Campana
     else if (comandoRaw.indexOf("\"cmd\":\"actuate\"") != -1) {
       if (comandoRaw.indexOf("\"target\":\"bell\"") != -1) {
-        digitalWrite(PIN_BELL, HIGH);
-        delay(120);
-        digitalWrite(PIN_BELL, LOW);
+        activarCampana(120); // Activación no bloqueante de campana
         Serial.println("{\"status\":\"ack\",\"message\":\"Campana activada\"}");
       }
     }
