@@ -98,7 +98,7 @@ void detenerMotor() {
 
 void destelloLed() {
   digitalWrite(PIN_LED_PUNTOS, HIGH);
-  delay(100);
+  delay(1000); // 1 segundo encendido para máxima visibilidad física
   digitalWrite(PIN_LED_PUNTOS, LOW);
 }
 
@@ -236,8 +236,9 @@ void loop() {
     // Campana física y destello LED
     digitalWrite(PIN_BELL, HIGH);
     digitalWrite(PIN_LED_PUNTOS, HIGH);
-    delay(100);
+    delay(100); // 100ms para golpear campana de manera segura
     digitalWrite(PIN_BELL, LOW);
+    delay(900); // 900ms adicionales para completar 1 segundo del LED encendido
     digitalWrite(PIN_LED_PUNTOS, LOW);
     
     // Disparar flash verde
