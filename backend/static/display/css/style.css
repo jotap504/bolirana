@@ -512,7 +512,18 @@ body::before {
 .game-timer { font-size:clamp(22px,3.4vw,36px); color:var(--red); font-weight:900; margin:0 auto; text-shadow:0 0 20px var(--red); }
 .game-credits { font-size:clamp(12px,1.6vw,18px); color:var(--gold); margin-left:auto; }
 
-.scores-wrap { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; width:100%; flex:1; min-height:0; align-items: center; }
+.scores-wrap { 
+  display:flex; 
+  flex-wrap:wrap; 
+  gap:12px; 
+  justify-content:center; 
+  width:100%; 
+  flex:1; 
+  min-height:0; 
+  align-items: center; 
+  padding: 10px 60px; /* Margen horizontal amplio de seguridad para evitar que las tarjetas en los bordes se corten */
+  box-sizing: border-box;
+}
 
 .score-card {
   flex:1; min-width:115px; max-width:180px;
@@ -524,7 +535,7 @@ body::before {
   position: relative;
   transform-origin: bottom center;
 }
-.score-card.current-turn { transform:scale(1.6) translateY(-15px); z-index: 10; }
+.score-card.current-turn { transform:scale(1.4) translateY(-10px); z-index: 10; }
 
 /* Posición grande del puesto por detrás del marcador */
 .rank-badge-backdrop {
