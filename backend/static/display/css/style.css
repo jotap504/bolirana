@@ -687,3 +687,23 @@ body::before {
 .final-name { flex:1; font-size:clamp(12px,1.6vw,19px); font-weight:700; }
 .final-pts  { font-size:clamp(16px,2.2vw,24px); color:var(--cyan); font-weight:700; }
 .gameover-actions { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+
+/* ⚡ OPTIMIZACIÓN EXTREMA DE BAJO RENDIMIENTO (NETBOOKS / CHROMIUM) */
+html.low-spec *, 
+html.low-spec ::before, 
+html.low-spec ::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transition: none !important; /* Deshabilitar transiciones pesadas de CSS para respuesta instantánea */
+  animation-duration: 0s !important; /* Deshabilitar animaciones complejas que consumen CPU */
+}
+html.low-spec .cyber-card,
+html.low-spec .final-scores,
+html.low-spec .player-score-card,
+html.low-spec #screen-paused,
+html.low-spec .pause-overlay {
+  background-color: rgba(5, 12, 28, 0.96) !important; /* Fondo opaco oscuro súper nítido y rápido sin blur */
+  border-color: rgba(0, 229, 255, 0.6) !important;
+}

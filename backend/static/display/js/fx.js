@@ -24,6 +24,7 @@ const FX = (() => {
     // Detectar si el modo de bajo rendimiento (Low Spec) está activo
     if (localStorage.getItem("lowSpecMode") === "true") {
       canvas.style.display = "none";
+      document.documentElement.classList.add("low-spec");
       console.log("Modo de bajo rendimiento activo: PixiJS deshabilitado.");
       return;
     }
