@@ -23,7 +23,7 @@ const int PIN_BTN_PAUSE = 21;
 
 // Actuadores de Salida
 const int PIN_BELL       = 13; // Solenoide/Campana física
-const int PIN_LED_PUNTOS = 22; // LED indicador de aciertos (titila al registrar puntos - GPIO 22 / D22)
+const int PIN_LED_PUNTOS = 2;  // LED indicador de aciertos (LED AZUL INTEGRADO EN ESP32 - GPIO 2)
 
 // 🌈 CONFIGURACIÓN DE ILUMINACIÓN NEOPINDEX (WS2812B)
 const int PIN_NEOPIXEL = 4;   // Pin de datos para tira direccionable
@@ -36,7 +36,7 @@ const int PIN_RGB_GREEN = 22;
 const int PIN_RGB_BLUE  = 23;
 
 // ⚽ MOTOR DEL ARQUERO MÓVIL (Driver Puente H - L298N o L9110S)
-const int PIN_MOTOR_IN1 = 2;  // Dirección A
+const int PIN_MOTOR_IN1 = 17; // Dirección A (GPIO 17)
 const int PIN_MOTOR_IN2 = 15; // Dirección B (GND/VCC alternado)
 const int PIN_LIMIT_IZQ = 34; // Sensor de límite/Fin de carrera Izquierdo
 const int PIN_LIMIT_DER = 35; // Sensor de límite/Fin de carrera Derecho
