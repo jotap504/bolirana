@@ -10,7 +10,7 @@ DEFAULT_CONFIG = {
         "ball_options": [3, 5, 7, 10],
         "time_limit_seconds": 120,
         "attract_timeout_seconds": 30,
-        "turn_change_seconds": 4,
+        "turn_change_seconds": 2,
         "rotation_mode": "sequential",  # "sequential" (todas las bolas juntas) o "alternate" (1 bola cada uno)
     },
     "pricing": {

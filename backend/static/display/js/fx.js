@@ -90,16 +90,25 @@ const FX = (() => {
     app.stage.addChild(spotlightRight);
   }
 
-  // Emisor persistente de chispas que flotan orgánicamente de fondo
+  const ambientParticles = [];
+  let cachedQrRect = null;
+  let cachedLogoRect = null;
+
+  window.addEventListener("resize", () => {
+    cachedQrRect = null;
+    cachedLogoRect = null;
+  });
+
+  // Emisor persistente de chispas que flotan orgánicamente de fondo (Optimizado para Netbooks)
   function _startAmbientDust() {
     if (!app) return;
-    const count = 40;
+    const count = 12; // Reducido de 40 a 12 para optimizar rendimiento en hardware de bajos recursos
     for (let i = 0; i < count; i++) {
       const p = new PIXI.Graphics();
-      const radius = 1.5 + Math.random() * 3.5;
+      const radius = 1.2 + Math.random() * 2.8;
       const color = Math.random() > 0.4 ? 0x00e5ff : 0x00ff88;
       
-      p.beginFill(color, 0.3 + Math.random() * 0.5)
+      p.beginFill(color, 0.25 + Math.random() * 0.45)
        .drawCircle(0, 0, radius)
        .endFill();
       
@@ -107,19 +116,26 @@ const FX = (() => {
       p.y = Math.random() * app.screen.height;
       app.stage.addChild(p);
 
-      const speed = 0.3 + Math.random() * 0.7;
-      const drift = (Math.random() - 0.5) * 0.3;
+      ambientParticles.push({
+        graphics: p,
+        speed: 0.25 + Math.random() * 0.65,
+        drift: (Math.random() - 0.5) * 0.25
+      });
+    }
 
-      const tick = () => {
-        p.y -= speed;
-        p.x += drift;
+    // Un solo ticker global en vez de registrar uno por cada partícula, ahorrando CPU
+    app.ticker.add((delta) => {
+      for (let i = 0; i < ambientParticles.length; i++) {
+        const item = ambientParticles[i];
+        const p = item.graphics;
+        p.y -= item.speed * delta;
+        p.x += item.drift * delta;
         if (p.y < -10) {
           p.y = app.screen.height + 10;
           p.x = Math.random() * app.screen.width;
         }
-      };
-      app.ticker.add(tick);
-    }
+      }
+    });
   }
 
   // Bucle principal de actualización de gráficos (Game Loop)
@@ -205,46 +221,62 @@ const FX = (() => {
     }
   }
 
-  // Coloca y rota anillos cibernéticos de neón alrededor de elementos HTML reales
+  // Coloca y rota anillos cibernéticos de neón (Optimizado: evita recálculos de layout continuos)
   function _renderNeonRings() {
     // 1. Anillo alrededor del QR en la pantalla de pagos
     if (qrRingGraphics) {
       qrRingGraphics.clear();
-      const qrEl = document.getElementById("qr-canvas");
       const paymentScreen = document.getElementById("screen-payment");
       
-      if (qrEl && paymentScreen && paymentScreen.classList.contains("active")) {
-        const rect = qrEl.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
+      if (paymentScreen && paymentScreen.classList.contains("active")) {
+        if (!cachedQrRect) {
+          const qrEl = document.getElementById("qr-canvas");
+          if (qrEl) {
+            cachedQrRect = qrEl.getBoundingClientRect(); // Solo se llama una vez en vez de 60 FPS
+          }
+        }
+        if (cachedQrRect) {
+          const cx = cachedQrRect.left + cachedQrRect.width / 2;
+          const cy = cachedQrRect.top + cachedQrRect.height / 2;
 
-        // Dibujar doble anillo rotativo
-        qrRingGraphics.lineStyle(2.5, 0x00e5ff, 0.7);
-        qrRingGraphics.drawCircle(cx, cy, 110 + Math.sin(time * 3) * 3);
-        
-        qrRingGraphics.lineStyle(1.5, 0xf5c000, 0.5);
-        // Anillo interrumpido en arco
-        const startAngle = time * 2;
-        qrRingGraphics.arc(cx, cy, 118, startAngle, startAngle + Math.PI, false);
+          // Dibujar doble anillo rotativo
+          qrRingGraphics.lineStyle(2.5, 0x00e5ff, 0.7);
+          qrRingGraphics.drawCircle(cx, cy, 110 + Math.sin(time * 3) * 3);
+          
+          qrRingGraphics.lineStyle(1.5, 0xf5c000, 0.5);
+          // Anillo interrumpido en arco
+          const startAngle = time * 2;
+          qrRingGraphics.arc(cx, cy, 118, startAngle, startAngle + Math.PI, false);
+        }
+      } else {
+        cachedQrRect = null;
       }
     }
 
     // 2. Anillo alrededor de la cyber-rana en el Logo de inicio
     if (logoRingGraphics) {
       logoRingGraphics.clear();
-      const frogEl = document.querySelector(".logo-frog-svg");
       const attractScreen = document.getElementById("screen-attract");
 
-      if (frogEl && attractScreen && attractScreen.classList.contains("active")) {
-        const rect = frogEl.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
+      if (attractScreen && attractScreen.classList.contains("active")) {
+        if (!cachedLogoRect) {
+          const frogEl = document.querySelector(".logo-frog-svg");
+          if (frogEl) {
+            cachedLogoRect = frogEl.getBoundingClientRect(); // Solo se llama una vez en vez de 60 FPS
+          }
+        }
+        if (cachedLogoRect) {
+          const cx = cachedLogoRect.left + cachedLogoRect.width / 2;
+          const cy = cachedLogoRect.top + cachedLogoRect.height / 2;
 
-        // Dibujar órbita neón verde alrededor de la cabeza de la rana
-        logoRingGraphics.lineStyle(2, 0x00ff88, 0.6);
-        const startAngle = -time * 1.5;
-        logoRingGraphics.arc(cx, cy, 60, startAngle, startAngle + Math.PI * 0.75, false);
-        logoRingGraphics.arc(cx, cy, 60, startAngle + Math.PI, startAngle + Math.PI * 1.75, false);
+          // Dibujar órbita neón verde alrededor de la cabeza de la rana
+          logoRingGraphics.lineStyle(2, 0x00ff88, 0.6);
+          const startAngle = -time * 1.5;
+          logoRingGraphics.arc(cx, cy, 60, startAngle, startAngle + Math.PI * 0.75, false);
+          logoRingGraphics.arc(cx, cy, 60, startAngle + Math.PI, startAngle + Math.PI * 1.75, false);
+        }
+      } else {
+        cachedLogoRect = null;
       }
     }
   }
