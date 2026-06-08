@@ -373,8 +373,9 @@ async function initCloud() {
     console.warn("Error en initCloud:", e);
   }
   
-  // Rellenar selector de clubes
+  // Rellenar selector de clubes y grid de avatares
   populateClubsDropdown();
+  populatePredefinedAvatarsGrid();
 
   loadRankings();
 }
@@ -427,6 +428,142 @@ function populateClubsDropdown() {
   }
 }
 
+// ── Variables de Estado de Avatar ──────────────────────────────────────────────
+let selectedAvatarUrl = "";
+let uploadedImageBase64 = null;
+
+const PRESET_AVATARS = [
+  // 5 masculinos
+  { name: "Carlos", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix" },
+  { name: "Juan", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Jack" },
+  { name: "Mateo", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Toby" },
+  { name: "Diego", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Oliver" },
+  { name: "Lucas", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Leo" },
+  // 5 femeninos
+  { name: "Ana", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Aneka" },
+  { name: "Sofía", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Sasha" },
+  { name: "Lucía", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Lucy" },
+  { name: "María", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Mia" },
+  { name: "Zoe", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Zoe" }
+];
+
+function populatePredefinedAvatarsGrid() {
+  const grid = document.getElementById("predefined-avatars-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  PRESET_AVATARS.forEach((preset, idx) => {
+    const img = document.createElement("img");
+    img.src = preset.url;
+    img.title = preset.name;
+    img.style.width = "100%";
+    img.style.aspectRatio = "1";
+    img.style.borderRadius = "8px";
+    img.style.border = "2px solid transparent";
+    img.style.cursor = "pointer";
+    img.style.background = "#111122";
+    img.style.boxSizing = "border-box";
+    img.dataset.url = preset.url;
+    
+    img.addEventListener("click", () => {
+      document.querySelectorAll("#predefined-avatars-grid img").forEach(el => {
+        el.style.borderColor = "transparent";
+      });
+      img.style.borderColor = "var(--neon2)";
+      selectedAvatarUrl = preset.url;
+      uploadedImageBase64 = null;
+      document.getElementById("file-name-label").textContent = "";
+      document.getElementById("profile-avatar-preview").src = preset.url;
+    });
+    
+    grid.appendChild(img);
+  });
+}
+
+// ── Colores Oficiales por Club ────────────────────────────────────────────────
+const CLUB_COLORS = {
+  // Argentina
+  "Boca Juniors": { primary: "#003b94", secondary: "#fcba12" },
+  "River Plate": { primary: "#ffffff", secondary: "#ff0000" },
+  "Racing Club": { primary: "#95c3e3", secondary: "#ffffff" },
+  "Independiente": { primary: "#e30613", secondary: "#ffffff" },
+  "San Lorenzo": { primary: "#002b5c", secondary: "#c8102e" },
+  "Vélez Sarsfield": { primary: "#ffffff", secondary: "#003087" },
+  "Huracán": { primary: "#ffffff", secondary: "#c8102e" },
+  "Estudiantes de La Plata": { primary: "#e30613", secondary: "#ffffff" },
+  "Gimnasia y Esgrima LP": { primary: "#ffffff", secondary: "#002040" },
+  "Newell's Old Boys": { primary: "#000000", secondary: "#e30613" },
+  "Rosario Central": { primary: "#003087", secondary: "#fcba12" },
+  "Talleres de Córdoba": { primary: "#ffffff", secondary: "#002060" },
+  "Belgrano de Córdoba": { primary: "#75aadb", secondary: "#ffffff" },
+  "Lanús": { primary: "#5c061c", secondary: "#ffffff" },
+  "Banfield": { primary: "#006633", secondary: "#ffffff" },
+  "Defensa y Justicia": { primary: "#008a4b", secondary: "#fff200" },
+  "Argentinos Juniors": { primary: "#c8102e", secondary: "#ffffff" },
+  "Platense": { primary: "#ffffff", secondary: "#6c4a21" },
+  "Tigre": { primary: "#003087", secondary: "#c8102e" },
+  "Godoy Cruz": { primary: "#005bab", secondary: "#ffffff" },
+  "Atlético Tucumán": { primary: "#75aadb", secondary: "#ffffff" },
+  "Central Córdoba": { primary: "#ffffff", secondary: "#000000" },
+  "Unión de Santa Fe": { primary: "#ffffff", secondary: "#c8102e" },
+  "Instituto de Córdoba": { primary: "#c8102e", secondary: "#ffffff" },
+  "Barracas Central": { primary: "#c8102e", secondary: "#ffffff" },
+  "Deportivo Riestra": { primary: "#000000", secondary: "#ffffff" },
+  "Sarmiento de Junín": { primary: "#005a36", secondary: "#ffffff" },
+  "Independiente Rivadavia": { primary: "#001a4a", secondary: "#ffffff" },
+
+  // España
+  "Real Madrid": { primary: "#ffffff", secondary: "#febe10" },
+  "FC Barcelona": { primary: "#004d98", secondary: "#a50044" },
+  "Atlético de Madrid": { primary: "#cb3524", secondary: "#ffffff" },
+  "Real Sociedad": { primary: "#0054a6", secondary: "#ffffff" },
+  "Athletic Club": { primary: "#ff0000", secondary: "#ffffff" },
+
+  // Italia
+  "Juventus": { primary: "#ffffff", secondary: "#000000" },
+  "AC Milan": { primary: "#e30613", secondary: "#000000" },
+  "Inter de Milán": { primary: "#0066b2", secondary: "#000000" },
+  "Napoli": { primary: "#12a0d7", secondary: "#ffffff" },
+  "AS Roma": { primary: "#8e2344", secondary: "#f1b229" },
+
+  // Inglaterra
+  "Manchester City": { primary: "#6cabdd", secondary: "#ffffff" },
+  "Arsenal": { primary: "#ef0107", secondary: "#ffffff" },
+  "Liverpool": { primary: "#c8102e", secondary: "#f6eb61" },
+  "Manchester United": { primary: "#da291c", secondary: "#000000" },
+  "Chelsea": { primary: "#034694", secondary: "#ffffff" },
+
+  // Francia
+  "Paris Saint-Germain": { primary: "#004170", secondary: "#e30613" },
+  "Olympique de Marsella": { primary: "#ffffff", secondary: "#2faee0" },
+  "Olympique de Lyon": { primary: "#ffffff", secondary: "#1c4294" },
+  "AS Monaco": { primary: "#e30613", secondary: "#ffffff" },
+  "Lille OSC": { primary: "#e30613", secondary: "#122f55" },
+
+  // Alemania
+  "Bayern Múnich": { primary: "#dc052d", secondary: "#ffffff" },
+  "Borussia Dortmund": { primary: "#fde100", secondary: "#000000" },
+  "Bayer Leverkusen": { primary: "#e30613", secondary: "#000000" },
+  "RB Leipzig": { primary: "#ffffff", secondary: "#dd013f" },
+  "Eintracht Frankfurt": { primary: "#e30613", secondary: "#000000" },
+
+  // Portugal
+  "SL Benfica": { primary: "#e30613", secondary: "#ffffff" },
+  "FC Porto": { primary: "#005ca9", secondary: "#ffffff" },
+  "Sporting CP": { primary: "#008057", secondary: "#ffffff" },
+  "SC Braga": { primary: "#e30613", secondary: "#ffffff" },
+  "Vitória de Guimarães": { primary: "#ffffff", secondary: "#000000" }
+};
+
+document.getElementById("profile-club").addEventListener("change", (e) => {
+  const club = e.target.value;
+  if (club && CLUB_COLORS[club]) {
+    const colors = CLUB_COLORS[club];
+    document.getElementById("color-primary").value = colors.primary;
+    document.getElementById("color-secondary").value = colors.secondary;
+    updateJerseyPreview(colors.primary, colors.secondary);
+  }
+});
+
 // ── Remera SVG Interactiva ───────────────────────────────────────────────────
 function updateJerseyPreview(primary, secondary) {
   // Elementos de color principal
@@ -447,6 +584,55 @@ document.getElementById("color-primary").addEventListener("input", (e) => {
 });
 document.getElementById("color-secondary").addEventListener("input", (e) => {
   updateJerseyPreview(document.getElementById("color-primary").value, e.target.value);
+});
+
+// Carga de archivo y compresión a Base64 con canvas
+document.getElementById("avatar-file-input").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  document.getElementById("file-name-label").textContent = file.name;
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      
+      const maxDim = 128;
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > height) {
+        if (width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        }
+      } else {
+        if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+      uploadedImageBase64 = compressedDataUrl;
+      selectedAvatarUrl = "";
+      
+      document.getElementById("profile-avatar-preview").src = compressedDataUrl;
+      
+      document.querySelectorAll("#predefined-avatars-grid img").forEach(el => {
+        el.style.borderColor = "transparent";
+      });
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
 });
 
 // ── Eventos de Configuración de Perfil ─────────────────────────────────────────
@@ -473,6 +659,40 @@ document.getElementById("edit-profile-btn").addEventListener("click", async () =
       profile.jersey_primary_color || "#ffffff",
       profile.jersey_secondary_color || "#00ffcc"
     );
+
+    // Cargar Avatar
+    const avatar = profile.avatar_url;
+    document.getElementById("file-name-label").textContent = "";
+    document.getElementById("avatar-file-input").value = "";
+
+    document.querySelectorAll("#predefined-avatars-grid img").forEach(el => {
+      el.style.borderColor = "transparent";
+    });
+
+    if (avatar) {
+      if (avatar.startsWith("data:image")) {
+        uploadedImageBase64 = avatar;
+        selectedAvatarUrl = "";
+        document.getElementById("profile-avatar-preview").src = avatar;
+      } else {
+        uploadedImageBase64 = null;
+        selectedAvatarUrl = avatar;
+        document.getElementById("profile-avatar-preview").src = avatar;
+        
+        document.querySelectorAll("#predefined-avatars-grid img").forEach(el => {
+          if (el.dataset.url === avatar) {
+            el.style.borderColor = "var(--neon2)";
+          }
+        });
+      }
+    } else {
+      const firstPreset = PRESET_AVATARS[0].url;
+      selectedAvatarUrl = firstPreset;
+      uploadedImageBase64 = null;
+      document.getElementById("profile-avatar-preview").src = firstPreset;
+      const firstImg = document.querySelector("#predefined-avatars-grid img");
+      if (firstImg) firstImg.style.borderColor = "var(--neon2)";
+    }
   }
   showScreen("scr-edit-profile");
 });
@@ -498,7 +718,7 @@ document.getElementById("profile-save").addEventListener("click", async () => {
   }
 
   const user = session.user;
-  const avatarUrl = user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
+  const avatarUrl = uploadedImageBase64 || selectedAvatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
 
   try {
     const { error } = await supabaseClient.from("profiles").upsert({
@@ -859,7 +1079,7 @@ newSaveBtn.addEventListener("click", async () => {
   }
 
   const user = session.user;
-  const avatarUrl = user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
+  const avatarUrl = uploadedImageBase64 || selectedAvatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
 
   try {
     const { error } = await supabaseClient.from("profiles").upsert({
