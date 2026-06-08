@@ -91,11 +91,45 @@
   </div>
 
   <!-- Botón de Login si no está logueado -->
-  <div id="login-container" style="width:100%; display:flex; flex-direction:column; align-items:center;">
+  <div id="login-container" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom: 20px;">
     <button class="btn" id="direct-google-login" style="background:#ffffff; color:#111122; display:flex; align-items:center; justify-content:center; gap:10px; font-weight:bold; font-size:14px; width:100%; max-width:280px; box-shadow: 0 4px 15px rgba(255,255,255,0.15); border-radius:8px; border:none; padding:14px; cursor:pointer;">
       <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1-.8 1.9-1.6 2.5v2.1h2.6c1.5-1.4 2.8-3.5 2.8-6.2z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.6-2.1c-.7.5-1.6.8-2.6.8-2 0-3.7-1.4-4.3-3.2H2.8v2.2C4.3 16.5 6.5 18 9 18z"/><path fill="#FBBC05" d="M4.7 11.3c-.2-.5-.3-1-.3-1.6s.1-1.1.3-1.6V5.9H2.8C2.2 7.1 2 8.5 2 10s.2 2.9.8 4.1l1.9-2.8z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.4 3.4 1.3l2.6-2.5C13.5 1.1 11.4 0 9 0 6.5 0 4.3 1.5 2.8 3.7l1.9 2.8c.6-1.8 2.3-3.2 4.3-3.2z"/></svg>
       CREAR / EDITAR PERFIL CON GOOGLE
     </button>
+  </div>
+
+  <!-- Tarjeta de Estadísticas del Jugador (Home Screen) -->
+  <div class="card" id="home-player-stats-card" style="margin-top:10px; margin-bottom:12px; padding:16px; width:100%; max-width:340px; display:none;">
+    <div style="font-size:12px; color:var(--neon); font-weight:bold; letter-spacing:1px; margin-bottom:8px; text-align:center;">📊 MIS ESTADÍSTICAS HISTÓRICAS</div>
+    <div style="display:flex; justify-content:space-around; text-align:center;">
+      <div>
+        <div id="home-stat-games" style="font-size:20px; font-weight:bold; color:var(--text);">0</div>
+        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">PARTIDAS</div>
+      </div>
+      <div>
+        <div id="home-stat-high" style="font-size:20px; font-weight:bold; color:var(--neon2);">0</div>
+        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">RÉCORD</div>
+      </div>
+      <div>
+        <div id="home-stat-streak" style="font-size:20px; font-weight:bold; color:var(--neon);">0</div>
+        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">RACHA</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rankings en Home Screen -->
+  <div id="home-rankings-container" style="display:none; width:100%; max-width:340px; flex-direction:column; align-items:center;">
+    <div class="logo" style="font-size:14px; color:var(--neon); letter-spacing: 2px; margin-top:10px; margin-bottom:10px; text-shadow:0 0 8px rgba(240,224,0,0.4);">🏆 LEAGUE RANKINGS</div>
+    
+    <div style="display:flex; gap:6px; width:100%; margin-bottom:12px;">
+      <button class="btn btn-tab active" data-home-rank-tab="machine" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:rgba(255,255,255,0.06); border:1px solid var(--muted); border-radius:8px; color:var(--text); cursor:pointer;">MÁQUINA</button>
+      <button class="btn btn-tab" data-home-rank-tab="zonal" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:transparent; border:1px solid transparent; border-radius:8px; color:var(--muted); cursor:pointer;">MI ZONA</button>
+      <button class="btn btn-tab" data-home-rank-tab="global" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:transparent; border:1px solid transparent; border-radius:8px; color:var(--muted); cursor:pointer;">MUNDIAL</button>
+    </div>
+    
+    <div id="home-ranking-list" style="width:100%; display:flex; flex-direction:column; gap:8px;">
+      <!-- Se rellena con JS -->
+    </div>
   </div>
 </div>
 
@@ -159,6 +193,11 @@
     <!-- Vista previa de la Remera SVG -->
     <div style="display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.3); border-radius:10px; padding:16px; position:relative; border: 1px solid rgba(255,255,255,0.08);">
       <svg id="jersey-svg" width="120" height="120" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));">
+        <defs>
+          <clipPath id="body-clip">
+            <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" />
+          </clipPath>
+        </defs>
         <!-- Mangas -->
         <path d="M 12 30 L 27 15 L 35 23 L 23 43 Z" fill="#ffffff" id="jersey-svg-sleeve-left" stroke="#07070f" stroke-width="1.5" />
         <path d="M 88 30 L 73 15 L 65 23 L 77 43 Z" fill="#ffffff" id="jersey-svg-sleeve-right" stroke="#07070f" stroke-width="1.5" />
@@ -167,9 +206,23 @@
         <path d="M 88 30 L 85 27 L 81 32 L 84 35 Z" fill="#00ffcc" id="jersey-svg-cuff-right" />
         <!-- Cuerpo -->
         <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" fill="#ffffff" id="jersey-svg-body" stroke="#07070f" stroke-width="1.5" />
-        <!-- Rayas verticales de diseño (Secundario) -->
-        <rect x="35" y="18" width="6" height="62" fill="#00ffcc" id="jersey-svg-stripe-left" />
-        <rect x="59" y="18" width="6" height="62" fill="#00ffcc" id="jersey-svg-stripe-right" />
+        
+        <!-- Patrón: Rayas Verticales (e.g. Racing, Juventus) -->
+        <g id="jersey-pattern-vertical" clip-path="url(#body-clip)" style="display:none;">
+          <rect x="34" y="18" width="8" height="62" fill="#00ffcc" id="jersey-svg-v1" />
+          <rect x="58" y="18" width="8" height="62" fill="#00ffcc" id="jersey-svg-v2" />
+        </g>
+        
+        <!-- Patrón: Franja Horizontal (e.g. Boca Juniors) -->
+        <g id="jersey-pattern-horizontal" clip-path="url(#body-clip)" style="display:none;">
+          <rect x="27" y="42" width="46" height="16" fill="#00ffcc" id="jersey-svg-h" />
+        </g>
+        
+        <!-- Patrón: Banda Diagonal (e.g. River Plate) -->
+        <g id="jersey-pattern-diagonal" clip-path="url(#body-clip)" style="display:none;">
+          <polygon points="27,18 38,18 73,66 73,78" fill="#00ffcc" id="jersey-svg-d" />
+        </g>
+        
         <!-- Cuello chomba (Secundario) -->
         <polygon points="37,18 50,32 63,18" fill="#00ffcc" id="jersey-svg-collar" stroke="#07070f" stroke-width="1" />
         <!-- Detalle central del cuello -->
@@ -361,13 +414,23 @@ async function initCloud() {
             document.getElementById("my-name").textContent = myName;
           }
           // Actualizar estadísticas históricas
-          document.getElementById("stat-games").textContent = profile.games_played || 0;
-          document.getElementById("stat-high").textContent = profile.high_score || 0;
-          document.getElementById("stat-streak").textContent = profile.best_streak || 0;
+          const games = profile.games_played || 0;
+          const highScore = profile.high_score || 0;
+          const streak = profile.best_streak || 0;
+
+          document.getElementById("stat-games").textContent = games;
+          document.getElementById("stat-high").textContent = highScore;
+          document.getElementById("stat-streak").textContent = streak;
+
+          document.getElementById("home-stat-games").textContent = games;
+          document.getElementById("home-stat-high").textContent = highScore;
+          document.getElementById("home-stat-streak").textContent = streak;
           
           // Mostrar botón de edición de perfil y tarjeta de estadísticas
           document.getElementById("edit-profile-btn").style.display = "block";
           document.getElementById("player-stats-card").style.display = "block";
+          document.getElementById("home-player-stats-card").style.display = "block";
+          document.getElementById("home-rankings-container").style.display = "flex";
         }
 
         // Mostrar resumen de usuario en pantalla de inicio
@@ -455,20 +518,21 @@ function populateClubsDropdown() {
 // ── Variables de Estado de Avatar ──────────────────────────────────────────────
 let selectedAvatarUrl = "";
 let uploadedImageBase64 = null;
+let currentJerseyPattern = "plain";
 
 const PRESET_AVATARS = [
   // 5 masculinos
-  { name: "Carlos", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix" },
-  { name: "Juan", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Jack" },
-  { name: "Mateo", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Toby" },
-  { name: "Diego", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Oliver" },
-  { name: "Lucas", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Leo" },
+  { name: "Carlos", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Felix" },
+  { name: "Juan", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=John" },
+  { name: "Mateo", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Max" },
+  { name: "Diego", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Oliver" },
+  { name: "Lucas", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Leo" },
   // 5 femeninos
-  { name: "Ana", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Aneka" },
-  { name: "Sofía", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Sasha" },
-  { name: "Lucía", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Lucy" },
-  { name: "María", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Mia" },
-  { name: "Zoe", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Zoe" }
+  { name: "Ana", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Luna" },
+  { name: "Sofía", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Bella" },
+  { name: "Lucía", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Sophia" },
+  { name: "María", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Maya" },
+  { name: "Zoe", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Zoe" }
 ];
 
 function populatePredefinedAvatarsGrid() {
@@ -506,76 +570,76 @@ function populatePredefinedAvatarsGrid() {
 // ── Colores Oficiales por Club ────────────────────────────────────────────────
 const CLUB_COLORS = {
   // Argentina
-  "Boca Juniors": { primary: "#003b94", secondary: "#fcba12" },
-  "River Plate": { primary: "#ffffff", secondary: "#ff0000" },
-  "Racing Club": { primary: "#95c3e3", secondary: "#ffffff" },
-  "Independiente": { primary: "#e30613", secondary: "#ffffff" },
-  "San Lorenzo": { primary: "#002b5c", secondary: "#c8102e" },
-  "Vélez Sarsfield": { primary: "#ffffff", secondary: "#003087" },
-  "Huracán": { primary: "#ffffff", secondary: "#c8102e" },
-  "Estudiantes de La Plata": { primary: "#e30613", secondary: "#ffffff" },
-  "Gimnasia y Esgrima LP": { primary: "#ffffff", secondary: "#002040" },
-  "Newell's Old Boys": { primary: "#000000", secondary: "#e30613" },
-  "Rosario Central": { primary: "#003087", secondary: "#fcba12" },
-  "Talleres de Córdoba": { primary: "#ffffff", secondary: "#002060" },
-  "Belgrano de Córdoba": { primary: "#75aadb", secondary: "#ffffff" },
-  "Lanús": { primary: "#5c061c", secondary: "#ffffff" },
-  "Banfield": { primary: "#006633", secondary: "#ffffff" },
-  "Defensa y Justicia": { primary: "#008a4b", secondary: "#fff200" },
-  "Argentinos Juniors": { primary: "#c8102e", secondary: "#ffffff" },
-  "Platense": { primary: "#ffffff", secondary: "#6c4a21" },
-  "Tigre": { primary: "#003087", secondary: "#c8102e" },
-  "Godoy Cruz": { primary: "#005bab", secondary: "#ffffff" },
-  "Atlético Tucumán": { primary: "#75aadb", secondary: "#ffffff" },
-  "Central Córdoba": { primary: "#ffffff", secondary: "#000000" },
-  "Unión de Santa Fe": { primary: "#ffffff", secondary: "#c8102e" },
-  "Instituto de Córdoba": { primary: "#c8102e", secondary: "#ffffff" },
-  "Barracas Central": { primary: "#c8102e", secondary: "#ffffff" },
-  "Deportivo Riestra": { primary: "#000000", secondary: "#ffffff" },
-  "Sarmiento de Junín": { primary: "#005a36", secondary: "#ffffff" },
-  "Independiente Rivadavia": { primary: "#001a4a", secondary: "#ffffff" },
+  "Boca Juniors": { primary: "#003b94", secondary: "#fcba12", pattern: "horizontal" },
+  "River Plate": { primary: "#ffffff", secondary: "#ff0000", pattern: "diagonal" },
+  "Racing Club": { primary: "#95c3e3", secondary: "#ffffff", pattern: "vertical" },
+  "Independiente": { primary: "#e30613", secondary: "#ffffff", pattern: "plain" },
+  "San Lorenzo": { primary: "#002b5c", secondary: "#c8102e", pattern: "vertical" },
+  "Vélez Sarsfield": { primary: "#ffffff", secondary: "#003087", pattern: "plain" },
+  "Huracán": { primary: "#ffffff", secondary: "#c8102e", pattern: "plain" },
+  "Estudiantes de La Plata": { primary: "#e30613", secondary: "#ffffff", pattern: "vertical" },
+  "Gimnasia y Esgrima LP": { primary: "#ffffff", secondary: "#002040", pattern: "horizontal" },
+  "Newell's Old Boys": { primary: "#000000", secondary: "#e30613", pattern: "plain" },
+  "Rosario Central": { primary: "#003087", secondary: "#fcba12", pattern: "vertical" },
+  "Talleres de Córdoba": { primary: "#ffffff", secondary: "#002060", pattern: "vertical" },
+  "Belgrano de Córdoba": { primary: "#75aadb", secondary: "#ffffff", pattern: "plain" },
+  "Lanús": { primary: "#5c061c", secondary: "#ffffff", pattern: "plain" },
+  "Banfield": { primary: "#006633", secondary: "#ffffff", pattern: "diagonal" },
+  "Defensa y Justicia": { primary: "#008a4b", secondary: "#fff200", pattern: "plain" },
+  "Argentinos Juniors": { primary: "#c8102e", secondary: "#ffffff", pattern: "diagonal" },
+  "Platense": { primary: "#ffffff", secondary: "#6c4a21", pattern: "horizontal" },
+  "Tigre": { primary: "#003087", secondary: "#c8102e", pattern: "horizontal" },
+  "Godoy Cruz": { primary: "#005bab", secondary: "#ffffff", pattern: "vertical" },
+  "Atlético Tucumán": { primary: "#75aadb", secondary: "#ffffff", pattern: "vertical" },
+  "Central Córdoba": { primary: "#ffffff", secondary: "#000000", pattern: "vertical" },
+  "Unión de Santa Fe": { primary: "#ffffff", secondary: "#c8102e", pattern: "vertical" },
+  "Instituto de Córdoba": { primary: "#c8102e", secondary: "#ffffff", pattern: "vertical" },
+  "Barracas Central": { primary: "#c8102e", secondary: "#ffffff", pattern: "vertical" },
+  "Deportivo Riestra": { primary: "#000000", secondary: "#ffffff", pattern: "vertical" },
+  "Sarmiento de Junín": { primary: "#005a36", secondary: "#ffffff", pattern: "plain" },
+  "Independiente Rivadavia": { primary: "#001a4a", secondary: "#ffffff", pattern: "plain" },
 
   // España
-  "Real Madrid": { primary: "#ffffff", secondary: "#febe10" },
-  "FC Barcelona": { primary: "#004d98", secondary: "#a50044" },
-  "Atlético de Madrid": { primary: "#cb3524", secondary: "#ffffff" },
-  "Real Sociedad": { primary: "#0054a6", secondary: "#ffffff" },
-  "Athletic Club": { primary: "#ff0000", secondary: "#ffffff" },
+  "Real Madrid": { primary: "#ffffff", secondary: "#febe10", pattern: "plain" },
+  "FC Barcelona": { primary: "#004d98", secondary: "#a50044", pattern: "vertical" },
+  "Atlético de Madrid": { primary: "#cb3524", secondary: "#ffffff", pattern: "vertical" },
+  "Real Sociedad": { primary: "#0054a6", secondary: "#ffffff", pattern: "vertical" },
+  "Athletic Club": { primary: "#ff0000", secondary: "#ffffff", pattern: "vertical" },
 
   // Italia
-  "Juventus": { primary: "#ffffff", secondary: "#000000" },
-  "AC Milan": { primary: "#e30613", secondary: "#000000" },
-  "Inter de Milán": { primary: "#0066b2", secondary: "#000000" },
-  "Napoli": { primary: "#12a0d7", secondary: "#ffffff" },
-  "AS Roma": { primary: "#8e2344", secondary: "#f1b229" },
+  "Juventus": { primary: "#ffffff", secondary: "#000000", pattern: "vertical" },
+  "AC Milan": { primary: "#e30613", secondary: "#000000", pattern: "vertical" },
+  "Inter de Milán": { primary: "#0066b2", secondary: "#000000", pattern: "vertical" },
+  "Napoli": { primary: "#12a0d7", secondary: "#ffffff", pattern: "plain" },
+  "AS Roma": { primary: "#8e2344", secondary: "#f1b229", pattern: "plain" },
 
   // Inglaterra
-  "Manchester City": { primary: "#6cabdd", secondary: "#ffffff" },
-  "Arsenal": { primary: "#ef0107", secondary: "#ffffff" },
-  "Liverpool": { primary: "#c8102e", secondary: "#f6eb61" },
-  "Manchester United": { primary: "#da291c", secondary: "#000000" },
-  "Chelsea": { primary: "#034694", secondary: "#ffffff" },
+  "Manchester City": { primary: "#6cabdd", secondary: "#ffffff", pattern: "plain" },
+  "Arsenal": { primary: "#ef0107", secondary: "#ffffff", pattern: "plain" },
+  "Liverpool": { primary: "#c8102e", secondary: "#f6eb61", pattern: "plain" },
+  "Manchester United": { primary: "#da291c", secondary: "#000000", pattern: "plain" },
+  "Chelsea": { primary: "#034694", secondary: "#ffffff", pattern: "plain" },
 
   // Francia
-  "Paris Saint-Germain": { primary: "#004170", secondary: "#e30613" },
-  "Olympique de Marsella": { primary: "#ffffff", secondary: "#2faee0" },
-  "Olympique de Lyon": { primary: "#ffffff", secondary: "#1c4294" },
-  "AS Monaco": { primary: "#e30613", secondary: "#ffffff" },
-  "Lille OSC": { primary: "#e30613", secondary: "#122f55" },
+  "Paris Saint-Germain": { primary: "#004170", secondary: "#e30613", pattern: "vertical" },
+  "Olympique de Marsella": { primary: "#ffffff", secondary: "#2faee0", pattern: "plain" },
+  "Olympique de Lyon": { primary: "#ffffff", secondary: "#1c4294", pattern: "plain" },
+  "AS Monaco": { primary: "#e30613", secondary: "#ffffff", pattern: "diagonal" },
+  "Lille OSC": { primary: "#e30613", secondary: "#122f55", pattern: "plain" },
 
   // Alemania
-  "Bayern Múnich": { primary: "#dc052d", secondary: "#ffffff" },
-  "Borussia Dortmund": { primary: "#fde100", secondary: "#000000" },
-  "Bayer Leverkusen": { primary: "#e30613", secondary: "#000000" },
-  "RB Leipzig": { primary: "#ffffff", secondary: "#dd013f" },
-  "Eintracht Frankfurt": { primary: "#e30613", secondary: "#000000" },
+  "Bayern Múnich": { primary: "#dc052d", secondary: "#ffffff", pattern: "plain" },
+  "Borussia Dortmund": { primary: "#fde100", secondary: "#000000", pattern: "plain" },
+  "Bayer Leverkusen": { primary: "#e30613", secondary: "#000000", pattern: "plain" },
+  "RB Leipzig": { primary: "#ffffff", secondary: "#dd013f", pattern: "plain" },
+  "Eintracht Frankfurt": { primary: "#e30613", secondary: "#000000", pattern: "vertical" },
 
   // Portugal
-  "SL Benfica": { primary: "#e30613", secondary: "#ffffff" },
-  "FC Porto": { primary: "#005ca9", secondary: "#ffffff" },
-  "Sporting CP": { primary: "#008057", secondary: "#ffffff" },
-  "SC Braga": { primary: "#e30613", secondary: "#ffffff" },
-  "Vitória de Guimarães": { primary: "#ffffff", secondary: "#000000" }
+  "SL Benfica": { primary: "#e30613", secondary: "#ffffff", pattern: "plain" },
+  "FC Porto": { primary: "#005ca9", secondary: "#ffffff", pattern: "vertical" },
+  "Sporting CP": { primary: "#008057", secondary: "#ffffff", pattern: "horizontal" },
+  "SC Braga": { primary: "#e30613", secondary: "#ffffff", pattern: "plain" },
+  "Vitória de Guimarães": { primary: "#ffffff", secondary: "#000000", pattern: "plain" }
 };
 
 document.getElementById("profile-club").addEventListener("change", (e) => {
@@ -584,12 +648,13 @@ document.getElementById("profile-club").addEventListener("change", (e) => {
     const colors = CLUB_COLORS[club];
     document.getElementById("color-primary").value = colors.primary;
     document.getElementById("color-secondary").value = colors.secondary;
-    updateJerseyPreview(colors.primary, colors.secondary);
+    currentJerseyPattern = colors.pattern || "plain";
+    updateJerseyPreview(colors.primary, colors.secondary, currentJerseyPattern);
   }
 });
 
 // ── Remera SVG Interactiva ───────────────────────────────────────────────────
-function updateJerseyPreview(primary, secondary) {
+function updateJerseyPreview(primary, secondary, pattern) {
   // Elementos de color principal
   document.getElementById("jersey-svg-sleeve-left").setAttribute("fill", primary);
   document.getElementById("jersey-svg-sleeve-right").setAttribute("fill", primary);
@@ -598,16 +663,32 @@ function updateJerseyPreview(primary, secondary) {
   // Elementos de color secundario
   document.getElementById("jersey-svg-cuff-left").setAttribute("fill", secondary);
   document.getElementById("jersey-svg-cuff-right").setAttribute("fill", secondary);
-  document.getElementById("jersey-svg-stripe-left").setAttribute("fill", secondary);
-  document.getElementById("jersey-svg-stripe-right").setAttribute("fill", secondary);
   document.getElementById("jersey-svg-collar").setAttribute("fill", secondary);
+
+  // Ocultar todos los patrones primero
+  document.getElementById("jersey-pattern-vertical").style.display = "none";
+  document.getElementById("jersey-pattern-horizontal").style.display = "none";
+  document.getElementById("jersey-pattern-diagonal").style.display = "none";
+
+  // Activar el patrón correspondiente y pintarlo
+  if (pattern === "vertical") {
+    document.getElementById("jersey-pattern-vertical").style.display = "block";
+    document.getElementById("jersey-svg-v1").setAttribute("fill", secondary);
+    document.getElementById("jersey-svg-v2").setAttribute("fill", secondary);
+  } else if (pattern === "horizontal") {
+    document.getElementById("jersey-pattern-horizontal").style.display = "block";
+    document.getElementById("jersey-svg-h").setAttribute("fill", secondary);
+  } else if (pattern === "diagonal") {
+    document.getElementById("jersey-pattern-diagonal").style.display = "block";
+    document.getElementById("jersey-svg-d").setAttribute("fill", secondary);
+  }
 }
 
 document.getElementById("color-primary").addEventListener("input", (e) => {
-  updateJerseyPreview(e.target.value, document.getElementById("color-secondary").value);
+  updateJerseyPreview(e.target.value, document.getElementById("color-secondary").value, currentJerseyPattern);
 });
 document.getElementById("color-secondary").addEventListener("input", (e) => {
-  updateJerseyPreview(document.getElementById("color-primary").value, e.target.value);
+  updateJerseyPreview(document.getElementById("color-primary").value, e.target.value, currentJerseyPattern);
 });
 
 // Carga de archivo y compresión a Base64 con canvas
@@ -679,9 +760,11 @@ document.getElementById("edit-profile-btn").addEventListener("click", async () =
     document.getElementById("color-primary").value = profile.jersey_primary_color || "#ffffff";
     document.getElementById("color-secondary").value = profile.jersey_secondary_color || "#00ffcc";
     
+    currentJerseyPattern = CLUB_COLORS[profile.club]?.pattern || "plain";
     updateJerseyPreview(
       profile.jersey_primary_color || "#ffffff",
-      profile.jersey_secondary_color || "#00ffcc"
+      profile.jersey_secondary_color || "#00ffcc",
+      currentJerseyPattern
     );
 
     // Cargar Avatar
@@ -1103,7 +1186,7 @@ newSaveBtn.addEventListener("click", async () => {
   }
 
   const user = session.user;
-  const avatarUrl = uploadedImageBase64 || selectedAvatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
+  const avatarUrl = uploadedImageBase64 || selectedAvatarUrl || `https://api.dicebear.com/7.x/lorelei/svg?seed=${user.id}`;
 
   try {
     const { error } = await supabaseClient.from("profiles").upsert({
@@ -1158,6 +1241,28 @@ document.getElementById("direct-logout-btn").addEventListener("click", async () 
 
 document.getElementById("direct-edit-profile-btn").addEventListener("click", () => {
   document.getElementById("edit-profile-btn").click();
+});
+
+// Sincronizar las pestañas de rankings entre el home y la pantalla de espera
+document.querySelectorAll(".btn-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    const tabName = tab.dataset.rankTab || tab.dataset.homeRankTab;
+    if (!tabName) return;
+    
+    activeRankTab = tabName;
+    
+    // Sincronizar clases activas en todos los selectores de pestañas
+    document.querySelectorAll(".btn-tab").forEach(t => {
+      const tName = t.dataset.rankTab || t.dataset.homeRankTab;
+      if (tName === activeRankTab) {
+        t.classList.add("active");
+      } else {
+        t.classList.remove("active");
+      }
+    });
+    
+    loadRankings();
+  });
 });
 
 async function checkActiveGameStatus() {
