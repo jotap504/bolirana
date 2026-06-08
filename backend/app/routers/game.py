@@ -7,6 +7,7 @@ router = APIRouter()
 # Registros globales para retransmisión nube-local (solo activos en modo nube)
 active_machines: dict[str, WebSocket] = {}
 active_players: dict[str, dict[int, WebSocket]] = {}
+last_machine_states: dict[str, dict] = {}
 
 
 # ── WebSocket: display principal ──────────────────────────────────────────────
@@ -151,6 +152,8 @@ async def ws_machine_relay(ws: WebSocket):
                 if arcade_id in active_players and idx in active_players[arcade_id]:
                     await active_players[arcade_id][idx].send_json(payload)
             elif target == "broadcast":
+                if payload.get("type") == "state":
+                    last_machine_states[arcade_id] = payload
                 if arcade_id in active_players:
                     data = json.dumps(payload)
                     for player_ws in list(active_players[arcade_id].values()):
@@ -206,7 +209,13 @@ async def sim_qr(request: Request):
     return {"ok": True}
 
 @router.get("/api/state")
-async def get_state(request: Request):
+async def get_state(request: Request, arcade_id: str = "FUTSPO_01"):
+    from app.config import get_config
+    if get_config().get("cloud_mode"):
+        state = last_machine_states.get(arcade_id, {})
+        if not state:
+            return {"state": "attract", "players": []}
+        return state
     return request.app.state.engine.session.to_dict()
 
 @router.get("/api/supabase-config")

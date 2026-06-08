@@ -283,7 +283,7 @@ async function loadRankings() {
     let data = [];
     if (activeRankTab === "machine") {
       // Rankings locales de la base de datos de esta máquina particular
-      const res = await fetch("/api/state");
+      const res = await fetch(`/api/state?arcade_id=${arcadeId}`);
       const state = await res.json();
       data = (state.players || [])
         .map((p, i) => ({ name: p.name || `Jugador ${i+1}`, score: p.score, zone: "Local" }))
@@ -506,7 +506,7 @@ document.getElementById("go-rematch").addEventListener("click", () => {
 
 document.getElementById("join-game-btn").addEventListener("click", async () => {
   try {
-    const res = await fetch("/api/state");
+    const res = await fetch(`/api/state?arcade_id=${arcadeId}`);
     const state = await res.json();
     const players = state.players || [];
     
