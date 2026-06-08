@@ -43,6 +43,7 @@ DEFAULT_CONFIG = {
         "anon_key": os.getenv("SUPABASE_ANON_KEY", "your-anon-key"),
         "enabled": os.getenv("SUPABASE_ENABLED", "False").lower() in ("true", "1", "yes"),
     },
+    "cloud_mode": os.getenv("CLOUD_MODE", "False").lower() in ("true", "1", "yes"),
     "attract": {
         "videos": [],
         "images": [],

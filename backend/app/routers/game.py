@@ -68,6 +68,31 @@ async def ws_admin(ws: WebSocket):
         mgr.disconnect_admin(ws)
 
 
+# ── WebSocket: hardware (ESP32 bridge client) ─────────────────────────────────
+@router.websocket("/ws/hardware")
+async def ws_hardware(ws: WebSocket):
+    bridge = ws.app.state.bridge
+    await ws.accept()
+    bridge.hardware_ws = ws
+    log.info("Cliente de hardware conectado via WebSocket")
+    try:
+        while True:
+            raw = await ws.receive_text()
+            try:
+                msg = json.loads(raw)
+                # Propagar evento al event handler existente del bridge
+                if hasattr(bridge, "_on_event"):
+                    await bridge._on_event(msg)
+            except json.JSONDecodeError:
+                log.warning("Hardware WS malformed JSON: %s", raw)
+            except Exception as e:
+                log.error("Error procesando mensaje de hardware WS: %s", e)
+    except WebSocketDisconnect:
+        log.info("Cliente de hardware desconectado del WebSocket")
+    finally:
+        bridge.hardware_ws = None
+
+
 # ── REST: simular eventos (testing) ───────────────────────────────────────────
 @router.post("/api/sim/sensor/{zone_id}")
 async def sim_sensor(zone_id: str, request: Request):

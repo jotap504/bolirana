@@ -15,15 +15,20 @@ class SerialBridge:
         self._on_event  = on_event
         self._serial    = None
         self._running   = False
+        self.hardware_ws = None  # Para el modo híbrido en la nube
 
     async def start(self) -> None:
-        cfg = get_config()["serial"]
+        cfg = get_config()
         self._running = True
-        if cfg.get("mock"):
+        if cfg.get("cloud_mode"):
+            log.info("Serial bridge iniciado en modo NUBE (esperando WebSocket /ws/hardware)")
+            return
+        serial_cfg = cfg["serial"]
+        if serial_cfg.get("mock"):
             log.info("Serial bridge en modo MOCK")
             asyncio.create_task(self._mock_loop())
         else:
-            asyncio.create_task(self._serial_loop(cfg["port"], cfg["baud"]))
+            asyncio.create_task(self._serial_loop(serial_cfg["port"], serial_cfg["baud"]))
 
     async def stop(self) -> None:
         self._running = False
@@ -32,14 +37,19 @@ class SerialBridge:
 
     async def send(self, cmd: dict) -> None:
         """Envía comando al ESP32."""
-        data = json.dumps(cmd) + "\n"
-        if self._serial:
+        data = json.dumps(cmd)
+        if self.hardware_ws:
             try:
-                self._serial.write(data.encode())
+                await self.hardware_ws.send_text(data)
+            except Exception as e:
+                log.warning("Hardware WebSocket write error: %s", e)
+        elif self._serial:
+            try:
+                self._serial.write((data + "\n").encode())
             except Exception as e:
                 log.warning("Serial write error: %s", e)
         else:
-            log.debug("Mock send: %s", data.strip())
+            log.debug("Mock/Nube sin cliente send: %s", data)
 
     # ── loops ─────────────────────────────────────────────────────────────────
 
