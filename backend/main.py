@@ -38,6 +38,7 @@ async def lifespan(app: FastAPI):
         from app.game.relay_client import CloudRelayClient
         app.state.relay = CloudRelayClient(app)
         app.state.engine.relay_client = app.state.relay
+        app.state.ws.relay_client = app.state.relay
         # Registrar y conectar el relay con la sesión actual
         app.state.relay.start(app.state.engine.session.session_id)
         app.state.engine.last_relay_session_id = app.state.engine.session.session_id

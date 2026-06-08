@@ -1,4 +1,4 @@
-﻿"""
+"""
 WebSocket manager — hub central de conexiones.
 Canales:
   display  → pantalla principal (1 conexión)
@@ -24,6 +24,7 @@ class WSManager:
         self._display:  WebSocket | None        = None
         self._players:  dict[int, WebSocket]    = {}   # index → ws
         self._admin:    list[WebSocket]         = []
+        self.relay_client = None
 
     # ── conexiones ────────────────────────────────────────────────────────────
 
@@ -57,6 +58,13 @@ class WSManager:
             await self._safe_send(ws, data)
         for ws in list(self._admin):
             await self._safe_send(ws, data)
+        
+        # Enviar broadcast al relay de la nube si está activo
+        if self.relay_client:
+            await self.relay_client.send({
+                "target": "broadcast",
+                "payload": message
+            })
 
     async def send_display(self, message: dict) -> None:
         if self._display:
