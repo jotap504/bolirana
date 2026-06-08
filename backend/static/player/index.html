@@ -95,6 +95,26 @@
   
   <div class="card" style="margin-bottom:12px; padding:16px; width:100%; max-width:340px;">
     <div class="waiting-msg" id="waiting-msg-text" style="font-size:13px;">La máquina está en configuración.<br>Aguardá a que inicie la partida.</div>
+    <button class="btn btn-ghost" id="edit-profile-btn" style="margin-top:10px; font-size:11px; padding:8px; display:none; width:100%; border-color:var(--neon2); color:var(--neon2); font-weight:bold; letter-spacing:1px; border-radius:6px; background:transparent; cursor:pointer;">⚙️ CONFIGURAR MI PERFIL</button>
+  </div>
+
+  <!-- Tarjeta de Estadísticas del Jugador (Google Auth) -->
+  <div class="card" id="player-stats-card" style="margin-bottom:12px; padding:16px; width:100%; max-width:340px; display:none;">
+    <div style="font-size:12px; color:var(--neon); font-weight:bold; letter-spacing:1px; margin-bottom:8px; text-align:center;">📊 MIS ESTADÍSTICAS HISTÓRICAS</div>
+    <div style="display:flex; justify-content:space-around; text-align:center;">
+      <div>
+        <div id="stat-games" style="font-size:20px; font-weight:bold; color:var(--text);">0</div>
+        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">PARTIDAS</div>
+      </div>
+      <div>
+        <div id="stat-high" style="font-size:20px; font-weight:bold; color:var(--neon2);">0</div>
+        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">RÉCORD</div>
+      </div>
+      <div>
+        <div id="stat-streak" style="font-size:20px; font-weight:bold; color:var(--neon);">0</div>
+        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">RACHA</div>
+      </div>
+    </div>
   </div>
 
   <div class="logo" style="font-size:14px; color:var(--neon); letter-spacing: 2px; margin-top:10px; margin-bottom:10px; text-shadow:0 0 8px rgba(240,224,0,0.4);">🏆 LEAGUE RANKINGS</div>
@@ -109,6 +129,69 @@
   <!-- Contenedor de la Tabla de Rankings -->
   <div id="ranking-list" style="width:100%; max-width:340px; display:flex; flex-direction:column; gap:8px;">
     <!-- Se rellena dinámicamente con JS -->
+  </div>
+</div>
+
+<!-- Editar Perfil -->
+<div id="scr-edit-profile" class="screen" style="justify-content:flex-start; padding-top:24px; overflow-y:auto; padding-bottom: 40px;">
+  <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; font-size: 24px; color:var(--neon2);">MI PERFIL</div>
+  <div class="subtitle" style="margin-bottom:16px;">PERSONALIZÁ TU AVATAR Y DATOS</div>
+  
+  <div class="card" style="width:100%; max-width:340px; display:flex; flex-direction:column; gap:12px; padding:20px; margin-bottom: 16px;">
+    <!-- Vista previa de la Remera SVG -->
+    <div style="display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.3); border-radius:10px; padding:16px; position:relative; border: 1px solid rgba(255,255,255,0.08);">
+      <svg id="jersey-svg" width="120" height="120" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));">
+        <!-- Mangas -->
+        <path d="M 12 30 L 27 15 L 35 23 L 23 43 Z" fill="#ffffff" id="jersey-svg-sleeve-left" stroke="#07070f" stroke-width="1.5" />
+        <path d="M 88 30 L 73 15 L 65 23 L 77 43 Z" fill="#ffffff" id="jersey-svg-sleeve-right" stroke="#07070f" stroke-width="1.5" />
+        <!-- Puños de las mangas (Secundario) -->
+        <path d="M 12 30 L 15 27 L 19 32 L 16 35 Z" fill="#00ffcc" id="jersey-svg-cuff-left" />
+        <path d="M 88 30 L 85 27 L 81 32 L 84 35 Z" fill="#00ffcc" id="jersey-svg-cuff-right" />
+        <!-- Cuerpo -->
+        <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" fill="#ffffff" id="jersey-svg-body" stroke="#07070f" stroke-width="1.5" />
+        <!-- Rayas verticales de diseño (Secundario) -->
+        <rect x="35" y="18" width="6" height="62" fill="#00ffcc" id="jersey-svg-stripe-left" />
+        <rect x="59" y="18" width="6" height="62" fill="#00ffcc" id="jersey-svg-stripe-right" />
+        <!-- Cuello chomba (Secundario) -->
+        <polygon points="37,18 50,32 63,18" fill="#00ffcc" id="jersey-svg-collar" stroke="#07070f" stroke-width="1" />
+        <!-- Detalle central del cuello -->
+        <line x1="50" y1="18" x2="50" y2="28" stroke="#07070f" stroke-width="1.5" />
+      </svg>
+    </div>
+
+    <!-- Campos del Formulario -->
+    <div style="text-align:left;">
+      <label style="font-size:11px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">APODO A MOSTRAR</label>
+      <input type="text" id="profile-name" placeholder="Tu Apodo" maxlength="12" style="font-size:15px; padding:10px; border-radius:6px; width:100%; max-width:none; text-align:left; background:rgba(255,255,255,0.08); border:2px solid var(--muted); color:var(--text); outline:none;">
+    </div>
+
+    <div style="text-align:left;">
+      <label style="font-size:11px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">EDAD</label>
+      <input type="number" id="profile-age" placeholder="Edad" min="1" max="120" style="font-size:15px; padding:10px; border-radius:6px; width:100%; background:rgba(255,255,255,0.08); border:2px solid var(--muted); color:var(--text); outline:none;">
+    </div>
+
+    <div style="text-align:left;">
+      <label style="font-size:11px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">SELECCIONÁ TU CLUB</label>
+      <select id="profile-club" style="font-size:14px; padding:10px; border-radius:6px; width:100%; background:#111122; border:2px solid var(--muted); color:var(--text); outline:none; cursor:pointer; height:45px;">
+        <!-- Se rellena con JS -->
+      </select>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+      <div style="flex:1; text-align:left;">
+        <label style="font-size:10px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">COLOR DE REMERA</label>
+        <input type="color" id="color-primary" value="#ffffff" style="width:100%; height:42px; border:2px solid var(--muted); border-radius:6px; background:none; cursor:pointer; padding:0; outline:none;">
+      </div>
+      <div style="flex:1; text-align:left;">
+        <label style="font-size:10px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">DETALLES / CUELLO</label>
+        <input type="color" id="color-secondary" value="#00ffcc" style="width:100%; height:42px; border:2px solid var(--muted); border-radius:6px; background:none; cursor:pointer; padding:0; outline:none;">
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; width:100%; max-width:340px;">
+    <button class="btn btn-ghost" id="profile-cancel" style="flex:1; border-color:var(--muted); color:var(--muted); border-radius:8px; cursor:pointer; padding:12px;">ATRÁS</button>
+    <button class="btn btn-primary" id="profile-save" style="flex:2; background:var(--neon2); color:#000; box-shadow: 0 0 15px rgba(0,255,204,0.3); border-radius:8px; cursor:pointer; padding:12px;">GUARDAR CAMBIOS</button>
   </div>
 </div>
 
@@ -212,13 +295,35 @@ async function initCloud() {
         showScreen("scr-waiting");
         document.getElementById("my-name").textContent = myName;
         
-        // Intentar registrar perfil en la tabla de Supabase profiles
+        // Intentar registrar/actualizar perfil inicial en la tabla de Supabase profiles
         await supabaseClient.from("profiles").upsert({
           id: user.id,
           name: myName,
           avatar_url: user.user_metadata.avatar_url || "",
           zone: myZone
         });
+
+        // Obtener el perfil completo para cargar estadísticas e inicializar campos
+        const { data: profile } = await supabaseClient
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (profile) {
+          if (profile.name) {
+            myName = profile.name;
+            document.getElementById("my-name").textContent = myName;
+          }
+          // Actualizar estadísticas históricas
+          document.getElementById("stat-games").textContent = profile.games_played || 0;
+          document.getElementById("stat-high").textContent = profile.high_score || 0;
+          document.getElementById("stat-streak").textContent = profile.best_streak || 0;
+          
+          // Mostrar botón de edición de perfil y tarjeta de estadísticas
+          document.getElementById("edit-profile-btn").style.display = "block";
+          document.getElementById("player-stats-card").style.display = "block";
+        }
       }
     } else {
       // Ocultar botones e interfaces de Google en modo offline
@@ -236,9 +341,161 @@ async function initCloud() {
     console.warn("Error en initCloud:", e);
   }
   
+  // Rellenar selector de clubes
+  populateClubsDropdown();
+
   // Cargar rankings iniciales
   loadRankings();
 }
+
+// ── Lista de Clubes y Poblado de Dropdown ─────────────────────────────────────
+const LEAGUES = {
+  "Argentina (Primera División)": [
+    "Boca Juniors", "River Plate", "Racing Club", "Independiente", "San Lorenzo",
+    "Vélez Sarsfield", "Huracán", "Estudiantes de La Plata", "Gimnasia y Esgrima LP",
+    "Newell's Old Boys", "Rosario Central", "Talleres de Córdoba", "Belgrano de Córdoba",
+    "Lanús", "Banfield", "Defensa y Justicia", "Argentinos Juniors", "Platense",
+    "Tigre", "Godoy Cruz", "Atlético Tucumán", "Central Córdoba", "Unión de Santa Fe",
+    "Instituto de Córdoba", "Barracas Central", "Deportivo Riestra", "Sarmiento de Junín",
+    "Independiente Rivadavia"
+  ],
+  "España (LaLiga - Top 5)": [
+    "Real Madrid", "FC Barcelona", "Atlético de Madrid", "Real Sociedad", "Athletic Club"
+  ],
+  "Italia (Serie A - Top 5)": [
+    "Juventus", "AC Milan", "Inter de Milán", "Napoli", "AS Roma"
+  ],
+  "Inglaterra (Premier League - Top 5)": [
+    "Manchester City", "Arsenal", "Liverpool", "Manchester United", "Chelsea"
+  ],
+  "Francia (Ligue 1 - Top 5)": [
+    "Paris Saint-Germain", "Olympique de Marsella", "Olympique de Lyon", "AS Monaco", "Lille OSC"
+  ],
+  "Alemania (Bundesliga - Top 5)": [
+    "Bayern Múnich", "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig", "Eintracht Frankfurt"
+  ],
+  "Portugal (Primeira Liga - Top 5)": [
+    "SL Benfica", "FC Porto", "Sporting CP", "SC Braga", "Vitória de Guimarães"
+  ]
+};
+
+function populateClubsDropdown() {
+  const select = document.getElementById("profile-club");
+  if (!select) return;
+  select.innerHTML = '<option value="">-- Sin Club --</option>';
+  for (const [league, teams] of Object.entries(LEAGUES)) {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = league;
+    teams.forEach(team => {
+      const option = document.createElement("option");
+      option.value = team;
+      option.textContent = team;
+      optgroup.appendChild(option);
+    });
+    select.appendChild(optgroup);
+  }
+}
+
+// ── Remera SVG Interactiva ───────────────────────────────────────────────────
+function updateJerseyPreview(primary, secondary) {
+  // Elementos de color principal
+  document.getElementById("jersey-svg-sleeve-left").setAttribute("fill", primary);
+  document.getElementById("jersey-svg-sleeve-right").setAttribute("fill", primary);
+  document.getElementById("jersey-svg-body").setAttribute("fill", primary);
+
+  // Elementos de color secundario
+  document.getElementById("jersey-svg-cuff-left").setAttribute("fill", secondary);
+  document.getElementById("jersey-svg-cuff-right").setAttribute("fill", secondary);
+  document.getElementById("jersey-svg-stripe-left").setAttribute("fill", secondary);
+  document.getElementById("jersey-svg-stripe-right").setAttribute("fill", secondary);
+  document.getElementById("jersey-svg-collar").setAttribute("fill", secondary);
+}
+
+document.getElementById("color-primary").addEventListener("input", (e) => {
+  updateJerseyPreview(e.target.value, document.getElementById("color-secondary").value);
+});
+document.getElementById("color-secondary").addEventListener("input", (e) => {
+  updateJerseyPreview(document.getElementById("color-primary").value, e.target.value);
+});
+
+// ── Eventos de Configuración de Perfil ─────────────────────────────────────────
+document.getElementById("edit-profile-btn").addEventListener("click", async () => {
+  if (!supabaseClient) return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session || !session.user) return;
+  
+  // Cargar datos actuales desde Supabase
+  const { data: profile } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .single();
+
+  if (profile) {
+    document.getElementById("profile-name").value = profile.name || "";
+    document.getElementById("profile-age").value = profile.age || "";
+    document.getElementById("profile-club").value = profile.club || "";
+    document.getElementById("color-primary").value = profile.jersey_primary_color || "#ffffff";
+    document.getElementById("color-secondary").value = profile.jersey_secondary_color || "#00ffcc";
+    
+    updateJerseyPreview(
+      profile.jersey_primary_color || "#ffffff",
+      profile.jersey_secondary_color || "#00ffcc"
+    );
+  }
+  showScreen("scr-edit-profile");
+});
+
+document.getElementById("profile-cancel").addEventListener("click", () => {
+  showScreen("scr-waiting");
+});
+
+document.getElementById("profile-save").addEventListener("click", async () => {
+  if (!supabaseClient) return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session || !session.user) return;
+
+  const newName = document.getElementById("profile-name").value.trim();
+  const ageVal = parseInt(document.getElementById("profile-age").value);
+  const clubVal = document.getElementById("profile-club").value;
+  const colorPrimary = document.getElementById("color-primary").value;
+  const colorSecondary = document.getElementById("color-secondary").value;
+
+  if (!newName) {
+    alert("Por favor ingresa un apodo válido.");
+    return;
+  }
+
+  const user = session.user;
+  const avatarUrl = user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
+
+  try {
+    const { error } = await supabaseClient.from("profiles").upsert({
+      id: user.id,
+      name: newName,
+      age: isNaN(ageVal) ? null : ageVal,
+      club: clubVal || null,
+      jersey_primary_color: colorPrimary,
+      jersey_secondary_color: colorSecondary,
+      avatar_url: avatarUrl,
+      zone: myZone,
+      updated_at: new Date().toISOString()
+    });
+
+    if (error) throw error;
+
+    myName = newName;
+    document.getElementById("my-name").textContent = myName;
+
+    // Enviar nombre actualizado por websocket a la máquina
+    send({ type: "player_name", name: myName, google_id: user.id, avatar: avatarUrl });
+
+    alert("Perfil guardado correctamente.");
+    showScreen("scr-waiting");
+  } catch (e) {
+    alert("Error al guardar perfil: " + e.message);
+  }
+});
 
 // ── Google Login click ────────────────────────────────────────────────────────
 document.getElementById("google-login").addEventListener("click", async () => {

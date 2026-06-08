@@ -1,10 +1,9 @@
 -- ==========================================
--- SCRIPT DE BASE DE DATOS PARA SUPABASE
+-- SCRIPT DE BASE DE DATOS PARA SUPABASE (Actualizado con estadísticas y remera)
 -- Ejecutar este script en el SQL Editor de Supabase
 -- ==========================================
 
 -- 1. Tabla de Perfiles de Jugador (profiles)
--- Almacena los perfiles de los usuarios registrados via Google OAuth
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   name text not null,
@@ -16,6 +15,10 @@ create table if not exists public.profiles (
 -- Habilitar RLS para profiles
 alter table public.profiles enable row level security;
 
+-- Limpiar políticas existentes para evitar errores al re-ejecutar
+drop policy if exists "Permitir lectura publica de perfiles" on public.profiles;
+drop policy if exists "Permitir a los usuarios modificar su propio perfil" on public.profiles;
+
 -- Políticas de Seguridad RLS para profiles
 create policy "Permitir lectura publica de perfiles" on public.profiles
   for select to public using (true);
@@ -25,9 +28,18 @@ create policy "Permitir a los usuarios modificar su propio perfil" on public.pro
   using ((select auth.uid()) = id)
   with check ((select auth.uid()) = id);
 
+-- Columnas adicionales de personalización y estadísticas
+alter table public.profiles
+  add column if not exists age integer,
+  add column if not exists club text,
+  add column if not exists jersey_primary_color text default '#ffffff',
+  add column if not exists jersey_secondary_color text default '#00ffcc',
+  add column if not exists games_played integer default 0,
+  add column if not exists high_score integer default 0,
+  add column if not exists best_streak integer default 0;
+
 
 -- 2. Tabla de Rankings de Partidas (rankings)
--- Almacena el historial de puntajes cargados por la maquina o el celular del jugador
 create table if not exists public.rankings (
   id bigint generated always as identity primary key,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -42,9 +54,36 @@ create table if not exists public.rankings (
 -- Habilitar RLS para rankings
 alter table public.rankings enable row level security;
 
+-- Limpiar políticas existentes para evitar errores al re-ejecutar
+drop policy if exists "Permitir lectura publica de rankings" on public.rankings;
+drop policy if exists "Permitir insert publico de rankings" on public.rankings;
+
 -- Políticas de Seguridad RLS para rankings
 create policy "Permitir lectura publica de rankings" on public.rankings
   for select to public using (true);
 
 create policy "Permitir insert publico de rankings" on public.rankings
   for insert to public with check (true);
+
+
+-- 3. Trigger de Postgres para actualizar estadísticas automáticamente
+create or replace function public.update_profile_stats()
+returns trigger as $$
+begin
+  if new.google_id is not null then
+    update public.profiles
+    set 
+      games_played = games_played + 1,
+      high_score = greatest(high_score, new.score)
+    where id = new.google_id;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Drop trigger si existe antes de crearlo
+drop trigger if exists on_ranking_inserted on public.rankings;
+
+create trigger on_ranking_inserted
+  after insert on public.rankings
+  for each row execute function public.update_profile_stats();
