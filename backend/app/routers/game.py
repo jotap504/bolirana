@@ -4,6 +4,10 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
 log = logging.getLogger(__name__)
 router = APIRouter()
 
+# Registros globales para retransmisión nube-local (solo activos en modo nube)
+active_machines: dict[str, WebSocket] = {}
+active_players: dict[str, dict[int, WebSocket]] = {}
+
 
 # ── WebSocket: display principal ──────────────────────────────────────────────
 @router.websocket("/ws/display")
@@ -25,17 +29,67 @@ async def ws_display(ws: WebSocket):
 # ── WebSocket: celular jugador ────────────────────────────────────────────────
 @router.websocket("/ws/player/{index}")
 async def ws_player(ws: WebSocket, index: int):
-    engine = ws.app.state.engine
+    from app.config import get_config
+    is_cloud = get_config().get("cloud_mode")
+    arcade_id = ws.query_params.get("arcade_id", "FUTSPO_01")
     session_id = ws.query_params.get("session_id", "")
-    
-    # Validar si el session_id coincide con el de la sesión activa
+
+    if is_cloud:
+        # --- MODO NUBE (RELAY PROXY) ---
+        await ws.accept()
+        if arcade_id not in active_machines:
+            await ws.send_json({"type": "error", "message": "La máquina no está en línea."})
+            await ws.close()
+            return
+
+        if arcade_id not in active_players:
+            active_players[arcade_id] = {}
+        active_players[arcade_id][index] = ws
+        log.info("Relay Nube: Jugador %d conectado a %s", index, arcade_id)
+
+        # Avisar a la máquina local
+        try:
+            await active_machines[arcade_id].send_json({
+                "type": "player_connected",
+                "index": index
+            })
+        except Exception as e:
+            log.warning("Fallo al avisar conexión a la máquina: %s", e)
+
+        try:
+            while True:
+                raw = await ws.receive_text()
+                msg = json.loads(raw)
+                # Reenviar el mensaje del celular a la máquina local
+                if arcade_id in active_machines:
+                    await active_machines[arcade_id].send_json({
+                        "type": "player_message",
+                        "index": index,
+                        "payload": msg
+                    })
+        except WebSocketDisconnect:
+            log.info("Relay Nube: Jugador %d desconectado de %s", index, arcade_id)
+            if arcade_id in active_players and index in active_players[arcade_id]:
+                active_players[arcade_id].pop(index, None)
+            if arcade_id in active_machines:
+                try:
+                    await active_machines[arcade_id].send_json({
+                        "type": "player_disconnected",
+                        "index": index
+                    })
+                except Exception:
+                    pass
+        return
+
+    # --- MODO LOCAL (ESTÁNDAR) ---
+    engine = ws.app.state.engine
     if session_id != engine.session.session_id:
         await ws.accept()
         await ws.send_json({"type": "error", "message": "Sesión vencida. Por favor escaneá el nuevo QR en la pantalla."})
         await ws.close()
         return
 
-    mgr    = ws.app.state.ws
+    mgr = ws.app.state.ws
     await mgr.connect_player(ws, index)
     if index < len(engine.session.players):
         engine.session.players[index].connected = True
@@ -68,29 +122,53 @@ async def ws_admin(ws: WebSocket):
         mgr.disconnect_admin(ws)
 
 
-# ── WebSocket: hardware (ESP32 bridge client) ─────────────────────────────────
-@router.websocket("/ws/hardware")
-async def ws_hardware(ws: WebSocket):
-    bridge = ws.app.state.bridge
+# ── WebSocket: máquina local en la nube (Relay) ──────────────────────────────
+@router.websocket("/ws/machine_relay")
+async def ws_machine_relay(ws: WebSocket):
+    from app.config import get_config
+    if not get_config().get("cloud_mode"):
+        await ws.accept()
+        await ws.send_json({"type": "error", "message": "La máquina local no debe conectarse en modo local."})
+        await ws.close()
+        return
+
+    arcade_id = ws.query_params.get("arcade_id", "FUTSPO_01")
+    session_id = ws.query_params.get("session_id", "")
     await ws.accept()
-    bridge.hardware_ws = ws
-    log.info("Cliente de hardware conectado via WebSocket")
+
+    active_machines[arcade_id] = ws
+    log.info("Relay Nube: Máquina %s conectada para sesión %s", arcade_id, session_id)
+
     try:
         while True:
             raw = await ws.receive_text()
-            try:
-                msg = json.loads(raw)
-                # Propagar evento al event handler existente del bridge
-                if hasattr(bridge, "_on_event"):
-                    await bridge._on_event(msg)
-            except json.JSONDecodeError:
-                log.warning("Hardware WS malformed JSON: %s", raw)
-            except Exception as e:
-                log.error("Error procesando mensaje de hardware WS: %s", e)
+            msg = json.loads(raw)
+            target = msg.get("target")
+            payload = msg.get("payload")
+
+            if target == "player":
+                idx = msg.get("index")
+                if arcade_id in active_players and idx in active_players[arcade_id]:
+                    await active_players[arcade_id][idx].send_json(payload)
+            elif target == "broadcast":
+                if arcade_id in active_players:
+                    data = json.dumps(payload)
+                    for player_ws in list(active_players[arcade_id].values()):
+                        try:
+                            await player_ws.send_text(data)
+                        except Exception:
+                            pass
     except WebSocketDisconnect:
-        log.info("Cliente de hardware desconectado del WebSocket")
-    finally:
-        bridge.hardware_ws = None
+        log.info("Relay Nube: Máquina %s desconectada", arcade_id)
+        active_machines.pop(arcade_id, None)
+        if arcade_id in active_players:
+            for player_ws in list(active_players[arcade_id].values()):
+                try:
+                    await player_ws.send_json({"type": "error", "message": "Conexión perdida con la máquina física."})
+                    await player_ws.close()
+                except Exception:
+                    pass
+            active_players.pop(arcade_id, None)
 
 
 # ── REST: simular eventos (testing) ───────────────────────────────────────────

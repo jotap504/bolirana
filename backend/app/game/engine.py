@@ -24,6 +24,8 @@ class GameEngine:
         self._attract_task: asyncio.Task | None = None
         self._timer_task:   asyncio.Task | None = None
         self.proximity_active = False
+        self.last_relay_session_id = ""
+        self.relay_client = None
 
     # ── API pública ──────────────────────────────────────────────────────────
 
@@ -265,6 +267,11 @@ class GameEngine:
         elif new_state == GameState.PLAYING:
             if self.session.mode == GameMode.TIMED:
                 self._start_timer()
+
+        # Actualizar conexión del relay si cambió la sesión (solo en local)
+        if self.relay_client and self.session.session_id != self.last_relay_session_id:
+            self.last_relay_session_id = self.session.session_id
+            self.relay_client.start(self.last_relay_session_id)
 
         await self._sync_state()
 

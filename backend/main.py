@@ -25,12 +25,23 @@ STATIC = Path(__file__).parent / "static"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from app.config import get_config
+    is_cloud = get_config().get("cloud_mode")
+
     await init_db()
     app.state.ws     = WSManager()
     app.state.engine = GameEngine(broadcast=app.state.ws.broadcast)
     app.state.bridge = SerialBridge(on_event=_handle_hw_event(app))
     await app.state.bridge.start()
     
+    if not is_cloud:
+        from app.game.relay_client import CloudRelayClient
+        app.state.relay = CloudRelayClient(app)
+        app.state.engine.relay_client = app.state.relay
+        # Registrar y conectar el relay con la sesión actual
+        app.state.relay.start(app.state.engine.session.session_id)
+        app.state.engine.last_relay_session_id = app.state.engine.session.session_id
+
     # Geolocalización asíncrona por IP de la máquina física al arrancar
     try:
         import asyncio
@@ -41,6 +52,8 @@ async def lifespan(app: FastAPI):
         
     log.info("Bolirana backend iniciado")
     yield
+    if not is_cloud and hasattr(app.state, "relay"):
+        app.state.relay.stop()
     await app.state.bridge.stop()
     log.info("Bolirana backend detenido")
 
