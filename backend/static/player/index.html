@@ -178,6 +178,30 @@
     </div>
 
     <!-- Campos del Formulario -->
+    <div style="text-align:left; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom:12px; margin-bottom:4px;">
+      <label style="font-size:11px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:6px; font-weight:bold;">FOTO DE PERFIL / AVATAR</label>
+      
+      <!-- Preview de la foto/avatar actual -->
+      <div style="display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
+        <img id="profile-avatar-preview" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Cat" style="width:70px; height:70px; border-radius:50%; border:3px solid var(--neon2); object-fit:cover; background:#07070f; display:block;">
+      </div>
+      
+      <!-- Subir Foto Custom -->
+      <div style="text-align:center; margin-bottom:12px;">
+        <label for="avatar-file-input" style="display:inline-block; padding:8px 14px; background:rgba(255,255,255,0.08); border:1px solid var(--muted); border-radius:6px; font-size:11px; color:var(--text); cursor:pointer; font-weight:bold; letter-spacing:1px;">
+          📷 SUBIR FOTO PROPIA
+        </label>
+        <input type="file" id="avatar-file-input" accept="image/*" style="display:none;">
+        <div id="file-name-label" style="font-size:10px; color:var(--muted); margin-top:4px;"></div>
+      </div>
+      
+      <!-- Grid de 10 Avatares -->
+      <label style="font-size:10px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:6px; font-weight:bold;">O SELECCIONÁ UN AVATAR DE LA LISTA</label>
+      <div id="predefined-avatars-grid" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:6px; margin-bottom:6px;">
+        <!-- Rellenado con JS -->
+      </div>
+    </div>
+
     <div style="text-align:left;">
       <label style="font-size:11px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">APODO A MOSTRAR</label>
       <input type="text" id="profile-name" placeholder="Tu Apodo" maxlength="12" style="font-size:15px; padding:10px; border-radius:6px; width:100%; max-width:none; text-align:left; background:rgba(255,255,255,0.08); border:2px solid var(--muted); color:var(--text); outline:none;">
