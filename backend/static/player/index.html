@@ -69,16 +69,34 @@
 <!-- Sumarse a la partida -->
 <div id="scr-join-game" class="screen active">
   <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; font-size: 36px; color:var(--neon); text-shadow: 0 0 12px var(--neon);">FUTSPO</div>
-  <div class="subtitle" style="margin-bottom:24px; letter-spacing: 2px;">MÁQUINA RECREATIVA</div>
+  <div class="subtitle" style="margin-bottom:24px; letter-spacing: 2px;">PERFIL DE JUGADOR</div>
   
-  <div class="card" style="margin-bottom:20px; padding:24px; width:100%; max-width:320px; border: 1px solid rgba(255, 255, 255, 0.1);">
+  <!-- Info si hay partida activa -->
+  <div id="active-game-card" class="card" style="margin-bottom:20px; padding:24px; width:100%; max-width:320px; border: 1px solid rgba(255, 255, 255, 0.1); display:none;">
     <div style="font-size:16px; font-weight:bold; color:var(--neon2); margin-bottom:8px;">Partida Detectada</div>
-    <div style="font-size:12px; color:var(--muted); line-height:1.6;">Estás a punto de unirte a la sesión de juego en esta máquina.</div>
+    <div style="font-size:12px; color:var(--muted); line-height:1.6; margin-bottom:16px;">Estás a punto de unirte a la sesión de juego en esta máquina.</div>
+    <button class="btn btn-primary" id="join-game-btn" style="background:var(--neon2); color:#000; font-weight:bold; font-size:16px; padding:18px; box-shadow:0 0 20px rgba(0, 255, 204, 0.4); width:100%; letter-spacing:2px; border-radius:12px; border:none; cursor:pointer;">
+      🎮 SUMARSE A LA PARTIDA
+    </button>
   </div>
 
-  <button class="btn btn-primary" id="join-game-btn" style="background:var(--neon2); color:#000; font-weight:bold; font-size:16px; padding:18px; box-shadow:0 0 20px rgba(0, 255, 204, 0.4); width:100%; max-width:280px; letter-spacing:2px; border-radius:12px; border:none; cursor:pointer;">
-    🎮 SUMARSE A LA PARTIDA
-  </button>
+  <!-- Tarjeta de sesión de usuario (si está logueado) -->
+  <div id="user-profile-summary" class="card" style="margin-bottom:20px; padding:20px; width:100%; max-width:320px; display:none; border: 1px solid rgba(0,255,204,0.2);">
+    <div style="font-size:12px; color:var(--muted); margin-bottom:6px;">SESIÓN INICIADA</div>
+    <div id="profile-summary-name" style="font-size:18px; font-weight:bold; color:var(--neon); margin-bottom:12px;">Jugador</div>
+    <button class="btn btn-primary" id="direct-edit-profile-btn" style="background:var(--neon); color:#000; font-weight:bold; font-size:14px; padding:12px; width:100%; border-radius:8px; border:none; cursor:pointer; letter-spacing:1px;">
+      👤 EDITAR MI PERFIL
+    </button>
+    <button class="btn btn-ghost" id="direct-logout-btn" style="margin-top:8px; font-size:12px; padding:8px; width:100%; border-color:#ff5555; color:#ff5555; font-weight:bold; border-radius:6px; cursor:pointer; background:transparent;">CERRAR SESIÓN</button>
+  </div>
+
+  <!-- Botón de Login si no está logueado -->
+  <div id="login-container" style="width:100%; display:flex; flex-direction:column; align-items:center;">
+    <button class="btn" id="direct-google-login" style="background:#ffffff; color:#111122; display:flex; align-items:center; justify-content:center; gap:10px; font-weight:bold; font-size:14px; width:100%; max-width:280px; box-shadow: 0 4px 15px rgba(255,255,255,0.15); border-radius:8px; border:none; padding:14px; cursor:pointer;">
+      <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1-.8 1.9-1.6 2.5v2.1h2.6c1.5-1.4 2.8-3.5 2.8-6.2z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.6-2.1c-.7.5-1.6.8-2.6.8-2 0-3.7-1.4-4.3-3.2H2.8v2.2C4.3 16.5 6.5 18 9 18z"/><path fill="#FBBC05" d="M4.7 11.3c-.2-.5-.3-1-.3-1.6s.1-1.1.3-1.6V5.9H2.8C2.2 7.1 2 8.5 2 10s.2 2.9.8 4.1l1.9-2.8z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.4 3.4 1.3l2.6-2.5C13.5 1.1 11.4 0 9 0 6.5 0 4.3 1.5 2.8 3.7l1.9 2.8c.6-1.8 2.3-3.2 4.3-3.2z"/></svg>
+      CREAR / EDITAR PERFIL CON GOOGLE
+    </button>
+  </div>
 </div>
 
 <!-- Conectando -->
@@ -290,9 +308,12 @@ async function initCloud() {
         console.log("Sesión activa recuperada:", myName);
         
         const avatarUrl = user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
-        // Registrar en backend local
-        send({ type: "player_name", name: myName, google_id: user.id, avatar: avatarUrl });
-        showScreen("scr-waiting");
+        
+        // Registrar en backend local si ya está conectado
+        if (sock && sock.readyState === 1) {
+          send({ type: "player_name", name: myName, google_id: user.id, avatar: avatarUrl });
+          showScreen("scr-waiting");
+        }
         document.getElementById("my-name").textContent = myName;
         
         // Intentar registrar/actualizar perfil inicial en la tabla de Supabase profiles
@@ -324,11 +345,22 @@ async function initCloud() {
           document.getElementById("edit-profile-btn").style.display = "block";
           document.getElementById("player-stats-card").style.display = "block";
         }
+
+        // Mostrar resumen de usuario en pantalla de inicio
+        document.getElementById("profile-summary-name").textContent = myName;
+        document.getElementById("user-profile-summary").style.display = "block";
+        document.getElementById("login-container").style.display = "none";
+      } else {
+        // No hay sesión activa
+        document.getElementById("user-profile-summary").style.display = "none";
+        document.getElementById("login-container").style.display = "block";
       }
     } else {
       // Ocultar botones e interfaces de Google en modo offline
       const googleBtn = document.getElementById("google-login");
       if (googleBtn) googleBtn.style.display = "none";
+      const directGoogleBtn = document.getElementById("direct-google-login");
+      if (directGoogleBtn) directGoogleBtn.style.display = "none";
       const separator = document.getElementById("google-separator");
       if (separator) separator.style.display = "none";
 
@@ -344,7 +376,6 @@ async function initCloud() {
   // Rellenar selector de clubes
   populateClubsDropdown();
 
-  // Cargar rankings iniciales
   loadRankings();
 }
 
@@ -789,12 +820,155 @@ document.getElementById("join-game-btn").addEventListener("click", async () => {
   }
 });
 
-if (playerIndex !== -1) {
-  showScreen("scr-connecting");
-  connect();
-} else {
-  showScreen("scr-join-game");
+function goBackToHome() {
+  if (sock && sock.readyState === 1) {
+    showScreen("scr-waiting");
+  } else {
+    document.getElementById("profile-summary-name").textContent = myName;
+    document.getElementById("user-profile-summary").style.display = "block";
+    document.getElementById("login-container").style.display = "none";
+    showScreen("scr-join-game");
+    checkActiveGameStatus();
+  }
 }
+
+// Actualizar redirección en guardar y cancelar
+document.getElementById("profile-cancel").addEventListener("click", () => {
+  goBackToHome();
+});
+
+// Modificamos el click del botón guardar para usar goBackToHome()
+const originalSaveBtn = document.getElementById("profile-save");
+const newSaveBtn = originalSaveBtn.cloneNode(true);
+originalSaveBtn.parentNode.replaceChild(newSaveBtn, originalSaveBtn);
+
+newSaveBtn.addEventListener("click", async () => {
+  if (!supabaseClient) return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session || !session.user) return;
+
+  const newName = document.getElementById("profile-name").value.trim();
+  const ageVal = parseInt(document.getElementById("profile-age").value);
+  const clubVal = document.getElementById("profile-club").value;
+  const colorPrimary = document.getElementById("color-primary").value;
+  const colorSecondary = document.getElementById("color-secondary").value;
+
+  if (!newName) {
+    alert("Por favor ingresa un apodo válido.");
+    return;
+  }
+
+  const user = session.user;
+  const avatarUrl = user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
+
+  try {
+    const { error } = await supabaseClient.from("profiles").upsert({
+      id: user.id,
+      name: newName,
+      age: isNaN(ageVal) ? null : ageVal,
+      club: clubVal || null,
+      jersey_primary_color: colorPrimary,
+      jersey_secondary_color: colorSecondary,
+      avatar_url: avatarUrl,
+      zone: myZone,
+      updated_at: new Date().toISOString()
+    });
+
+    if (error) throw error;
+
+    myName = newName;
+    document.getElementById("my-name").textContent = myName;
+
+    // Enviar nombre actualizado por websocket a la máquina si está conectada
+    send({ type: "player_name", name: myName, google_id: user.id, avatar: avatarUrl });
+
+    alert("Perfil guardado correctamente.");
+    goBackToHome();
+  } catch (e) {
+    alert("Error al guardar perfil: " + e.message);
+  }
+});
+
+// Eventos directos del menú de inicio
+document.getElementById("direct-google-login").addEventListener("click", async () => {
+  if (!supabaseClient) {
+    alert("Supabase Cloud no está habilitado o configurado en esta máquina.");
+    return;
+  }
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.href
+    }
+  });
+  if (error) alert("Error al conectar con Google: " + error.message);
+});
+
+document.getElementById("direct-logout-btn").addEventListener("click", async () => {
+  if (!supabaseClient) return;
+  if (confirm("¿Seguro que deseas cerrar sesión?")) {
+    await supabaseClient.auth.signOut();
+    window.location.reload();
+  }
+});
+
+document.getElementById("direct-edit-profile-btn").addEventListener("click", () => {
+  document.getElementById("edit-profile-btn").click();
+});
+
+async function checkActiveGameStatus() {
+  try {
+    const res = await fetch(`/api/state?arcade_id=${arcadeId}`);
+    const state = await res.json();
+    if (state && state.session_id) {
+      document.getElementById("active-game-card").style.display = "block";
+    } else {
+      document.getElementById("active-game-card").style.display = "none";
+    }
+  } catch (e) {
+    console.warn("No se pudo detectar estado de partida:", e);
+    document.getElementById("active-game-card").style.display = "none";
+  }
+}
+
+document.getElementById("join-game-btn").addEventListener("click", async () => {
+  try {
+    const res = await fetch(`/api/state?arcade_id=${arcadeId}`);
+    const state = await res.json();
+    const players = state.players || [];
+    
+    // Buscar el primer slot disponible (no conectado)
+    let availableIndex = -1;
+    for (let i = 0; i < players.length; i++) {
+      if (!players[i].connected) {
+        availableIndex = i;
+        break;
+      }
+    }
+    
+    if (availableIndex === -1) {
+      alert("La partida está llena o no tiene slots de celular libres.");
+      return;
+    }
+    
+    playerIndex = availableIndex;
+    showScreen("scr-connecting");
+    connect();
+  } catch (e) {
+    alert("Error al unirse a la partida: " + e.message);
+  }
+});
+
+// Inicialización
+initCloud().then(() => {
+  if (playerIndex !== -1) {
+    showScreen("scr-connecting");
+    connect();
+  } else {
+    showScreen("scr-join-game");
+    checkActiveGameStatus();
+  }
+});
 </script>
 </body>
 </html>
