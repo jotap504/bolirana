@@ -206,13 +206,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (msg.state === "connect_phone" || msg.state === "waiting_start") {
       const sessionId = msg.session_id || "";
       const localIp = msg.local_ip || "127.0.0.1";
+      const cloudHost = msg.cloud_host || "";
       
-      // Si se cargó como localhost/127.0.0.1 en PC, forzamos el uso de la IP local real detectada por el backend
-      const host = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-        ? `${localIp}:8000`
-        : window.location.host;
+      const host = cloudHost 
+        ? cloudHost 
+        : ((window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+            ? `${localIp}:8000`
+            : window.location.host);
 
-      const joinUrl = `http://${host}/player/index.html?arcade_id=FUTSPO_01&session_id=${sessionId}`;
+      const protocol = cloudHost ? "https" : "http";
+      const joinUrl = `${protocol}://${host}/player/index.html?arcade_id=FUTSPO_01&session_id=${sessionId}`;
       
       const connectQr = document.getElementById("connect-qr");
       if (connectQr) {

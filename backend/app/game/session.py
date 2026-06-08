@@ -122,6 +122,14 @@ class Session:
                 s.close()
             return ip
 
+        import os
+        cloud_ws = os.getenv("CLOUD_WS_URL", "")
+        cloud_host = ""
+        if cloud_ws:
+            parts = cloud_ws.replace("wss://", "").replace("ws://", "").split("/")
+            if parts:
+                cloud_host = parts[0]
+
         return {
             "state":            self.state,
             "players":          [p.to_dict() for p in self.players],
@@ -133,4 +141,5 @@ class Session:
             "time_left":        self.time_left,
             "session_id":       self.session_id,
             "local_ip":         get_local_ip(),
+            "cloud_host":       cloud_host,
         }
