@@ -200,13 +200,21 @@ class GameEngine:
         if self.session.state == GameState.PAYMENT:
             await self._check_payment_complete()
 
-    async def set_player_name(self, index: int, name: str, google_id: str = None, avatar: str = None) -> None:
+    async def set_player_name(self, index: int, name: str, google_id: str = None, avatar: str = None, club: str = "", jersey_primary_color: str = "#ffffff", jersey_secondary_color: str = "#00ffcc", jersey_pattern: str = "plain") -> None:
         if 0 <= index < len(self.session.players):
             self.session.players[index].name = name[:20]
             if google_id:
                 self.session.players[index].google_id = google_id
             if avatar:
                 self.session.players[index].avatar = avatar
+            if club:
+                self.session.players[index].club = club
+            if jersey_primary_color:
+                self.session.players[index].jersey_primary_color = jersey_primary_color
+            if jersey_secondary_color:
+                self.session.players[index].jersey_secondary_color = jersey_secondary_color
+            if jersey_pattern:
+                self.session.players[index].jersey_pattern = jersey_pattern
             await self._sync_state()
 
     async def set_balls_config(self, balls: int) -> None:

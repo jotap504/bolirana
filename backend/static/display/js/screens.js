@@ -120,10 +120,80 @@ const Screens = (() => {
     wrap.innerHTML = "";
     (data.players || []).forEach((p, i) => {
       const d = document.createElement("div");
-      d.className = "waiting-player";
-      d.style.borderColor = PLAYER_COLORS[i];
-      d.innerHTML = `<div class="wp-name" style="color:${PLAYER_COLORS[i]}">${p.name || "Jugador " + (i + 1)}</div>
-        <div class="wp-phone">${p.connected ? "📱 conectado" : ""}</div>`;
+      // Añadir clases para animación y borde cian/oro futurista
+      d.className = "waiting-player-card";
+      d.style.display = "flex";
+      d.style.alignItems = "center";
+      d.style.gap = "16px";
+      d.style.padding = "12px 20px";
+      d.style.background = "rgba(0, 16, 44, 0.75)";
+      d.style.border = `2.5px solid ${PLAYER_COLORS[i] || "var(--cyan)"}`;
+      d.style.borderRadius = "16px";
+      d.style.boxShadow = `0 4px 15px rgba(0, 0, 0, 0.4), inset 0 0 10px ${PLAYER_COLORS[i]}40`;
+      d.style.position = "relative";
+      d.style.overflow = "hidden";
+      d.style.transition = "all 0.3s ease";
+
+      const defaultAvatar = `https://api.dicebear.com/7.x/pixel-art/svg?seed=Player${i + 1}`;
+      const avatarUrl = p.avatar || defaultAvatar;
+
+      // Generar remera de fútbol SVG dinámica
+      const primary = p.jersey_primary_color || "#ffffff";
+      const secondary = p.jersey_secondary_color || "#00ffcc";
+      const pattern = p.jersey_pattern || "plain";
+
+      let patternHtml = "";
+      if (pattern === "vertical") {
+        patternHtml = `
+          <g clip-path="url(#body-clip-${i})">
+            <rect x="34" y="18" width="8" height="62" fill="${secondary}" />
+            <rect x="58" y="18" width="8" height="62" fill="${secondary}" />
+          </g>`;
+      } else if (pattern === "horizontal") {
+        patternHtml = `
+          <g clip-path="url(#body-clip-${i})">
+            <rect x="27" y="42" width="46" height="16" fill="${secondary}" />
+          </g>`;
+      } else if (pattern === "diagonal") {
+        patternHtml = `
+          <g clip-path="url(#body-clip-${i})">
+            <polygon points="27,18 38,18 73,66 73,78" fill="${secondary}" />
+          </g>`;
+      }
+
+      const jerseySvg = `
+        <svg width="45" height="45" viewBox="0 0 100 100" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); flex-shrink: 0;">
+          <defs>
+            <clipPath id="body-clip-${i}">
+              <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" />
+            </clipPath>
+          </defs>
+          <path d="M 12 30 L 27 15 L 35 23 L 23 43 Z" fill="${primary}" stroke="#07070f" stroke-width="1.5" />
+          <path d="M 88 30 L 73 15 L 65 23 L 77 43 Z" fill="${primary}" stroke="#07070f" stroke-width="1.5" />
+          <path d="M 12 30 L 15 27 L 19 32 L 16 35 Z" fill="${secondary}" />
+          <path d="M 88 30 L 85 27 L 81 32 L 84 35 Z" fill="${secondary}" />
+          <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" fill="${primary}" stroke="#07070f" stroke-width="1.5" />
+          ${patternHtml}
+          <polygon points="37,18 50,32 63,18" fill="${secondary}" stroke="#07070f" stroke-width="1" />
+          <line x1="50" y1="18" x2="50" y2="28" stroke="#07070f" stroke-width="1.5" />
+        </svg>
+      `;
+
+      d.innerHTML = `
+        <div class="wp-avatar-container" style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid ${PLAYER_COLORS[i]}; overflow: hidden; background: #061026; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 10px ${PLAYER_COLORS[i]}50;">
+          <img src="${avatarUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+          <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-shadow: 0 0 8px rgba(255,255,255,0.25);">${p.name || "Jugador " + (i + 1)}</div>
+          <div class="wp-phone" style="font-size: 11px; color: ${PLAYER_COLORS[i]}; font-family: 'Orbitron', sans-serif; font-weight: bold; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">
+            ${p.connected ? "<span>📱 CONECTADO</span>" : "<span style='opacity: 0.5;'>🎮 CPU</span>"}
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          ${jerseySvg}
+          <span style="font-size: 8px; color: var(--label); font-weight: bold; margin-top: 3px; font-family: 'Orbitron', sans-serif; text-transform: uppercase;">${p.club || 'Libre'}</span>
+        </div>
+      `;
       wrap.appendChild(d);
     });
   }
@@ -160,11 +230,54 @@ const Screens = (() => {
         const defaultAvatar = `https://api.dicebear.com/7.x/pixel-art/svg?seed=Player${i + 1}`;
         const avatarUrl = p.avatar || defaultAvatar;
 
+        // Generar remera de fútbol SVG dinámica para pantalla de juego
+        const primary = p.jersey_primary_color || "#ffffff";
+        const secondary = p.jersey_secondary_color || "#00ffcc";
+        const pattern = p.jersey_pattern || "plain";
+
+        let patternHtml = "";
+        if (pattern === "vertical") {
+          patternHtml = `
+            <g clip-path="url(#game-body-clip-${i})">
+              <rect x="34" y="18" width="8" height="62" fill="${secondary}" />
+              <rect x="58" y="18" width="8" height="62" fill="${secondary}" />
+            </g>`;
+        } else if (pattern === "horizontal") {
+          patternHtml = `
+            <g clip-path="url(#game-body-clip-${i})">
+              <rect x="27" y="42" width="46" height="16" fill="${secondary}" />
+            </g>`;
+        } else if (pattern === "diagonal") {
+          patternHtml = `
+            <g clip-path="url(#game-body-clip-${i})">
+              <polygon points="27,18 38,18 73,66 73,78" fill="${secondary}" />
+            </g>`;
+        }
+
+        const jerseySvg = `
+          <svg width="32" height="32" viewBox="0 0 100 100" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); flex-shrink: 0;" id="player-jersey-svg-${i}">
+            <defs>
+              <clipPath id="game-body-clip-${i}">
+                <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" />
+              </clipPath>
+            </defs>
+            <path d="M 12 30 L 27 15 L 35 23 L 23 43 Z" fill="${primary}" stroke="#07070f" stroke-width="1.5" />
+            <path d="M 88 30 L 73 15 L 65 23 L 77 43 Z" fill="${primary}" stroke="#07070f" stroke-width="1.5" />
+            <path d="M 12 30 L 15 27 L 19 32 L 16 35 Z" fill="${secondary}" />
+            <path d="M 88 30 L 85 27 L 81 32 L 84 35 Z" fill="${secondary}" />
+            <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" fill="${primary}" stroke="#07070f" stroke-width="1.5" />
+            ${patternHtml}
+            <polygon points="37,18 50,32 63,18" fill="${secondary}" stroke="#07070f" stroke-width="1" />
+            <line x1="50" y1="18" x2="50" y2="28" stroke="#07070f" stroke-width="1.5" />
+          </svg>
+        `;
+
         card.innerHTML = `
           <div class="turn-arrow-indicator" id="turn-arrow-${i}">▶</div>
           <div class="player-avatar-container">
             <img class="player-avatar-img" id="player-avatar-${i}" src="${avatarUrl}">
           </div>
+          ${jerseySvg}
           <div class="player-name-val" id="player-name-${i}">${p.name || "JUGADOR " + (i + 1)}</div>
           <div class="player-score-val" id="score-val-${i}">${p.score}</div>
           <div class="player-rank-badge" id="rank-badge-${i}">#${rank}</div>`;
@@ -193,6 +306,64 @@ const Screens = (() => {
           const currentUrl = p.avatar || defaultAvatar;
           if (avatarEl.getAttribute("src") !== currentUrl) {
             avatarEl.setAttribute("src", currentUrl);
+          }
+        }
+
+        // Hot-update jersey SVG colors/patterns
+        const jerseySvgEl = document.getElementById("player-jersey-svg-" + i);
+        if (jerseySvgEl) {
+          const primary = p.jersey_primary_color || "#ffffff";
+          const secondary = p.jersey_secondary_color || "#00ffcc";
+          const pattern = p.jersey_pattern || "plain";
+
+          // Update fill colors
+          const sleeveL = jerseySvgEl.querySelector('path[d^="M 12 30 L 27 15"]');
+          const sleeveR = jerseySvgEl.querySelector('path[d^="M 88 30 L 73 15"]');
+          const body = jerseySvgEl.querySelector('path[d^="M 27 18 L 73 18"]');
+          const collar = jerseySvgEl.querySelector('polygon[points^="37,18"]');
+
+          if (sleeveL) sleeveL.setAttribute("fill", primary);
+          if (sleeveR) sleeveR.setAttribute("fill", primary);
+          if (body) body.setAttribute("fill", primary);
+          if (collar) collar.setAttribute("fill", secondary);
+
+          // Update pattern SVG elements
+          const patternV = jerseySvgEl.querySelector('g[clip-path*="body-clip"]');
+          if (patternV) {
+            // Remove old dynamic group if pattern changed
+            patternV.remove();
+          }
+
+          // Let's inject the correct pattern group
+          let patternHtml = "";
+          if (pattern === "vertical") {
+            patternHtml = `
+              <g clip-path="url(#game-body-clip-${i})">
+                <rect x="34" y="18" width="8" height="62" fill="${secondary}" />
+                <rect x="58" y="18" width="8" height="62" fill="${secondary}" />
+              </g>`;
+          } else if (pattern === "horizontal") {
+            patternHtml = `
+              <g clip-path="url(#game-body-clip-${i})">
+                <rect x="27" y="42" width="46" height="16" fill="${secondary}" />
+              </g>`;
+          } else if (pattern === "diagonal") {
+            patternHtml = `
+              <g clip-path="url(#game-body-clip-${i})">
+                <polygon points="27,18 38,18 73,66 73,78" fill="${secondary}" />
+              </g>`;
+          }
+
+          if (patternHtml) {
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = `<svg>${patternHtml}</svg>`;
+            const patternGroup = tempDiv.querySelector("g");
+            if (patternGroup) {
+              const bodyPath = jerseySvgEl.querySelector('path[d^="M 27 18 L 73 18"]');
+              if (bodyPath) {
+                bodyPath.insertAdjacentElement("afterend", patternGroup);
+              }
+            }
           }
         }
       }

@@ -12,6 +12,8 @@
   
   <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- jsQR: QR code reader from camera -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
   <script id="tailwind-config">
     tailwind.config = {
@@ -142,6 +144,98 @@
       opacity: 1;
       transform: translateY(0);
     }
+    /* Scanning line animation for QR scanner */
+    @keyframes scanLine {
+      0% { top: 0%; }
+      100% { top: 100%; }
+    }
+
+    /* QR Scanner Modal */
+    #qr-scanner-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(7, 7, 15, 0.97);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 24px;
+    }
+    #qr-scanner-modal.active { display: flex; }
+    #qr-video-wrapper {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 2px solid rgba(0,243,255,0.6);
+      box-shadow: 0 0 30px rgba(0,243,255,0.3), inset 0 0 20px rgba(0,243,255,0.05);
+    }
+    #qr-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #qr-canvas-hidden { display: none; }
+    /* Corner brackets */
+    #qr-video-wrapper::before,
+    #qr-video-wrapper::after {
+      content: '';
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      z-index: 2;
+    }
+    #qr-video-wrapper::before {
+      top: 6px; left: 6px;
+      border-top: 3px solid #00f3ff;
+      border-left: 3px solid #00f3ff;
+      border-radius: 4px 0 0 0;
+    }
+    #qr-video-wrapper::after {
+      bottom: 6px; right: 6px;
+      border-bottom: 3px solid #00f3ff;
+      border-right: 3px solid #00f3ff;
+      border-radius: 0 0 4px 0;
+    }
+    .qr-corner-tr {
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 28px; height: 28px;
+      border-top: 3px solid #00f3ff;
+      border-right: 3px solid #00f3ff;
+      border-radius: 0 4px 0 0;
+      z-index: 2;
+    }
+    .qr-corner-bl {
+      position: absolute;
+      bottom: 6px; left: 6px;
+      width: 28px; height: 28px;
+      border-bottom: 3px solid #00f3ff;
+      border-left: 3px solid #00f3ff;
+      border-radius: 0 0 0 4px;
+      z-index: 2;
+    }
+    #qr-scan-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #00f3ff, transparent);
+      box-shadow: 0 0 8px #00f3ff;
+      animation: scanLine 2s linear infinite;
+      z-index: 3;
+    }
+    #qr-status-text {
+      font-size: 13px;
+      color: rgba(0,243,255,0.85);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-align: center;
+      min-height: 40px;
+    }
   </style>
 </head>
 <body class="text-on-background min-h-screen pb-[86px] flex flex-col font-body-md select-none">
@@ -149,6 +243,27 @@
 <!-- Floating Small Avatar Top-Left -->
 <div id="floating-avatar-container" class="fixed top-4 left-4 z-40 w-10 h-10 rounded-full overflow-hidden border border-primary/50 shadow-[0_0_10px_rgba(0,243,255,0.2)] bg-surface hidden">
   <img id="floating-avatar-img" alt="Avatar" class="w-full h-full object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix"/>
+</div>
+
+<!-- QR Scanner Modal Overlay -->
+<div id="qr-scanner-modal">
+  <div class="text-[13px] font-bold text-primary-container font-label-caps tracking-widest text-center">
+    ESCANEAR QR DE LA BOLIRANA
+  </div>
+
+  <div id="qr-video-wrapper">
+    <video id="qr-video" autoplay muted playsinline></video>
+    <canvas id="qr-canvas-hidden"></canvas>
+    <div class="qr-corner-tr"></div>
+    <div class="qr-corner-bl"></div>
+    <div id="qr-scan-line"></div>
+  </div>
+
+  <div id="qr-status-text">Apuntá la cámara al código QR de la pantalla</div>
+
+  <button id="close-qr-scanner-btn" class="w-full max-w-[280px] py-3 border border-outline text-outline font-bold text-[12px] rounded-xl active:scale-[0.98] transition-transform font-headline-md">
+    ✕ CANCELAR
+  </button>
 </div>
 
 <main class="w-full max-w-lg mx-auto flex-1 flex flex-col justify-center">
@@ -207,6 +322,12 @@
         </div>
       </div>
     </div>
+
+    <!-- Botón principal: Escanear QR de la bolirana -->
+    <button id="open-qr-scanner-btn" class="w-full py-4 bg-gradient-to-r from-primary-container/20 to-secondary-container/10 border-2 border-primary-container/60 text-primary-container font-bold text-[15px] font-headline-md rounded-xl flex items-center justify-center gap-3 active:scale-[0.97] transition-all shadow-[0_0_20px_rgba(0,243,255,0.15)] hover:shadow-[0_0_30px_rgba(0,243,255,0.3)]">
+      <span class="text-[22px]">📷</span>
+      ESCANEAR QR DE LA BOLIRANA
+    </button>
   </div>
 
   <!-- PANTALLA 2: Conectando -->
@@ -311,7 +432,20 @@
   <div id="scr-edit-profile" class="screen flex-col justify-start p-6 gap-5 overflow-y-auto">
     <div class="logo font-headline-md text-[24px] text-primary-container font-extrabold">MI PERFIL</div>
     <div class="text-[11px] font-label-caps text-outline -mt-4">PERSONALIZÁ TU AVATAR Y DATOS</div>
-    
+
+    <!-- Banner de estado de cuenta -->
+    <div id="profile-cloud-status" class="w-full rounded-lg px-4 py-3 flex items-center gap-3 text-[12px] font-bold hidden">
+      <span id="profile-cloud-icon" class="text-[18px]"></span>
+      <div class="flex-1">
+        <div id="profile-cloud-label" class="font-label-caps tracking-wide"></div>
+        <div id="profile-cloud-sublabel" class="text-[10px] font-normal opacity-80 mt-0.5"></div>
+      </div>
+      <button id="profile-cloud-login-btn" class="hidden px-3 py-1.5 bg-white text-surface rounded-lg font-bold text-[10px] flex items-center gap-1.5 shrink-0">
+        <svg width="12" height="12" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1-.8 1.9-1.6 2.5v2.1h2.6c1.5-1.4 2.8-3.5 2.8-6.2z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.6-2.1c-.7.5-1.6.8-2.6.8-2 0-3.7-1.4-4.3-3.2H2.8v2.2C4.3 16.5 6.5 18 9 18z"/><path fill="#FBBC05" d="M4.7 11.3c-.2-.5-.3-1-.3-1.6s.1-1.1.3-1.6V5.9H2.8C2.2 7.1 2 8.5 2 10s.2 2.9.8 4.1l1.9-2.8z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.4 3.4 1.3l2.6-2.5C13.5 1.1 11.4 0 9 0 6.5 0 4.3 1.5 2.8 3.7l1.9 2.8c.6-1.8 2.3-3.2 4.3-3.2z"/></svg>
+        INICIAR SESIÓN
+      </button>
+    </div>
+
     <div class="w-full bg-surface-container/90 backdrop-blur-md border border-outline-variant/30 rounded-lg p-5 flex flex-col gap-4">
       
       <!-- Vista previa de la Remera SVG -->
@@ -504,6 +638,7 @@ let myName  = "";
 let myScore = 0;
 let myZone = "Buenos Aires, AR";
 let supabaseClient = null;
+let savedToCloud = false; // Indica si el último guardado fué a Supabase
 
 // Nombres y sufijos rápidos aleatorios para unirse velozmente
 const RANDOM_PREFIXES = ["CYBER", "NEON", "PIXEL", "VORTEX", "SHADOW", "GLITCH", "ALPHA", "OMEGA", "KRONOS", "ZEUS"];
@@ -578,25 +713,37 @@ async function initCloud() {
         
         // Registrar en backend local si ya está conectado
         if (sock && sock.readyState === 1) {
-          send({ type: "player_name", name: myName, google_id: user.id, avatar: avatarUrl });
           showScreen("scr-waiting");
         }
         document.getElementById("my-name").textContent = myName;
         
-        // Intentar registrar/actualizar perfil inicial en la tabla de Supabase profiles
-        await supabaseClient.from("profiles").upsert({
-          id: user.id,
-          name: myName,
-          avatar_url: user.user_metadata.avatar_url || "",
-          zone: myZone
-        });
-
-        // Obtener el perfil completo para cargar estadísticas e inicializar campos
-        const { data: profile } = await supabaseClient
+        // 1. Obtener el perfil completo de Supabase si ya existe
+        const { data: profiles, error: selectError } = await supabaseClient
           .from("profiles")
           .select("*")
-          .eq("id", user.id)
-          .single();
+          .eq("id", user.id);
+
+        let profile = (profiles && profiles.length > 0) ? profiles[0] : null;
+
+        // 2. Si no existe (primer inicio de sesión), crearlo con los datos básicos de Google
+        if (!profile) {
+          console.log("Perfil no encontrado en Supabase, creando uno nuevo...");
+          const { data: newProfiles, error: insertError } = await supabaseClient
+            .from("profiles")
+            .insert({
+              id: user.id,
+              name: myName,
+              avatar_url: user.user_metadata.avatar_url || "",
+              zone: myZone
+            })
+            .select();
+
+          if (insertError) {
+            console.error("Error al crear perfil inicial en Supabase:", insertError);
+          } else if (newProfiles && newProfiles.length > 0) {
+            profile = newProfiles[0];
+          }
+        }
 
         if (profile) {
           if (profile.name) {
@@ -625,6 +772,20 @@ async function initCloud() {
           document.getElementById("edit-profile-btn").style.display = "block";
           document.getElementById("player-stats-card").style.display = "block";
           document.getElementById("home-player-stats-card").style.display = "block";
+
+          // Enviar perfil completo a la máquina local
+          if (sock && sock.readyState === 1) {
+            send({
+              type: "player_name",
+              name: myName,
+              google_id: user.id,
+              avatar: selectedAvatarUrl,
+              club: profile.club || "",
+              jersey_primary_color: profile.jersey_primary_color || "#ffffff",
+              jersey_secondary_color: profile.jersey_secondary_color || "#00ffcc",
+              jersey_pattern: profile.jersey_pattern || "plain"
+            });
+          }
         }
 
         // Mostrar resumen de usuario en pantalla de inicio
@@ -715,6 +876,7 @@ function populateClubsDropdown() {
 // ── Variables de Estado de Avatar ──────────────────────────────────────────────
 let selectedAvatarUrl = "";
 let uploadedImageBase64 = null;
+let uploadedImageFile = null; // El archivo original para subir a Storage
 let currentJerseyPattern = "plain";
 
 const PRESET_AVATARS = [
@@ -882,12 +1044,13 @@ document.getElementById("color-secondary").addEventListener("input", (e) => {
   updateJerseyPreview(document.getElementById("color-primary").value, e.target.value, currentJerseyPattern);
 });
 
-// Carga de archivo y compresión a Base64 con canvas
+// Carga de archivo — preview local con canvas, guardamos el File original para Storage
 document.getElementById("avatar-file-input").addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (!file) return;
   
   document.getElementById("file-name-label").textContent = file.name;
+  uploadedImageFile = file; // Guardamos el archivo original para subir a Storage
   
   const reader = new FileReader();
   reader.onload = (event) => {
@@ -896,32 +1059,25 @@ document.getElementById("avatar-file-input").addEventListener("change", (e) => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       
-      const maxDim = 128;
+      const maxDim = 256;
       let width = img.width;
       let height = img.height;
       
       if (width > height) {
-        if (width > maxDim) {
-          height = Math.round((height * maxDim) / width);
-          width = maxDim;
-        }
+        if (width > maxDim) { height = Math.round((height * maxDim) / width); width = maxDim; }
       } else {
-        if (height > maxDim) {
-          width = Math.round((width * maxDim) / height);
-          height = maxDim;
-        }
+        if (height > maxDim) { width = Math.round((width * maxDim) / height); height = maxDim; }
       }
       
       canvas.width = width;
       canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
       
-      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
-      uploadedImageBase64 = compressedDataUrl;
+      // Solo para preview local — NO guardamos en DB
+      uploadedImageBase64 = canvas.toDataURL("image/jpeg", 0.8);
       selectedAvatarUrl = "";
       
-      document.getElementById("profile-avatar-preview").src = compressedDataUrl;
-      
+      document.getElementById("profile-avatar-preview").src = uploadedImageBase64;
       document.querySelectorAll("#predefined-avatars-grid img").forEach(el => {
         el.style.borderColor = "transparent";
       });
@@ -930,6 +1086,22 @@ document.getElementById("avatar-file-input").addEventListener("change", (e) => {
   };
   reader.readAsDataURL(file);
 });
+
+// ── Helper: Subir imagen a Supabase Storage ─────────────────────────────────────
+async function uploadAvatarToStorage(file, userId) {
+  if (!supabaseClient || !file) return null;
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${userId}/${Date.now()}.${ext}`;
+  const { data, error } = await supabaseClient.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
+  if (error) {
+    console.error("Error subiendo avatar a Storage:", error);
+    return null;
+  }
+  const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(path);
+  return publicUrl;
+}
 
 // ── Eventos de Configuración de Perfil ─────────────────────────────────────────
 document.getElementById("edit-profile-btn").addEventListener("click", async () => {
@@ -997,6 +1169,35 @@ async function openProfileEditor() {
     }
   }
   showScreen("scr-edit-profile");
+  updateProfileCloudBanner(true); // Tiene sesión
+}
+
+function updateProfileCloudBanner(hasSession) {
+  const banner = document.getElementById("profile-cloud-status");
+  const icon = document.getElementById("profile-cloud-icon");
+  const label = document.getElementById("profile-cloud-label");
+  const sublabel = document.getElementById("profile-cloud-sublabel");
+  const loginBtn = document.getElementById("profile-cloud-login-btn");
+
+  banner.classList.remove("hidden");
+
+  if (hasSession) {
+    banner.style.cssText = "background: rgba(0,180,80,0.12); border: 1px solid rgba(0,200,80,0.35); color: #4ade80;";
+    icon.textContent = "\u2601\ufe0f";
+    label.textContent = "GUARDADO EN LA NUBE ACTIVO";
+    sublabel.textContent = "Los cambios se guardarán en tu cuenta de Google";
+    loginBtn.classList.add("hidden");
+  } else {
+    banner.style.cssText = "background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.35); color: #fbbf24;";
+    icon.textContent = "\u26a0\ufe0f";
+    label.textContent = "MODO SIN CUENTA";
+    sublabel.textContent = "Los datos se guardarán solo en esta sesión";
+    loginBtn.classList.remove("hidden");
+    loginBtn.onclick = () => {
+      goBackToHome();
+      // El botón de Google está en la home
+    };
+  }
 }
 
 // ── Google Login click ────────────────────────────────────────────────────────
@@ -1174,7 +1375,7 @@ function connect() {
   sock = new WebSocket(url);
   sock.onopen    = () => {
     showScreen("scr-waiting");
-    initCloud();
+    sendPlayerProfile();
   };
   sock.onclose   = () => { 
     if (!connectionRejected) {
@@ -1509,6 +1710,7 @@ document.getElementById("nav-btn-profile").addEventListener("click", async () =>
   // Si no está registrado con Google, pre-cargar el creador de perfil invitado
   showScreen("scr-edit-profile");
   prefillFastDetails();
+  updateProfileCloudBanner(false); // Sin sesión
 });
 
 // Registrar eventos de profile cancel/save
@@ -1528,14 +1730,33 @@ document.getElementById("profile-save").addEventListener("click", async () => {
     return;
   }
 
-  // Si está autenticado, guardar en Supabase. Si no, guardar localmente para el juego
-  let avatarUrl = uploadedImageBase64 || selectedAvatarUrl;
+  // Deshabilitar el botón para evitar doble click
+  const saveBtn = document.getElementById("profile-save");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "GUARDANDO...";
+
+  let avatarUrl = selectedAvatarUrl;
   
   if (supabaseClient) {
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session && session.user) {
+      if (session && session.user) {
       const user = session.user;
+      
+      // 1. Subir imagen a Storage si el usuario subió una foto
+      if (uploadedImageFile) {
+        const storageUrl = await uploadAvatarToStorage(uploadedImageFile, user.id);
+        if (storageUrl) {
+          avatarUrl = storageUrl;
+          uploadedImageFile = null;
+          uploadedImageBase64 = null;
+        } else {
+          avatarUrl = avatarUrl || `https://api.dicebear.com/7.x/lorelei/svg?seed=${user.id}`;
+        }
+      }
+      
       if (!avatarUrl) avatarUrl = `https://api.dicebear.com/7.x/lorelei/svg?seed=${user.id}`;
+      
+      // 2. Guardar perfil completo en Supabase
       try {
         const { error } = await supabaseClient.from("profiles").upsert({
           id: user.id,
@@ -1544,28 +1765,63 @@ document.getElementById("profile-save").addEventListener("click", async () => {
           club: clubVal || null,
           jersey_primary_color: colorPrimary,
           jersey_secondary_color: colorSecondary,
+          jersey_pattern: currentJerseyPattern,
           avatar_url: avatarUrl,
           zone: myZone,
           updated_at: new Date().toISOString()
-        });
+        }, { onConflict: 'id' });
 
-        if (error) throw error;
-        alert("Perfil de nube guardado correctamente.");
+        if (error) {
+          console.error("Error de Supabase al guardar perfil:", error);
+          throw error;
+        }
+        console.log("\u2705 Perfil guardado en Supabase:", { name: newName, club: clubVal, avatarUrl });
+        savedToCloud = true;
       } catch (e) {
         console.warn("Error guardando en nube:", e);
+        saveBtn.disabled = false;
+        saveBtn.textContent = "GUARDAR CAMBIOS";
+        alert("Error al guardar en la nube: " + (e.message || e));
+        return;
       }
+    } else {
+      // Sin sesión activa — solo local
+      savedToCloud = false;
     }
+  } else {
+    savedToCloud = false;
   }
 
   if (!avatarUrl) avatarUrl = `https://api.dicebear.com/7.x/lorelei/svg?seed=${newName}`;
   
   myName = newName;
+  selectedAvatarUrl = avatarUrl;
   document.getElementById("my-name").textContent = myName;
+  updateFloatingAvatar(avatarUrl);
 
-  // Enviar nombre actualizado por websocket a la máquina si está conectada
-  send({ type: "player_name", name: myName, avatar: avatarUrl });
+  // Enviar perfil actualizado por websocket a la máquina
+  send({
+    type: "player_name",
+    name: myName,
+    avatar: avatarUrl,
+    club: clubVal,
+    jersey_primary_color: colorPrimary,
+    jersey_secondary_color: colorSecondary,
+    jersey_pattern: currentJerseyPattern
+  });
 
-  alert("Perfil guardado localmente.");
+  saveBtn.disabled = false;
+  saveBtn.textContent = "GUARDAR CAMBIOS";
+
+  if (savedToCloud) {
+    alert("\u2705 Perfil guardado en la nube correctamente.");
+  } else {
+    const wantLogin = confirm("\u26a0\ufe0f Perfil guardado solo localmente (no estás conectado con Google).\n\n¿Querés iniciar sesión para guardar en la nube y que tus datos persistan?");
+    if (wantLogin) {
+      goBackToHome();
+      return; // El usuario va a usar el botón de Google en la home
+    }
+  }
   goBackToHome();
 });
 
@@ -1596,7 +1852,163 @@ async function checkActiveGameStatus() {
   }
 }
 
-// Inicialización
+async function sendPlayerProfile() {
+  if (!sock || sock.readyState !== 1) return;
+  
+  let club = "";
+  let primary = "#ffffff";
+  let secondary = "#00ffcc";
+  let pattern = "plain";
+  let avatar = uploadedImageBase64 || selectedAvatarUrl;
+
+  // Si está autenticado, intentar leer de Supabase
+  if (supabaseClient) {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session && session.user) {
+      const { data: profile } = await supabaseClient
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
+        
+      if (profile) {
+        if (profile.name) myName = profile.name;
+        if (profile.avatar_url) avatar = profile.avatar_url;
+        club = profile.club || "";
+        primary = profile.jersey_primary_color || "#ffffff";
+        secondary = profile.jersey_secondary_color || "#00ffcc";
+        pattern = profile.jersey_pattern || "plain";
+      }
+    }
+  }
+
+  if (!myName) {
+    myName = document.getElementById("profile-name")?.value.trim() || document.getElementById("name-input")?.value.trim() || "Jugador";
+  }
+  if (!avatar) {
+    avatar = `https://api.dicebear.com/7.x/lorelei/svg?seed=${myName}`;
+  }
+
+  send({
+    type: "player_name",
+    name: myName,
+    avatar: avatar,
+    club: club,
+    jersey_primary_color: primary,
+    jersey_secondary_color: secondary,
+    jersey_pattern: pattern
+  });
+}
+
+// ── QR Scanner ────────────────────────────────────────────────────────────────
+let qrScanStream = null;
+let qrAnimFrame = null;
+let qrDetected = false;
+
+async function openQrScanner() {
+  const modal = document.getElementById("qr-scanner-modal");
+  const video = document.getElementById("qr-video");
+  const status = document.getElementById("qr-status-text");
+  
+  qrDetected = false;
+  status.textContent = "Apuntá la cámara al código QR de la pantalla";
+  status.style.color = "rgba(0,243,255,0.85)";
+  modal.classList.add("active");
+
+  try {
+    // Solicitar cámara trasera del celular
+    qrScanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" }, width: { ideal: 640 }, height: { ideal: 640 } }
+    });
+    video.srcObject = qrScanStream;
+    video.play();
+    video.addEventListener("loadedmetadata", startQrScan, { once: true });
+  } catch (err) {
+    console.error("Error accediendo a la cámara:", err);
+    status.textContent = "No se pudo acceder a la cámara. Permití el acceso e intentá de nuevo.";
+    status.style.color = "#ff6b6b";
+  }
+}
+
+function startQrScan() {
+  const video = document.getElementById("qr-video");
+  const canvas = document.getElementById("qr-canvas-hidden");
+  const ctx = canvas.getContext("2d");
+
+  function tick() {
+    if (qrDetected || !qrScanStream) return;
+    
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "dontInvert"
+      });
+      
+      if (code) {
+        const url = code.data;
+        console.log("QR detectado:", url);
+        onQrDetected(url);
+        return;
+      }
+    }
+    
+    qrAnimFrame = requestAnimationFrame(tick);
+  }
+  
+  qrAnimFrame = requestAnimationFrame(tick);
+}
+
+function onQrDetected(url) {
+  qrDetected = true;
+  const status = document.getElementById("qr-status-text");
+  
+  // Verificar que sea una URL de FutSapo / bolirana
+  const isFutsapoUrl = url.includes("/player/index.html") || url.includes("arcade_id=") || url.includes("session_id=");
+  
+  if (!isFutsapoUrl) {
+    status.textContent = "❌ El código QR no pertenece a FutSapo. Intentá de nuevo.";
+    status.style.color = "#ff6b6b";
+    // Reintentar después de 2s
+    setTimeout(() => {
+      qrDetected = false;
+      status.textContent = "Apuntá la cámara al código QR de la pantalla";
+      status.style.color = "rgba(0,243,255,0.85)";
+      startQrScan();
+    }, 2000);
+    return;
+  }
+
+  // ✅ QR válido detectado
+  status.textContent = "✅ ¡Código detectado! Conectando...";
+  status.style.color = "#a4f200";
+  
+  stopQrScanner();
+  
+  // Redirigir a la URL del juego (que ya incluye arcade_id y session_id)
+  setTimeout(() => {
+    window.location.href = url;
+  }, 800);
+}
+
+function stopQrScanner() {
+  if (qrAnimFrame) cancelAnimationFrame(qrAnimFrame);
+  if (qrScanStream) {
+    qrScanStream.getTracks().forEach(t => t.stop());
+    qrScanStream = null;
+  }
+  const video = document.getElementById("qr-video");
+  video.srcObject = null;
+  document.getElementById("qr-scanner-modal").classList.remove("active");
+}
+
+document.getElementById("open-qr-scanner-btn").addEventListener("click", openQrScanner);
+document.getElementById("close-qr-scanner-btn").addEventListener("click", stopQrScanner);
+
+// ── Inicialización ────────────────────────────────────────────────────────────
 initCloud().then(() => {
   if (playerIndex !== -1) {
     showScreen("scr-connecting");

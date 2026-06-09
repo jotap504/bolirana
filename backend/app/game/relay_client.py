@@ -111,7 +111,11 @@ class CloudRelayClient:
                                     idx,
                                     payload.get("name", ""),
                                     payload.get("google_id"),
-                                    payload.get("avatar", "")
+                                    payload.get("avatar", ""),
+                                    club=payload.get("club", ""),
+                                    jersey_primary_color=payload.get("jersey_primary_color", "#ffffff"),
+                                    jersey_secondary_color=payload.get("jersey_secondary_color", "#00ffcc"),
+                                    jersey_pattern=payload.get("jersey_pattern", "plain")
                                 )
                             elif payload_type == "btn":
                                 await engine.handle_button(payload.get("id"))

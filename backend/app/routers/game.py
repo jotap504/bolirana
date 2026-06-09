@@ -101,7 +101,16 @@ async def ws_player(ws: WebSocket, index: int):
             msg = json.loads(raw)
             match msg.get("type"):
                 case "player_name":
-                    await engine.set_player_name(index, msg.get("name", ""), msg.get("google_id"), msg.get("avatar", ""))
+                    await engine.set_player_name(
+                        index,
+                        msg.get("name", ""),
+                        msg.get("google_id"),
+                        msg.get("avatar", ""),
+                        club=msg.get("club", ""),
+                        jersey_primary_color=msg.get("jersey_primary_color", "#ffffff"),
+                        jersey_secondary_color=msg.get("jersey_secondary_color", "#00ffcc"),
+                        jersey_pattern=msg.get("jersey_pattern", "plain")
+                    )
                 case "btn":
                     await engine.handle_button(msg["id"])
     except WebSocketDisconnect:

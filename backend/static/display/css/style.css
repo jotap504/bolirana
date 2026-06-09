@@ -86,9 +86,9 @@ body::before {
   pointer-events:none; z-index:0;
 }
 
-/* Scanlines + Rejilla CRT Arcade */
+/* Scanlines + Rejilla CRT Arcade (Ubicado por detrás de las pantallas para no afectar avatares/texto) */
 #app::after {
-  content:''; position:absolute; inset:0; z-index:998; pointer-events:none;
+  content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
   background:
     repeating-linear-gradient(0deg,
       transparent 0px, transparent 3px,
@@ -98,7 +98,7 @@ body::before {
 
 /* ── Screens ─────────────────────────────────────────────────── */
 .screen {
-  position:absolute; inset:0; z-index:1;
+  position:absolute; inset:0; z-index:2;
   display:none; flex-direction:column;
   align-items:center; justify-content:flex-start;
   padding:32px 40px 24px;

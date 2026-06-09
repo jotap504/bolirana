@@ -32,11 +32,31 @@ create policy "Permitir a los usuarios modificar su propio perfil" on public.pro
 alter table public.profiles
   add column if not exists age integer,
   add column if not exists club text,
+  add column if not exists zone text,
   add column if not exists jersey_primary_color text default '#ffffff',
   add column if not exists jersey_secondary_color text default '#00ffcc',
+  add column if not exists jersey_pattern text default 'plain',
   add column if not exists games_played integer default 0,
   add column if not exists high_score integer default 0,
-  add column if not exists best_streak integer default 0;
+  add column if not exists best_streak integer default 0,
+  add column if not exists updated_at timestamptz default now();
+
+-- 3b. Storage: Políticas RLS del bucket 'avatars'
+-- (Ejecutar después de crear el bucket 'avatars' como Public en el dashboard)
+create policy if not exists "Public read avatars" on storage.objects
+  for select to public using (bucket_id = 'avatars');
+
+create policy if not exists "Auth users upload avatars" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
+
+create policy if not exists "Auth users update own avatars" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
+
+create policy if not exists "Auth users delete own avatars" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
 
 
 -- 2. Tabla de Rankings de Partidas (rankings)

@@ -32,6 +32,10 @@ class Player:
     connected:   bool = False   # celular conectado
     google_id:   Optional[str] = None # Google OAuth User ID
     avatar:      str  = ""      # URL de la foto de Google o ruta del avatar local
+    jersey_primary_color:   str = "#ffffff"
+    jersey_secondary_color: str = "#00ffcc"
+    jersey_pattern:         str = "plain"
+    club:                   str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -42,6 +46,10 @@ class Player:
             "connected":  self.connected,
             "google_id":  self.google_id,
             "avatar":     self.avatar,
+            "jersey_primary_color":   self.jersey_primary_color,
+            "jersey_secondary_color": self.jersey_secondary_color,
+            "jersey_pattern":         self.jersey_pattern,
+            "club":                   self.club,
         }
 
 
