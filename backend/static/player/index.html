@@ -6,62 +6,361 @@
   <title>Bolirana Player</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    :root{--bg:#07070f;--neon:#f0e000;--neon2:#00ffcc;--text:#e8e8ff;--muted:#5566aa;--card:rgba(255,255,255,0.06)}
-    html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif}
-    h1,h2,h3{font-family:monospace}
-
-    .screen{display:none;flex-direction:column;align-items:center;justify-content:center;
-      min-height:100vh;padding:24px;text-align:center;gap:20px}
-    .screen.active{display:flex}
-
-    .logo{font-size:28px;color:var(--neon);text-shadow:0 0 12px var(--neon);letter-spacing:4px;margin-bottom:4px}
-    .subtitle{font-size:12px;color:var(--muted);letter-spacing:3px}
-
-    input[type=text]{
-      width:100%;max-width:280px;padding:14px 16px;font-size:18px;
-      background:rgba(255,255,255,0.08);border:2px solid var(--muted);
-      border-radius:10px;color:var(--text);text-align:center;letter-spacing:2px;
-      outline:none;transition:border-color 0.2s}
-    input:focus{border-color:var(--neon)}
-
-    .btn{width:100%;max-width:280px;padding:16px;border:none;border-radius:10px;
-      font-size:16px;font-weight:700;cursor:pointer;letter-spacing:2px;transition:all 0.15s}
-    .btn-primary{background:var(--neon);color:#000}
-    .btn-primary:active{transform:scale(0.97)}
-    .btn-ghost{background:transparent;border:2px solid var(--muted);color:var(--muted)}
-
-    .card{background:var(--card);border-radius:14px;padding:20px;width:100%;max-width:340px}
-    .score-big{font-size:56px;font-weight:900;color:var(--neon);text-shadow:0 0 20px var(--neon);
-      transition:transform 0.15s}
-    .score-big.bump{transform:scale(1.3)}
-    .score-label{font-size:12px;color:var(--muted);letter-spacing:2px;margin-bottom:8px}
-    .player-tag{font-size:14px;color:var(--neon2);margin-bottom:4px}
-    .turn-badge{
-      padding:8px 20px;border-radius:20px;font-size:13px;letter-spacing:2px;
-      background:rgba(240,224,0,0.15);border:1px solid var(--neon);color:var(--neon);
+    :root{
+      --bg-radial: radial-gradient(circle at center, #0e0e24 0%, #030309 100%);
+      --neon-primary: #ffe600;
+      --neon-secondary: #00f5ff;
+      --neon-accent: #ff0055;
+      --text-main: #eef2ff;
+      --text-muted: #798bb4;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.07);
+      --glow-shadow: 0 0 15px rgba(0, 245, 255, 0.2);
     }
-    .other-scores{display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px}
-    .other-row{display:flex;justify-content:space-between;
-      padding:10px 16px;background:var(--card);border-radius:8px;font-size:14px}
-    .other-name{color:var(--muted)}
-    .other-score{color:var(--text);font-weight:700}
-    .waiting-msg{font-size:14px;color:var(--muted);line-height:1.8}
-    .waiting-spinner{font-size:36px;animation:spin 1s linear infinite}
-    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-    .event-log{width:100%;max-width:340px;font-size:12px;color:var(--muted);
-      text-align:left;max-height:80px;overflow:hidden}
     
-    .btn-tab{transition:all 0.2s;}
-    .btn-tab.active{background:rgba(0, 255, 204, 0.15) !important; border-color:var(--neon2) !important; color:var(--neon2) !important;}
-    .ranking-row{display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:8px; font-size:13px; width:100%;}
-    .ranking-pos{font-weight:bold; color:var(--neon); font-family:monospace; min-width:24px;}
-    .ranking-name{flex:1; text-align:left; padding-left:8px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-    .ranking-score{font-family:monospace; font-weight:bold; color:var(--neon2);}
-    .ranking-zone{font-size:10px; color:var(--muted); display:block; margin-top:2px;}
+    html,body{
+      width:100%;
+      min-height:100vh;
+      background: var(--bg-radial);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      overflow-x: hidden;
+    }
+    
+    h1,h2,h3{
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
+    }
+
+    /* Transición suave para las pantallas */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+      gap: 20px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      width: 100%;
+    }
+    .screen.active {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .logo {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 32px;
+      color: var(--neon-primary);
+      text-shadow: 0 0 10px rgba(255, 230, 0, 0.5), 0 0 20px rgba(255, 230, 0, 0.2);
+      letter-spacing: 4px;
+      margin-bottom: 2px;
+    }
+    .subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Inputs estilo Cyberpunk */
+    input[type=text], input[type=number] {
+      width: 100%;
+      max-width: 300px;
+      padding: 12px 16px;
+      font-size: 16px;
+      font-family: 'Outfit', sans-serif;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: var(--text-main);
+      text-align: left;
+      outline: none;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+    input:focus {
+      border-color: var(--neon-secondary);
+      box-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
+    }
+
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-family: 'Outfit', sans-serif;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: var(--text-main);
+      outline: none;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+    select:focus {
+      border-color: var(--neon-secondary);
+      box-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
+    }
+
+    /* Botones Premium con gradientes y glows */
+    .btn {
+      width: 100%;
+      max-width: 300px;
+      padding: 16px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      font-family: 'Orbitron', sans-serif;
+      cursor: pointer;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transition: all 0.6s ease;
+    }
+    .btn:hover::after {
+      left: 100%;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--neon-secondary) 0%, #0088ff 100%);
+      color: #000;
+      box-shadow: 0 4px 15px rgba(0, 245, 255, 0.3);
+    }
+    .btn-primary:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 8px rgba(0, 245, 255, 0.2);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--neon-primary) 0%, #d4a000 100%);
+      color: #000;
+      box-shadow: 0 4px 15px rgba(255, 230, 0, 0.3);
+    }
+    
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--text-muted);
+      color: var(--text-muted);
+    }
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border-color: var(--text-main);
+    }
+
+    /* Tarjetas Glassmorphism */
+    .card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 350px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    .score-big {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 64px;
+      font-weight: 900;
+      color: var(--neon-primary);
+      text-shadow: 0 0 20px rgba(255, 230, 0, 0.6);
+      transition: transform 0.15s ease-out;
+    }
+    .score-big.bump {
+      transform: scale(1.25);
+    }
+    .score-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    
+    .player-tag {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--neon-secondary);
+      text-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
+      margin-bottom: 4px;
+    }
+    
+    .turn-badge {
+      padding: 8px 24px;
+      border-radius: 30px;
+      font-size: 11px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: 2px;
+      background: rgba(0, 245, 255, 0.08);
+      border: 1px solid var(--neon-secondary);
+      color: var(--neon-secondary);
+      text-shadow: 0 0 5px var(--neon-secondary);
+      animation: pulse-glow 2s infinite alternate;
+    }
+    
+    @keyframes pulse-glow {
+      from { box-shadow: 0 0 5px rgba(0,245,255,0.2); }
+      to { box-shadow: 0 0 15px rgba(0,245,255,0.4); }
+    }
+
+    .other-scores {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 350px;
+    }
+    .other-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    .other-name {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .other-score {
+      color: var(--text-main);
+      font-weight: 700;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .waiting-msg {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .waiting-spinner {
+      font-size: 40px;
+      animation: spin 2s linear infinite;
+      filter: drop-shadow(0 0 10px var(--neon-secondary));
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .event-log {
+      width: 100%;
+      max-width: 350px;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: left;
+      max-height: 80px;
+      overflow: hidden;
+      border-top: 1px solid var(--glass-border);
+      padding-top: 8px;
+    }
+    
+    /* Pestañas de Rankings */
+    .btn-tab {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: 'Orbitron', sans-serif;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .btn-tab.active {
+      background: rgba(0, 245, 255, 0.12) !important;
+      border-color: var(--neon-secondary) !important;
+      color: var(--neon-secondary) !important;
+      box-shadow: 0 0 10px rgba(0, 245, 255, 0.2);
+    }
+    
+    .ranking-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      font-size: 13px;
+      width: 100%;
+      transition: transform 0.2s ease;
+    }
+    .ranking-row:hover {
+      transform: scale(1.02);
+      background: rgba(255,255,255,0.04);
+    }
+    
+    .ranking-pos {
+      font-weight: 900;
+      font-family: 'Orbitron', sans-serif;
+      min-width: 24px;
+      font-size: 14px;
+    }
+    /* Medallas de ranking */
+    .ranking-row:nth-child(1) .ranking-pos { color: #ffd700; text-shadow: 0 0 5px rgba(255,215,0,0.5); }
+    .ranking-row:nth-child(2) .ranking-pos { color: #c0c0c0; text-shadow: 0 0 5px rgba(192,192,192,0.5); }
+    .ranking-row:nth-child(3) .ranking-pos { color: #cd7f32; text-shadow: 0 0 5px rgba(205,127,50,0.5); }
+    .ranking-row:nth-child(n+4) .ranking-pos { color: var(--text-muted); }
+
+    .ranking-name {
+      flex: 1;
+      text-align: left;
+      padding-left: 10px;
+      color: var(--text-main);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ranking-score {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      color: var(--neon-secondary);
+      text-shadow: 0 0 5px rgba(0, 245, 255, 0.3);
+    }
+    .ranking-zone {
+      font-size: 10px;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    /* Animación flotante de camiseta */
+    #jersey-svg {
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(1deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
   </style>
 </head>
 <body>
@@ -804,56 +1103,7 @@ document.getElementById("edit-profile-btn").addEventListener("click", async () =
   showScreen("scr-edit-profile");
 });
 
-document.getElementById("profile-cancel").addEventListener("click", () => {
-  showScreen("scr-waiting");
-});
 
-document.getElementById("profile-save").addEventListener("click", async () => {
-  if (!supabaseClient) return;
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session || !session.user) return;
-
-  const newName = document.getElementById("profile-name").value.trim();
-  const ageVal = parseInt(document.getElementById("profile-age").value);
-  const clubVal = document.getElementById("profile-club").value;
-  const colorPrimary = document.getElementById("color-primary").value;
-  const colorSecondary = document.getElementById("color-secondary").value;
-
-  if (!newName) {
-    alert("Por favor ingresa un apodo válido.");
-    return;
-  }
-
-  const user = session.user;
-  const avatarUrl = uploadedImageBase64 || selectedAvatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
-
-  try {
-    const { error } = await supabaseClient.from("profiles").upsert({
-      id: user.id,
-      name: newName,
-      age: isNaN(ageVal) ? null : ageVal,
-      club: clubVal || null,
-      jersey_primary_color: colorPrimary,
-      jersey_secondary_color: colorSecondary,
-      avatar_url: avatarUrl,
-      zone: myZone,
-      updated_at: new Date().toISOString()
-    });
-
-    if (error) throw error;
-
-    myName = newName;
-    document.getElementById("my-name").textContent = myName;
-
-    // Enviar nombre actualizado por websocket a la máquina
-    send({ type: "player_name", name: myName, google_id: user.id, avatar: avatarUrl });
-
-    alert("Perfil guardado correctamente.");
-    showScreen("scr-waiting");
-  } catch (e) {
-    alert("Error al guardar perfil: " + e.message);
-  }
-});
 
 // ── Google Login click ────────────────────────────────────────────────────────
 document.getElementById("google-login").addEventListener("click", async () => {
@@ -891,8 +1141,11 @@ document.querySelectorAll(".btn-tab").forEach(tab => {
 
 async function loadRankings() {
   const list = document.getElementById("ranking-list");
-  if (!list) return;
-  list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Cargando rankings...</div>`;
+  const homeList = document.getElementById("home-ranking-list");
+  
+  const loadingHtml = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Cargando rankings...</div>`;
+  if (list) list.innerHTML = loadingHtml;
+  if (homeList) homeList.innerHTML = loadingHtml;
 
   try {
     let data = [];
@@ -905,7 +1158,9 @@ async function loadRankings() {
         .sort((a,b) => b.score - a.score);
     } else if (activeRankTab === "zonal") {
       if (!supabaseClient) {
-        list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px;">Nube no disponible en esta máquina.</div>`;
+        const noCloudHtml = `<div style="text-align:center; color:var(--muted); font-size:12px;">Nube no disponible en esta máquina.</div>`;
+        if (list) list.innerHTML = noCloudHtml;
+        if (homeList) homeList.innerHTML = noCloudHtml;
         return;
       }
       // Consultar Supabase tabla rankings filtrando por zona
@@ -919,7 +1174,9 @@ async function loadRankings() {
       data = scores.map(s => ({ name: s.player_name, score: s.score, zone: s.zone }));
     } else if (activeRankTab === "global") {
       if (!supabaseClient) {
-        list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px;">Nube no disponible en esta máquina.</div>`;
+        const noCloudHtml = `<div style="text-align:center; color:var(--muted); font-size:12px;">Nube no disponible en esta máquina.</div>`;
+        if (list) list.innerHTML = noCloudHtml;
+        if (homeList) homeList.innerHTML = noCloudHtml;
         return;
       }
       // Consultar Supabase tabla rankings global ordenada
@@ -933,23 +1190,45 @@ async function loadRankings() {
     }
 
     if (data.length === 0) {
-      list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Sin puntajes aún. ¡Sé el primero!</div>`;
+      const emptyHtml = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Sin puntajes aún. ¡Sé el primero!</div>`;
+      if (list) list.innerHTML = emptyHtml;
+      if (homeList) homeList.innerHTML = emptyHtml;
       return;
     }
 
-    list.innerHTML = data.map((r, idx) => `
-      <div class="ranking-row">
-        <span class="ranking-pos">#${idx+1}</span>
-        <div class="ranking-name">
-          <div style="font-weight:bold; color:var(--text);">${r.name}</div>
-          <span class="ranking-zone">📍 ${r.zone || "Desconocida"}</span>
+    const rowsHtml = data.map((r, idx) => {
+      let medal = `#${idx+1}`;
+      let extraStyle = "";
+      if (idx === 0) {
+        medal = "🥇";
+        extraStyle = "border-color: rgba(255, 215, 0, 0.4); box-shadow: 0 0 12px rgba(255, 215, 0, 0.15); background: rgba(255, 215, 0, 0.03);";
+      } else if (idx === 1) {
+        medal = "🥈";
+        extraStyle = "border-color: rgba(192, 192, 192, 0.4); box-shadow: 0 0 12px rgba(192, 192, 192, 0.15); background: rgba(192, 192, 192, 0.03);";
+      } else if (idx === 2) {
+        medal = "🥉";
+        extraStyle = "border-color: rgba(205, 127, 50, 0.4); box-shadow: 0 0 12px rgba(205, 127, 50, 0.15); background: rgba(205, 127, 50, 0.03);";
+      }
+      
+      return `
+        <div class="ranking-row" style="${extraStyle}">
+          <span class="ranking-pos">${medal}</span>
+          <div class="ranking-name">
+            <div style="font-weight:bold; color:var(--text);">${r.name}</div>
+            <span class="ranking-zone">📍 ${r.zone || "Desconocida"}</span>
+          </div>
+          <span class="ranking-score">${r.score} pts</span>
         </div>
-        <span class="ranking-score">${r.score} pts</span>
-      </div>
-    `).join("");
+      `;
+    }).join("");
+
+    if (list) list.innerHTML = rowsHtml;
+    if (homeList) homeList.innerHTML = rowsHtml;
   } catch (e) {
     console.error(e);
-    list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Rankings no disponibles temporalmente.</div>`;
+    const errHtml = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Rankings no disponibles temporalmente.</div>`;
+    if (list) list.innerHTML = errHtml;
+    if (homeList) homeList.innerHTML = errHtml;
   }
 }
 
@@ -981,8 +1260,27 @@ function btn(id){ send({type:"btn",id}); }
 
 // ── Pantallas ────────────────────────────────────────────────────────────────
 function showScreen(id){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id)?.classList.add("active");
+  const screens = document.querySelectorAll(".screen");
+  const target = document.getElementById(id);
+  if (!target) return;
+  
+  screens.forEach(s => {
+    if (s.id !== id && s.classList.contains("active")) {
+      s.style.display = "flex";
+      s.classList.remove("active");
+      setTimeout(() => {
+        if (!s.classList.contains("active")) {
+          s.style.display = "none";
+          s.style.display = ""; // clear inline style
+        }
+      }, 400);
+    }
+  });
+  
+  target.style.display = "flex";
+  // Force reflow
+  target.offsetHeight;
+  target.classList.add("active");
 }
 
 // ── Manejo de mensajes ───────────────────────────────────────────────────────
@@ -1146,7 +1444,6 @@ document.getElementById("join-game-btn").addEventListener("click", async () => {
     alert("Error al unirse a la partida: " + e.message);
   }
 });
-
 function goBackToHome() {
   if (sock && sock.readyState === 1) {
     showScreen("scr-waiting");
@@ -1159,17 +1456,11 @@ function goBackToHome() {
   }
 }
 
-// Actualizar redirección en guardar y cancelar
 document.getElementById("profile-cancel").addEventListener("click", () => {
   goBackToHome();
 });
 
-// Modificamos el click del botón guardar para usar goBackToHome()
-const originalSaveBtn = document.getElementById("profile-save");
-const newSaveBtn = originalSaveBtn.cloneNode(true);
-originalSaveBtn.parentNode.replaceChild(newSaveBtn, originalSaveBtn);
-
-newSaveBtn.addEventListener("click", async () => {
+document.getElementById("profile-save").addEventListener("click", async () => {
   if (!supabaseClient) return;
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session || !session.user) return;
@@ -1215,7 +1506,6 @@ newSaveBtn.addEventListener("click", async () => {
     alert("Error al guardar perfil: " + e.message);
   }
 });
-
 // Eventos directos del menú de inicio
 document.getElementById("direct-google-login").addEventListener("click", async () => {
   if (!supabaseClient) {
