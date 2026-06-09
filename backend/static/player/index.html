@@ -7,7 +7,7 @@
   
   <!-- Tailwind CSS & Fonts -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;700&family=JetBrains+Mono:wght@500;700&family=Sora:wght@600;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   
   <!-- Supabase client -->
@@ -74,12 +74,13 @@
             "full": "9999px"
           },
           fontFamily: {
-            "headline-md": ["Sora", "sans-serif"],
-            "display-lg": ["Sora", "sans-serif"],
-            "body-lg": ["Geist", "sans-serif"],
-            "body-md": ["Geist", "sans-serif"],
-            "label-caps": ["JetBrains Mono", "monospace"],
-            "data-numeral": ["JetBrains Mono", "monospace"]
+            "sans": ["'Plus Jakarta Sans'", "sans-serif"],
+            "headline-md": ["'Plus Jakarta Sans'", "sans-serif"],
+            "display-lg": ["'Plus Jakarta Sans'", "sans-serif"],
+            "body-lg": ["'Plus Jakarta Sans'", "sans-serif"],
+            "body-md": ["'Plus Jakarta Sans'", "sans-serif"],
+            "label-caps": ["'Plus Jakarta Sans'", "sans-serif"],
+            "data-numeral": ["'Plus Jakarta Sans'", "sans-serif"]
           }
         }
       }
@@ -92,6 +93,7 @@
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
     
     .neon-glow { text-shadow: 0 0 10px theme('colors.primary-container'); }
@@ -471,18 +473,24 @@
 </main>
 
 <!-- Barra de Navegación Inferior Permanente (BottomNavBar) -->
-<nav id="bottom-nav" class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-4 pt-2 bg-surface-container-low/90 backdrop-blur-xl border-t border-primary/30 shadow-[0_-4px_20px_rgba(0,220,230,0.2)] z-50 rounded-t-[20px]">
-  <button id="nav-btn-home" class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim drop-shadow-[0_0_8px_rgba(0,220,230,0.8)] hover:text-secondary transition-all active:scale-90 duration-200 w-16 h-16 relative bg-surface-container rounded-full border border-primary/30 -mt-4">
-    <span class="material-symbols-outlined mb-1 text-2xl" style="font-variation-settings: 'FILL' 1;">grid_view</span>
-    <span class="font-label-caps text-[10px] tracking-widest text-primary font-bold">INICIO</span>
+<nav id="bottom-nav" class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-4 pt-2 bg-surface-container-low/90 backdrop-blur-xl border-t border-primary/30 shadow-[0_-4px_20px_rgba(0,220,230,0.2)] z-50 rounded-t-[20px] h-[72px]">
+  <button id="nav-btn-home" class="flex flex-col items-center justify-center flex-1 h-full py-1 text-primary dark:text-primary-fixed-dim transition-all duration-200">
+    <div class="icon-wrapper w-14 h-8 rounded-full bg-primary-container/15 text-primary-container border border-primary-container/20 flex items-center justify-center transition-colors shadow-[0_0_12px_rgba(0,243,255,0.15)]">
+      <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+    </div>
+    <span class="font-label-caps text-[10px] tracking-widest text-primary font-bold mt-1">INICIO</span>
   </button>
-  <button id="nav-btn-rankings" class="flex flex-col items-center justify-center text-outline dark:text-outline-variant hover:text-secondary transition-all active:scale-90 duration-200 w-16 h-16 relative">
-    <span class="material-symbols-outlined mb-1 text-2xl" style="font-variation-settings: 'FILL' 0;">leaderboard</span>
-    <span class="font-label-caps text-label-caps text-[10px]">RANKINGS</span>
+  <button id="nav-btn-rankings" class="flex flex-col items-center justify-center flex-1 h-full py-1 text-outline dark:text-outline-variant transition-all duration-200">
+    <div class="icon-wrapper w-14 h-8 rounded-full flex items-center justify-center transition-colors">
+      <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">leaderboard</span>
+    </div>
+    <span class="font-label-caps text-label-caps text-[10px] mt-1">RANKINGS</span>
   </button>
-  <button id="nav-btn-profile" class="flex flex-col items-center justify-center text-outline dark:text-outline-variant hover:text-secondary transition-all active:scale-90 duration-200 w-16 h-16 relative">
-    <span class="material-symbols-outlined mb-1 text-2xl" style="font-variation-settings: 'FILL' 0;">account_circle</span>
-    <span class="font-label-caps text-label-caps text-[10px]">PERFIL</span>
+  <button id="nav-btn-profile" class="flex flex-col items-center justify-center flex-1 h-full py-1 text-outline dark:text-outline-variant transition-all duration-200">
+    <div class="icon-wrapper w-14 h-8 rounded-full flex items-center justify-center transition-colors">
+      <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+    </div>
+    <span class="font-label-caps text-label-caps text-[10px] mt-1">PERFIL</span>
   </button>
 </nav>
 
@@ -1261,25 +1269,34 @@ function updateBottomNavActive(activeTabId) {
     const btn = document.getElementById(tab.btn);
     if (!btn) return;
     
+    const wrapper = btn.querySelector('.icon-wrapper');
     const iconSpan = btn.querySelector('.material-symbols-outlined');
     const labelSpan = btn.querySelector('.font-label-caps');
     
     if (tabKey === activeTabId) {
       // Activo
-      btn.className = "flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim drop-shadow-[0_0_8px_rgba(0,220,230,0.8)] hover:text-secondary transition-all active:scale-90 duration-200 w-16 h-16 relative bg-surface-container rounded-full border border-primary/30 -mt-4";
+      btn.className = "flex flex-col items-center justify-center flex-1 h-full py-1 text-primary dark:text-primary-fixed-dim transition-all duration-200";
+      if (wrapper) {
+        wrapper.className = "icon-wrapper w-14 h-8 rounded-full bg-primary-container/15 text-primary-container border border-primary-container/20 flex items-center justify-center transition-colors shadow-[0_0_12px_rgba(0,243,255,0.15)]";
+      }
       if (iconSpan) {
         iconSpan.style.setProperty("font-variation-settings", "'FILL' 1");
-        iconSpan.className = "material-symbols-outlined mb-1 text-3xl text-primary-fixed-dim";
       }
-      if (labelSpan) labelSpan.className = "font-label-caps text-[10px] tracking-widest text-primary font-bold";
+      if (labelSpan) {
+        labelSpan.className = "font-label-caps text-[10px] tracking-widest text-primary font-bold mt-1";
+      }
     } else {
       // Inactivo
-      btn.className = "flex flex-col items-center justify-center text-outline dark:text-outline-variant hover:text-secondary transition-all active:scale-90 duration-200 w-16 h-16 relative";
+      btn.className = "flex flex-col items-center justify-center flex-1 h-full py-1 text-outline dark:text-outline-variant transition-all duration-200";
+      if (wrapper) {
+        wrapper.className = "icon-wrapper w-14 h-8 rounded-full flex items-center justify-center transition-colors bg-transparent text-outline";
+      }
       if (iconSpan) {
         iconSpan.style.setProperty("font-variation-settings", "'FILL' 0");
-        iconSpan.className = "material-symbols-outlined mb-1 text-2xl text-outline";
       }
-      if (labelSpan) labelSpan.className = "font-label-caps text-label-caps text-[10px]";
+      if (labelSpan) {
+        labelSpan.className = "font-label-caps text-label-caps text-[10px] mt-1";
+      }
     }
   });
 }
