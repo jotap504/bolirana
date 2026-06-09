@@ -92,20 +92,27 @@ async def sync_scores_to_supabase(players: list, mode: str) -> None:
     # Mapear los scores de los jugadores
     payload = []
     for p in players:
-        name = p.name or f"Jugador {p.index + 1}"
-        is_guest = not hasattr(p, "google_id") or p.google_id is None
         google_id = getattr(p, "google_id", None)
-        avatar = getattr(p, "avatar", None)
+        is_guest = not hasattr(p, "google_id") or google_id is None
         
-        payload.append({
-            "arcade_id": arcade_id,
-            "player_name": name,
-            "score": p.score,
-            "zone": MACHINE_ZONE,
-            "is_guest": is_guest,
-            "google_id": google_id or None,
-            "avatar_url": avatar or None
-        })
+        # Sincronizar en rankings solo si es un jugador registrado
+        if not is_guest and google_id is not None:
+            name = p.name or f"Jugador {p.index + 1}"
+            avatar = getattr(p, "avatar", None)
+            
+            payload.append({
+                "arcade_id": arcade_id,
+                "player_name": name,
+                "score": p.score,
+                "zone": MACHINE_ZONE,
+                "is_guest": False,
+                "google_id": google_id,
+                "avatar_url": avatar or None
+            })
+
+    if not payload:
+        log.info("Sincronización Supabase omitida: no hay jugadores registrados en la partida.")
+        return
 
     def _send():
         try:

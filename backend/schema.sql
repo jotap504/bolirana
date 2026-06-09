@@ -167,6 +167,7 @@ begin
     cos(radians(m.longitude) - radians(machine_lon)) + 
     sin(radians(machine_lat)) * sin(radians(m.latitude))
   )) <= radius_km
+    and r.google_id is not null
   order by r.score desc
   limit 10;
 end;

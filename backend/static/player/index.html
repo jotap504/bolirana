@@ -1302,6 +1302,7 @@ async function loadRankings() {
             .from("rankings")
             .select("player_name, score, zone, avatar_url")
             .eq("arcade_id", arcadeId)
+            .not("google_id", "is", null) // Excluir invitados de los rankings históricos
             .order("score", { ascending: false })
             .limit(10);
           if (!error && scores && scores.length > 0) {
