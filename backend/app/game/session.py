@@ -138,8 +138,10 @@ class Session:
             if parts:
                 cloud_host = parts[0]
 
+        from app.config import get_config
         return {
             "state":            self.state,
+            "arcade_id":        get_config().get("arcade_id", "FUTSPO_01"),
             "players":          [p.to_dict() for p in self.players],
             "current_player":   self.current_player,
             "mode":             self.mode,

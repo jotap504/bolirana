@@ -1,6 +1,7 @@
 import json
 import logging
 import urllib.request
+import urllib.error
 import asyncio
 from ..config import get_config
 
@@ -91,6 +92,8 @@ async def sync_scores_to_supabase(players: list, mode: str) -> None:
 
     # Mapear los scores de los jugadores
     payload = []
+    max_score = max((p.score for p in players), default=0) if players else 0
+
     for p in players:
         google_id = getattr(p, "google_id", None)
         is_guest = not hasattr(p, "google_id") or google_id is None
@@ -99,6 +102,7 @@ async def sync_scores_to_supabase(players: list, mode: str) -> None:
         if not is_guest and google_id is not None:
             name = p.name or f"Jugador {p.index + 1}"
             avatar = getattr(p, "avatar", None)
+            is_winner = (p.score == max_score) if max_score > 0 else False
             
             payload.append({
                 "arcade_id": arcade_id,
@@ -107,7 +111,8 @@ async def sync_scores_to_supabase(players: list, mode: str) -> None:
                 "zone": MACHINE_ZONE,
                 "is_guest": False,
                 "google_id": google_id,
-                "avatar_url": avatar or None
+                "avatar_url": avatar or None,
+                "is_winner": is_winner
             })
 
     if not payload:
@@ -129,6 +134,9 @@ async def sync_scores_to_supabase(players: list, mode: str) -> None:
             )
             with urllib.request.urlopen(req, timeout=5) as response:
                 log.info("Partida sincronizada con Supabase. Status: %s", response.status)
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8")
+            log.error("Error HTTP al sincronizar partida con Supabase (%s): %s", e.code, err_body)
         except Exception as e:
             log.error("Error al sincronizar partida con Supabase: %s", e)
 

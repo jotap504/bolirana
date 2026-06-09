@@ -323,6 +323,11 @@
         </div>
         <div class="w-px h-8 bg-outline-variant/30"></div>
         <div>
+          <div id="home-stat-total" class="text-[20px] font-bold font-data-numeral text-primary-container">0</div>
+          <div class="text-[9px] text-outline tracking-wider uppercase font-label-caps mt-1">PUNTOS</div>
+        </div>
+        <div class="w-px h-8 bg-outline-variant/30"></div>
+        <div>
           <div id="home-stat-high" class="text-[20px] font-bold font-data-numeral text-tertiary-fixed">0</div>
           <div class="text-[9px] text-outline tracking-wider uppercase font-label-caps mt-1">RÉCORD</div>
         </div>
@@ -361,6 +366,11 @@
         <div>
           <div id="stat-games" class="text-[20px] font-bold font-data-numeral text-on-surface">0</div>
           <div class="text-[9px] text-outline tracking-wider font-label-caps mt-1">PARTIDAS</div>
+        </div>
+        <div class="w-px h-8 bg-outline-variant/30"></div>
+        <div>
+          <div id="stat-total" class="text-[20px] font-bold font-data-numeral text-primary-container">0</div>
+          <div class="text-[9px] text-outline tracking-wider font-label-caps mt-1">PUNTOS</div>
         </div>
         <div class="w-px h-8 bg-outline-variant/30"></div>
         <div>
@@ -780,14 +790,17 @@ async function initCloud() {
           
           // Actualizar estadísticas históricas
           const games = profile.games_played || 0;
+          const totalScore = profile.total_score || 0;
           const highScore = profile.high_score || 0;
           const streak = profile.best_streak || 0;
 
           document.getElementById("stat-games").textContent = games;
+          document.getElementById("stat-total").textContent = totalScore.toLocaleString();
           document.getElementById("stat-high").textContent = highScore;
           document.getElementById("stat-streak").textContent = streak;
 
           document.getElementById("home-stat-games").textContent = games;
+          document.getElementById("home-stat-total").textContent = totalScore.toLocaleString();
           document.getElementById("home-stat-high").textContent = highScore;
           document.getElementById("home-stat-streak").textContent = streak;
           
@@ -1258,11 +1271,8 @@ async function triggerGoogleLogin() {
 let activeRankTab = "machine";
 
 function formatScore(score) {
-  if (activeRankTab === "machine" || activeRankTab === "zonal") {
+  if (activeRankTab === "machine" || activeRankTab === "zonal" || activeRankTab === "global") {
     return Number(score).toLocaleString() + " Pts";
-  } else if (activeRankTab === "global") {
-    const val = Math.round(score);
-    return val + (val === 1 ? " Partida" : " Partidas");
   } else if (activeRankTab === "effectiveness") {
     return Math.round(score).toLocaleString() + " Prom.";
   }
@@ -1370,11 +1380,11 @@ async function loadRankings() {
       }
       const { data: profiles, error } = await supabaseClient
         .from("profiles")
-        .select("name, games_played, zone, avatar_url")
-        .order("games_played", { ascending: false })
+        .select("name, total_score, zone, avatar_url")
+        .order("total_score", { ascending: false })
         .limit(10);
       if (error) throw error;
-      data = profiles.map(p => ({ name: p.name, score: p.games_played, zone: p.zone, avatar_url: p.avatar_url }));
+      data = profiles.map(p => ({ name: p.name, score: p.total_score, zone: p.zone, avatar_url: p.avatar_url }));
     } else if (activeRankTab === "effectiveness") {
       if (!supabaseClient) {
         list.innerHTML = `<div class="text-center text-outline text-[12px] py-4">Nube no disponible en esta máquina.</div>`;
@@ -1711,17 +1721,20 @@ async function refreshUserProfileStats() {
       const profile = (profiles && profiles.length > 0) ? profiles[0] : null;
       if (profile) {
         const games = profile.games_played || 0;
+        const totalScore = profile.total_score || 0;
         const highScore = profile.high_score || 0;
         const streak = profile.best_streak || 0;
 
         document.getElementById("stat-games").textContent = games;
+        document.getElementById("stat-total").textContent = totalScore.toLocaleString();
         document.getElementById("stat-high").textContent = highScore;
         document.getElementById("stat-streak").textContent = streak;
 
         document.getElementById("home-stat-games").textContent = games;
+        document.getElementById("home-stat-total").textContent = totalScore.toLocaleString();
         document.getElementById("home-stat-high").textContent = highScore;
         document.getElementById("home-stat-streak").textContent = streak;
-        console.log("Estadísticas del jugador actualizadas:", { games, highScore, streak });
+        console.log("Estadísticas del jugador actualizadas:", { games, totalScore, highScore, streak });
       }
     }
   } catch (e) {

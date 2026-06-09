@@ -65,14 +65,38 @@ DEFAULT_CONFIG = {
 
 _runtime: dict = {}
 
+def apply_env_overrides(cfg: dict) -> None:
+    # Supabase config overrides from environment
+    if "SUPABASE_URL" in os.environ:
+        if "supabase" not in cfg:
+            cfg["supabase"] = {}
+        cfg["supabase"]["url"] = os.environ["SUPABASE_URL"]
+    if "SUPABASE_ANON_KEY" in os.environ:
+        if "supabase" not in cfg:
+            cfg["supabase"] = {}
+        cfg["supabase"]["anon_key"] = os.environ["SUPABASE_ANON_KEY"]
+    if "SUPABASE_ENABLED" in os.environ:
+        if "supabase" not in cfg:
+            cfg["supabase"] = {}
+        cfg["supabase"]["enabled"] = os.environ["SUPABASE_ENABLED"].lower() in ("true", "1", "yes")
+    if "CLOUD_MODE" in os.environ:
+        cfg["cloud_mode"] = os.environ["CLOUD_MODE"].lower() in ("true", "1", "yes")
+    if "MP_ACCESS_TOKEN" in os.environ:
+        if "mercadopago" not in cfg:
+            cfg["mercadopago"] = {}
+        cfg["mercadopago"]["access_token"] = os.environ["MP_ACCESS_TOKEN"]
+
 def get_config() -> dict:
-    return _runtime if _runtime else DEFAULT_CONFIG
+    cfg = _runtime if _runtime else DEFAULT_CONFIG
+    apply_env_overrides(cfg)
+    return cfg
 
 def update_config(patch: dict) -> None:
     import copy
     global _runtime
     base = copy.deepcopy(get_config())
     _deep_merge(base, patch)
+    apply_env_overrides(base)
     _runtime = base
 
 def _deep_merge(target: dict, source: dict) -> None:

@@ -215,7 +215,8 @@ document.addEventListener("DOMContentLoaded", () => {
             : window.location.host);
 
       const protocol = cloudHost ? "https" : "http";
-      const joinUrl = `${protocol}://${host}/player/index.html?arcade_id=FUTSPO_01&session_id=${sessionId}`;
+      const arcadeId = msg.arcade_id || "FUTSPO_01";
+      const joinUrl = `${protocol}://${host}/player/index.html?arcade_id=${arcadeId}&session_id=${sessionId}`;
       
       const connectQr = document.getElementById("connect-qr");
       if (connectQr) {

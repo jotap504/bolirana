@@ -38,6 +38,7 @@ alter table public.profiles
   add column if not exists jersey_pattern text default 'plain',
   add column if not exists games_played integer default 0,
   add column if not exists high_score integer default 0,
+  add column if not exists current_streak integer default 0,
   add column if not exists best_streak integer default 0,
   add column if not exists total_score integer default 0,
   add column if not exists updated_at timestamptz default now();
@@ -60,7 +61,6 @@ create policy if not exists "Auth users delete own avatars" on storage.objects
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
 
 
--- 2. Tabla de Rankings de Partidas (rankings)
 create table if not exists public.rankings (
   id bigint generated always as identity primary key,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -70,8 +70,13 @@ create table if not exists public.rankings (
   zone text,
   is_guest boolean default true,
   google_id uuid references auth.users(id) on delete set null,
-  avatar_url text
+  avatar_url text,
+  is_winner boolean default false
 );
+
+-- Asegurar columna is_winner si la tabla ya existía
+alter table public.rankings
+  add column if not exists is_winner boolean default false;
 
 -- Habilitar RLS para rankings
 alter table public.rankings enable row level security;
@@ -96,7 +101,9 @@ begin
     set 
       games_played = games_played + 1,
       high_score = greatest(high_score, new.score),
-      total_score = coalesce(total_score, 0) + new.score
+      total_score = coalesce(total_score, 0) + new.score,
+      current_streak = case when new.is_winner = true then coalesce(current_streak, 0) + 1 else 0 end,
+      best_streak = greatest(coalesce(best_streak, 0), case when new.is_winner = true then coalesce(current_streak, 0) + 1 else 0 end)
     where id = new.google_id;
   end if;
   return new;

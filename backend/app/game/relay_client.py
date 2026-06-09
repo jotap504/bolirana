@@ -62,8 +62,10 @@ class CloudRelayClient:
 
     async def _loop(self, session_id: str):
         import os
+        from app.config import get_config
+        arcade_id = get_config().get("arcade_id", "FUTSPO_01")
         cloud_url = os.getenv("CLOUD_WS_URL", "wss://bolirana.onrender.com/ws/machine_relay")
-        url = f"{cloud_url}?arcade_id={self.arcade_id}&session_id={session_id}"
+        url = f"{cloud_url}?arcade_id={arcade_id}&session_id={session_id}"
 
         if url.startswith("http://"):
             url = url.replace("http://", "ws://")
