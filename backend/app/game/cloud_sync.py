@@ -7,7 +7,7 @@ from ..config import get_config
 log = logging.getLogger(__name__)
 
 # Ubicación por defecto de la máquina recreativa
-MACHINE_ZONE = "Buenos Aires, AR"
+MACHINE_ZONE = "Buenos Aires"
 MACHINE_LAT = -34.6037
 MACHINE_LON = -58.3816
 
@@ -26,13 +26,13 @@ async def detect_machine_location() -> None:
                 data = json.loads(response.read().decode())
                 if data.get("status") == "success":
                     return {
-                        "zone": f"{data.get('city')}, {data.get('region')}",
+                        "zone": data.get("regionName", "Buenos Aires"),
                         "lat": float(data.get("lat", -34.6037)),
                         "lon": float(data.get("lon", -58.3816))
                     }
         except Exception as e:
             log.warning("No se pudo geolocalizar la máquina por IP: %s", e)
-        return {"zone": "Buenos Aires, AR", "lat": -34.6037, "lon": -58.3816}
+        return {"zone": "Buenos Aires", "lat": -34.6037, "lon": -58.3816}
 
     result = await asyncio.to_thread(_fetch)
     MACHINE_ZONE = result["zone"]

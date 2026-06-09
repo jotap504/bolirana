@@ -655,7 +655,7 @@ let arcadeId = urlParams.get("arcade_id") || "FUTSPO_01";
 let sessionId = urlParams.get("session_id") || "";
 let myName  = "";
 let myScore = 0;
-let myZone = "Buenos Aires, AR";
+let myZone = "Buenos Aires";
 let supabaseClient = null;
 let savedToCloud = false; // Indica si el último guardado fué a Supabase
 
@@ -704,9 +704,9 @@ async function initCloud() {
   try {
     const res = await fetch("https://ipapi.co/json/");
     const data = await res.json();
-    if (data && data.city && data.region_code) {
-      myZone = `${data.city}, ${data.region_code}`;
-      console.log("Zona detectada:", myZone);
+    if (data && data.region) {
+      myZone = data.region;
+      console.log("Provincia detectada:", myZone);
     }
   } catch (e) {
     console.warn("Error detectando IP:", e);
