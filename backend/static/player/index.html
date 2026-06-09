@@ -723,6 +723,10 @@ async function initCloud() {
           .select("*")
           .eq("id", user.id);
 
+        if (selectError) {
+          console.error("Error al obtener perfil en initCloud:", selectError);
+        }
+
         let profile = (profiles && profiles.length > 0) ? profiles[0] : null;
 
         // 2. Si no existe (primer inicio de sesión), crearlo con los datos básicos de Google
@@ -1440,7 +1444,14 @@ function showScreen(id){
     document.body.style.paddingBottom = "0px";
   } else {
     if (bottomNav) bottomNav.classList.remove("hidden");
-    if (floatingAvatar) floatingAvatar.classList.remove("hidden");
+    if (floatingAvatar) {
+      floatingAvatar.classList.remove("hidden");
+      // Asegurar que la imagen del avatar flotante esté actualizada
+      const img = document.getElementById("floating-avatar-img");
+      if (img && selectedAvatarUrl) {
+        img.src = selectedAvatarUrl;
+      }
+    }
     document.body.style.paddingBottom = "86px";
     
     // Asignar el tab activo en la barra inferior
