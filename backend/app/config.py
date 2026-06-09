@@ -1,7 +1,12 @@
 import os
 from pathlib import Path
 
-DB_PATH = Path(os.getenv("DATABASE_PATH", str(Path(__file__).parent.parent / "bolirana.db")))
+if os.getenv("RENDER") == "true":
+    default_db_path = "/tmp/bolirana.db"
+else:
+    default_db_path = str(Path(__file__).parent.parent / "bolirana.db")
+
+DB_PATH = Path(os.getenv("DATABASE_PATH", default_db_path))
 ASSETS_DIR = Path(__file__).parent.parent / "static" / "display" / "assets"
 
 DEFAULT_CONFIG = {
