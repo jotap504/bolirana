@@ -322,7 +322,8 @@ class GameEngine:
         winner = self.session.winner()
         await self._transition(GameState.GAME_OVER)
         await self._broadcast({"type": "game_over", "scores": scores,
-                               "winner_index": winner.index if winner else 0})
+                               "winner_index": winner.index if winner else 0,
+                               "session_id": self.session.session_id})
         
         # Sincronizar asíncronamente a Supabase Cloud
         try:

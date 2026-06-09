@@ -600,6 +600,17 @@
   <div id="scr-gameover" class="screen flex-col items-center justify-center p-6 gap-5 text-center">
     <div class="logo font-headline-md text-[28px] font-extrabold text-primary-container tracking-widest">FutSapo - FIN</div>
     <div id="go-winner" class="text-[16px] text-tertiary-fixed font-bold tracking-wide"></div>
+    
+    <!-- Tarjeta de Resultado Personal -->
+    <div id="go-personal-result-card" class="w-full bg-surface-container/90 backdrop-blur-md border border-primary-container/20 rounded-lg p-5 shadow-lg hidden">
+      <div class="text-[11px] font-label-caps text-outline tracking-wider mb-2 font-bold text-center">🏆 TU RESULTADO</div>
+      <div class="text-[14px] text-on-surface leading-relaxed text-center">
+        Partida <span id="go-session-id" class="font-bold text-primary-container">XXXX</span><br>
+        Hiciste <span id="go-personal-score" class="font-black text-tertiary-fixed text-[24px] font-headline-md neon-glow">0</span> puntos.<br>
+        Quedaste en la posición <span id="go-personal-pos" class="font-black text-secondary text-[24px] font-headline-md">0</span>.
+      </div>
+    </div>
+    
     <div class="w-full flex flex-col gap-2" id="go-scores"></div>
     
     <!-- Contenedor Revancha Móvil -->
@@ -1687,10 +1698,45 @@ function renderPlayersState(msg) {
   });
 }
 
+async function refreshUserProfileStats() {
+  if (!supabaseClient) return;
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session && session.user) {
+      const { data: profiles } = await supabaseClient
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id);
+      
+      const profile = (profiles && profiles.length > 0) ? profiles[0] : null;
+      if (profile) {
+        const games = profile.games_played || 0;
+        const highScore = profile.high_score || 0;
+        const streak = profile.best_streak || 0;
+
+        document.getElementById("stat-games").textContent = games;
+        document.getElementById("stat-high").textContent = highScore;
+        document.getElementById("stat-streak").textContent = streak;
+
+        document.getElementById("home-stat-games").textContent = games;
+        document.getElementById("home-stat-high").textContent = highScore;
+        document.getElementById("home-stat-streak").textContent = streak;
+        console.log("Estadísticas del jugador actualizadas:", { games, highScore, streak });
+      }
+    }
+  } catch (e) {
+    console.warn("Error refrescando estadísticas de usuario:", e);
+  }
+}
+
 function renderGameOver(msg) {
   showScreen("scr-gameover");
   const scores = msg.scores || [];
+  
+  // Mostrar ganador general
   document.getElementById("go-winner").textContent = scores[0] ? `🏆 GANADOR: ${scores[0].name}` : "";
+  
+  // Tabla de posiciones general
   const wrap = document.getElementById("go-scores");
   wrap.innerHTML = "";
   const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
@@ -1700,6 +1746,36 @@ function renderGameOver(msg) {
     d.innerHTML = `<span class="text-outline font-medium">${medals[i] || "🔹"} ${s.name}</span><span class="text-on-background font-bold font-data-numeral">${s.score}</span>`;
     wrap.appendChild(d);
   });
+
+  // Mostrar resultado personal del jugador
+  const personalCard = document.getElementById("go-personal-result-card");
+  if (personalCard && playerIndex !== -1 && scores.length > 0) {
+    const myEntryIdx = scores.findIndex(s => s.index === playerIndex);
+    if (myEntryIdx !== -1) {
+      const myScore = scores[myEntryIdx].score;
+      const myPos = myEntryIdx + 1;
+      const sessionIdStr = msg.session_id ? msg.session_id.toUpperCase() : (sessionId ? sessionId.toUpperCase() : "XXXX");
+      
+      document.getElementById("go-session-id").textContent = sessionIdStr;
+      document.getElementById("go-personal-score").textContent = myScore.toLocaleString();
+      document.getElementById("go-personal-pos").textContent = myPos + "°";
+      personalCard.classList.remove("hidden");
+      personalCard.style.display = "block";
+    } else {
+      personalCard.classList.add("hidden");
+      personalCard.style.display = "none";
+    }
+  } else if (personalCard) {
+    personalCard.classList.add("hidden");
+    personalCard.style.display = "none";
+  }
+
+  // Refrescar automáticamente rankings e historial en la nube después de 1.5s (tiempo para el sync del backend)
+  setTimeout(() => {
+    console.log("Refrescando rankings zonal/global y estadísticas personales...");
+    loadRankings();
+    refreshUserProfileStats();
+  }, 1500);
 }
 
 function logEvent(text) {
