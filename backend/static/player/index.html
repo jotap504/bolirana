@@ -1,647 +1,490 @@
 <!DOCTYPE html>
-<html lang="es">
+<html class="dark" lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>Bolirana Player</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <title>Bolirana FUTSPO</title>
+  
+  <!-- Tailwind CSS & Fonts -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;700&family=JetBrains+Mono:wght@500;700&family=Sora:wght@600;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  
+  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "secondary-container": "#fe00fe",
+            "tertiary-container": "#a4f200",
+            "primary": "#e3fdff",
+            "outline": "#849495",
+            "inverse-surface": "#e3e1e9",
+            "secondary": "#ffabf3",
+            "tertiary-fixed-dim": "#94db00",
+            "on-primary-fixed": "#002022",
+            "surface-bright": "#38393f",
+            "on-secondary-container": "#500050",
+            "on-tertiary-container": "#466b00",
+            "on-background": "#e3e1e9",
+            "primary-fixed-dim": "#00dce6",
+            "surface": "#121318",
+            "outline-variant": "#3a494b",
+            "on-tertiary": "#223600",
+            "on-tertiary-fixed": "#121f00",
+            "on-surface": "#e3e1e9",
+            "tertiary-fixed": "#a9f900",
+            "on-surface-variant": "#b9cacb",
+            "on-primary": "#00373a",
+            "primary-container": "#00f3ff",
+            "surface-container-highest": "#34343a",
+            "inverse-primary": "#00696f",
+            "on-primary-fixed-variant": "#004f53",
+            "surface-dim": "#121318",
+            "surface-container-lowest": "#0d0e13",
+            "secondary-fixed": "#ffd7f5",
+            "on-secondary-fixed": "#380038",
+            "surface-container-low": "#1a1b21",
+            "on-secondary": "#5b005b",
+            "on-error": "#690005",
+            "secondary-fixed-dim": "#ffabf3",
+            "surface-variant": "#34343a",
+            "background": "#121318",
+            "on-error-container": "#ffdad6",
+            "on-secondary-fixed-variant": "#810081",
+            "surface-tint": "#00dce6",
+            "tertiary": "#eeffce",
+            "on-tertiary-fixed-variant": "#334f00",
+            "inverse-on-surface": "#2f3036",
+            "primary-fixed": "#6ff6ff",
+            "on-primary-container": "#006b71",
+            "surface-container": "#1e1f25",
+            "error": "#ffb4ab",
+            "error-container": "#93000a",
+            "surface-container-high": "#292a2f"
+          },
+          borderRadius: {
+            "DEFAULT": "8px",
+            "lg": "12px",
+            "xl": "16px",
+            "full": "9999px"
+          },
+          fontFamily: {
+            "headline-md": ["Sora", "sans-serif"],
+            "display-lg": ["Sora", "sans-serif"],
+            "body-lg": ["Geist", "sans-serif"],
+            "body-md": ["Geist", "sans-serif"],
+            "label-caps": ["JetBrains Mono", "monospace"],
+            "data-numeral": ["JetBrains Mono", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    :root{
-      --bg-radial: radial-gradient(circle at center, #0e0e24 0%, #030309 100%);
-      --neon-primary: #ffe600;
-      --neon-secondary: #00f5ff;
-      --neon-accent: #ff0055;
-      --text-main: #eef2ff;
-      --text-muted: #798bb4;
-      --glass-bg: rgba(255, 255, 255, 0.03);
-      --glass-border: rgba(255, 255, 255, 0.07);
-      --glow-shadow: 0 0 15px rgba(0, 245, 255, 0.2);
-    }
+    .neon-glow { text-shadow: 0 0 10px theme('colors.primary-container'); }
+    .neon-border { box-shadow: 0 0 15px rgba(0, 243, 255, 0.25); border-color: theme('colors.primary-container'); }
     
-    html,body{
-      width:100%;
-      min-height:100vh;
-      background: var(--bg-radial);
-      color: var(--text-main);
-      font-family: 'Outfit', sans-serif;
-      overflow-x: hidden;
+    /* Animations */
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(1deg); }
     }
-    
-    h1,h2,h3{
-      font-family: 'Orbitron', sans-serif;
-      letter-spacing: 1px;
+    .podium-1 { animation: float 3s ease-in-out infinite; }
+    .podium-2 { animation: float 3.5s ease-in-out infinite 0.5s; }
+    .podium-3 { animation: float 4s ease-in-out infinite 1s; }
+    #jersey-svg { animation: float 4s ease-in-out infinite; }
+
+    /* Scanning border effect */
+    .scanning-border {
+      position: relative;
+      overflow: hidden;
+      border-radius: theme('borderRadius.DEFAULT');
+    }
+    .scanning-border::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border: 2px solid transparent;
+      background: linear-gradient(90deg, transparent, theme('colors.primary-container'), transparent) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: destination-out;
+      mask-composite: exclude;
+      animation: scan 2.5s linear infinite;
+    }
+    @keyframes scan {
+      100% { transform: translateX(100%); }
     }
 
-    /* Transición suave para las pantallas */
+    /* Transition classes for screens */
     .screen {
       display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 24px;
-      text-align: center;
-      gap: 20px;
       opacity: 0;
       transform: translateY(10px);
       transition: opacity 0.4s ease, transform 0.4s ease;
-      width: 100%;
     }
     .screen.active {
       display: flex;
       opacity: 1;
       transform: translateY(0);
     }
-
-    .logo {
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 900;
-      font-size: 32px;
-      color: var(--neon-primary);
-      text-shadow: 0 0 10px rgba(255, 230, 0, 0.5), 0 0 20px rgba(255, 230, 0, 0.2);
-      letter-spacing: 4px;
-      margin-bottom: 2px;
-    }
-    .subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    /* Inputs estilo Cyberpunk */
-    input[type=text], input[type=number] {
-      width: 100%;
-      max-width: 300px;
-      padding: 12px 16px;
-      font-size: 16px;
-      font-family: 'Outfit', sans-serif;
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid var(--glass-border);
-      border-radius: 8px;
-      color: var(--text-main);
-      text-align: left;
-      outline: none;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
-    }
-    input:focus {
-      border-color: var(--neon-secondary);
-      box-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
-    }
-
-    select {
-      width: 100%;
-      padding: 12px 16px;
-      font-size: 15px;
-      font-family: 'Outfit', sans-serif;
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid var(--glass-border);
-      border-radius: 8px;
-      color: var(--text-main);
-      outline: none;
-      cursor: pointer;
-      backdrop-filter: blur(10px);
-      transition: all 0.3s ease;
-    }
-    select:focus {
-      border-color: var(--neon-secondary);
-      box-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
-    }
-
-    /* Botones Premium con gradientes y glows */
-    .btn {
-      width: 100%;
-      max-width: 300px;
-      padding: 16px;
-      border: none;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 800;
-      font-family: 'Orbitron', sans-serif;
-      cursor: pointer;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
-    }
-    .btn::after {
-      content: '';
-      position: absolute;
-      top: 0; left: -100%;
-      width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-      transition: all 0.6s ease;
-    }
-    .btn:hover::after {
-      left: 100%;
-    }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, var(--neon-secondary) 0%, #0088ff 100%);
-      color: #000;
-      box-shadow: 0 4px 15px rgba(0, 245, 255, 0.3);
-    }
-    .btn-primary:active {
-      transform: scale(0.97);
-      box-shadow: 0 2px 8px rgba(0, 245, 255, 0.2);
-    }
-    
-    .btn-secondary {
-      background: linear-gradient(135deg, var(--neon-primary) 0%, #d4a000 100%);
-      color: #000;
-      box-shadow: 0 4px 15px rgba(255, 230, 0, 0.3);
-    }
-    
-    .btn-ghost {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--text-muted);
-      color: var(--text-muted);
-    }
-    .btn-ghost:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-main);
-      border-color: var(--text-main);
-    }
-
-    /* Tarjetas Glassmorphism */
-    .card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 24px;
-      width: 100%;
-      max-width: 350px;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-    }
-
-    .score-big {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 64px;
-      font-weight: 900;
-      color: var(--neon-primary);
-      text-shadow: 0 0 20px rgba(255, 230, 0, 0.6);
-      transition: transform 0.15s ease-out;
-    }
-    .score-big.bump {
-      transform: scale(1.25);
-    }
-    .score-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      letter-spacing: 3px;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-    
-    .player-tag {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--neon-secondary);
-      text-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
-      margin-bottom: 4px;
-    }
-    
-    .turn-badge {
-      padding: 8px 24px;
-      border-radius: 30px;
-      font-size: 11px;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 700;
-      letter-spacing: 2px;
-      background: rgba(0, 245, 255, 0.08);
-      border: 1px solid var(--neon-secondary);
-      color: var(--neon-secondary);
-      text-shadow: 0 0 5px var(--neon-secondary);
-      animation: pulse-glow 2s infinite alternate;
-    }
-    
-    @keyframes pulse-glow {
-      from { box-shadow: 0 0 5px rgba(0,245,255,0.2); }
-      to { box-shadow: 0 0 15px rgba(0,245,255,0.4); }
-    }
-
-    .other-scores {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      width: 100%;
-      max-width: 350px;
-    }
-    .other-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 18px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      border-radius: 10px;
-      font-size: 14px;
-    }
-    .other-name {
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-    .other-score {
-      color: var(--text-main);
-      font-weight: 700;
-      font-family: 'Orbitron', sans-serif;
-    }
-
-    .waiting-msg {
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-    .waiting-spinner {
-      font-size: 40px;
-      animation: spin 2s linear infinite;
-      filter: drop-shadow(0 0 10px var(--neon-secondary));
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    
-    .event-log {
-      width: 100%;
-      max-width: 350px;
-      font-size: 12px;
-      color: var(--text-muted);
-      text-align: left;
-      max-height: 80px;
-      overflow: hidden;
-      border-top: 1px solid var(--glass-border);
-      padding-top: 8px;
-    }
-    
-    /* Pestañas de Rankings */
-    .btn-tab {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      font-family: 'Orbitron', sans-serif;
-      text-transform: uppercase;
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
-    .btn-tab.active {
-      background: rgba(0, 245, 255, 0.12) !important;
-      border-color: var(--neon-secondary) !important;
-      color: var(--neon-secondary) !important;
-      box-shadow: 0 0 10px rgba(0, 245, 255, 0.2);
-    }
-    
-    .ranking-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--glass-border);
-      border-radius: 10px;
-      font-size: 13px;
-      width: 100%;
-      transition: transform 0.2s ease;
-    }
-    .ranking-row:hover {
-      transform: scale(1.02);
-      background: rgba(255,255,255,0.04);
-    }
-    
-    .ranking-pos {
-      font-weight: 900;
-      font-family: 'Orbitron', sans-serif;
-      min-width: 24px;
-      font-size: 14px;
-    }
-    /* Medallas de ranking */
-    .ranking-row:nth-child(1) .ranking-pos { color: #ffd700; text-shadow: 0 0 5px rgba(255,215,0,0.5); }
-    .ranking-row:nth-child(2) .ranking-pos { color: #c0c0c0; text-shadow: 0 0 5px rgba(192,192,192,0.5); }
-    .ranking-row:nth-child(3) .ranking-pos { color: #cd7f32; text-shadow: 0 0 5px rgba(205,127,50,0.5); }
-    .ranking-row:nth-child(n+4) .ranking-pos { color: var(--text-muted); }
-
-    .ranking-name {
-      flex: 1;
-      text-align: left;
-      padding-left: 10px;
-      color: var(--text-main);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .ranking-score {
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 900;
-      color: var(--neon-secondary);
-      text-shadow: 0 0 5px rgba(0, 245, 255, 0.3);
-    }
-    .ranking-zone {
-      font-size: 10px;
-      color: var(--text-muted);
-      display: block;
-      margin-top: 2px;
-      font-weight: 500;
-    }
-
-    /* Animación flotante de camiseta */
-    #jersey-svg {
-      animation: float 4s ease-in-out infinite;
-    }
-    @keyframes float {
-      0% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-6px) rotate(1deg); }
-      100% { transform: translateY(0px) rotate(0deg); }
-    }
   </style>
 </head>
-<body>
+<body class="bg-background text-on-background min-h-screen pb-[86px] flex flex-col font-body-md select-none">
 
-<!-- Sumarse a la partida -->
-<div id="scr-join-game" class="screen active">
-  <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; font-size: 36px; color:var(--neon); text-shadow: 0 0 12px var(--neon);">FUTSPO</div>
-  <div class="subtitle" style="margin-bottom:24px; letter-spacing: 2px;">PERFIL DE JUGADOR</div>
-  
-  <!-- Info si hay partida activa -->
-  <div id="active-game-card" class="card" style="margin-bottom:20px; padding:24px; width:100%; max-width:320px; border: 1px solid rgba(255, 255, 255, 0.1); display:none;">
-    <div style="font-size:16px; font-weight:bold; color:var(--neon2); margin-bottom:8px;">Partida Detectada</div>
-    <div style="font-size:12px; color:var(--muted); line-height:1.6; margin-bottom:16px;">Estás a punto de unirte a la sesión de juego en esta máquina.</div>
-    <button class="btn btn-primary" id="join-game-btn" style="background:var(--neon2); color:#000; font-weight:bold; font-size:16px; padding:18px; box-shadow:0 0 20px rgba(0, 255, 204, 0.4); width:100%; letter-spacing:2px; border-radius:12px; border:none; cursor:pointer;">
-      🎮 SUMARSE A LA PARTIDA
-    </button>
+<!-- Header Superior Permanente -->
+<header id="app-header" class="w-full top-0 sticky bg-surface/80 backdrop-blur-md border-b border-primary/20 shadow-[0_0_15px_rgba(0,220,230,0.1)] z-40 flex justify-between items-center px-4 py-3">
+  <div class="w-10 h-10 rounded-full overflow-hidden border border-primary/50 relative">
+    <img id="header-avatar-img" alt="Avatar" class="w-full h-full object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix"/>
   </div>
-
-  <!-- Tarjeta de sesión de usuario (si está logueado) -->
-  <div id="user-profile-summary" class="card" style="margin-bottom:20px; padding:20px; width:100%; max-width:320px; display:none; border: 1px solid rgba(0,255,204,0.2);">
-    <div style="font-size:12px; color:var(--muted); margin-bottom:6px;">SESIÓN INICIADA</div>
-    <div id="profile-summary-name" style="font-size:18px; font-weight:bold; color:var(--neon); margin-bottom:12px;">Jugador</div>
-    <button class="btn btn-primary" id="direct-edit-profile-btn" style="background:var(--neon); color:#000; font-weight:bold; font-size:14px; padding:12px; width:100%; border-radius:8px; border:none; cursor:pointer; letter-spacing:1px;">
-      👤 EDITAR MI PERFIL
-    </button>
-    <button class="btn btn-ghost" id="direct-logout-btn" style="margin-top:8px; font-size:12px; padding:8px; width:100%; border-color:#ff5555; color:#ff5555; font-weight:bold; border-radius:6px; cursor:pointer; background:transparent;">CERRAR SESIÓN</button>
-  </div>
-
-  <!-- Botón de Login si no está logueado -->
-  <div id="login-container" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom: 20px;">
-    <button class="btn" id="direct-google-login" style="background:#ffffff; color:#111122; display:flex; align-items:center; justify-content:center; gap:10px; font-weight:bold; font-size:14px; width:100%; max-width:280px; box-shadow: 0 4px 15px rgba(255,255,255,0.15); border-radius:8px; border:none; padding:14px; cursor:pointer;">
-      <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1-.8 1.9-1.6 2.5v2.1h2.6c1.5-1.4 2.8-3.5 2.8-6.2z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.6-2.1c-.7.5-1.6.8-2.6.8-2 0-3.7-1.4-4.3-3.2H2.8v2.2C4.3 16.5 6.5 18 9 18z"/><path fill="#FBBC05" d="M4.7 11.3c-.2-.5-.3-1-.3-1.6s.1-1.1.3-1.6V5.9H2.8C2.2 7.1 2 8.5 2 10s.2 2.9.8 4.1l1.9-2.8z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.4 3.4 1.3l2.6-2.5C13.5 1.1 11.4 0 9 0 6.5 0 4.3 1.5 2.8 3.7l1.9 2.8c.6-1.8 2.3-3.2 4.3-3.2z"/></svg>
-      CREAR / EDITAR PERFIL CON GOOGLE
-    </button>
-  </div>
-
-  <!-- Tarjeta de Estadísticas del Jugador (Home Screen) -->
-  <div class="card" id="home-player-stats-card" style="margin-top:10px; margin-bottom:12px; padding:16px; width:100%; max-width:340px; display:none;">
-    <div style="font-size:12px; color:var(--neon); font-weight:bold; letter-spacing:1px; margin-bottom:8px; text-align:center;">📊 MIS ESTADÍSTICAS HISTÓRICAS</div>
-    <div style="display:flex; justify-content:space-around; text-align:center;">
-      <div>
-        <div id="home-stat-games" style="font-size:20px; font-weight:bold; color:var(--text);">0</div>
-        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">PARTIDAS</div>
-      </div>
-      <div>
-        <div id="home-stat-high" style="font-size:20px; font-weight:bold; color:var(--neon2);">0</div>
-        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">RÉCORD</div>
-      </div>
-      <div>
-        <div id="home-stat-streak" style="font-size:20px; font-weight:bold; color:var(--neon);">0</div>
-        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">RACHA</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Rankings en Home Screen -->
-  <div id="home-rankings-container" style="display:none; width:100%; max-width:340px; flex-direction:column; align-items:center;">
-    <div class="logo" style="font-size:14px; color:var(--neon); letter-spacing: 2px; margin-top:10px; margin-bottom:10px; text-shadow:0 0 8px rgba(240,224,0,0.4);">🏆 LEAGUE RANKINGS</div>
-    
-    <div style="display:flex; gap:6px; width:100%; margin-bottom:12px;">
-      <button class="btn btn-tab active" data-home-rank-tab="machine" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:rgba(255,255,255,0.06); border:1px solid var(--muted); border-radius:8px; color:var(--text); cursor:pointer;">MÁQUINA</button>
-      <button class="btn btn-tab" data-home-rank-tab="zonal" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:transparent; border:1px solid transparent; border-radius:8px; color:var(--muted); cursor:pointer;">MI ZONA</button>
-      <button class="btn btn-tab" data-home-rank-tab="global" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:transparent; border:1px solid transparent; border-radius:8px; color:var(--muted); cursor:pointer;">MUNDIAL</button>
-    </div>
-    
-    <div id="home-ranking-list" style="width:100%; display:flex; flex-direction:column; gap:8px;">
-      <!-- Se rellena con JS -->
-    </div>
-  </div>
-</div>
-
-<!-- Conectando -->
-<div id="scr-connecting" class="screen">
-  <div class="waiting-spinner">🎱</div>
-  <div class="logo">BOLIRANA</div>
-  <div class="subtitle">conectando...</div>
-</div>
-
-<!-- Esperando partida / Rankings -->
-<div id="scr-waiting" class="screen" style="justify-content:flex-start; padding-top:40px; overflow-y:auto;">
-  <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; font-size: 24px; color:var(--neon2); text-shadow: 0 0 10px var(--neon2);">FUTSPO</div>
-  <div class="turn-badge" id="waiting-status-badge" style="margin-bottom:12px;">CONECTADO</div>
-  
-  <div class="card" style="margin-bottom:12px; padding:16px; width:100%; max-width:340px;">
-    <div class="waiting-msg" id="waiting-msg-text" style="font-size:13px;">La máquina está en configuración.<br>Aguardá a que inicie la partida.</div>
-    <button class="btn btn-ghost" id="edit-profile-btn" style="margin-top:10px; font-size:11px; padding:8px; display:none; width:100%; border-color:var(--neon2); color:var(--neon2); font-weight:bold; letter-spacing:1px; border-radius:6px; background:transparent; cursor:pointer;">⚙️ CONFIGURAR MI PERFIL</button>
-  </div>
-
-  <!-- Tarjeta de Estadísticas del Jugador (Google Auth) -->
-  <div class="card" id="player-stats-card" style="margin-bottom:12px; padding:16px; width:100%; max-width:340px; display:none;">
-    <div style="font-size:12px; color:var(--neon); font-weight:bold; letter-spacing:1px; margin-bottom:8px; text-align:center;">📊 MIS ESTADÍSTICAS HISTÓRICAS</div>
-    <div style="display:flex; justify-content:space-around; text-align:center;">
-      <div>
-        <div id="stat-games" style="font-size:20px; font-weight:bold; color:var(--text);">0</div>
-        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">PARTIDAS</div>
-      </div>
-      <div>
-        <div id="stat-high" style="font-size:20px; font-weight:bold; color:var(--neon2);">0</div>
-        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">RÉCORD</div>
-      </div>
-      <div>
-        <div id="stat-streak" style="font-size:20px; font-weight:bold; color:var(--neon);">0</div>
-        <div style="font-size:9px; color:var(--muted); letter-spacing:1px;">RACHA</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="logo" style="font-size:14px; color:var(--neon); letter-spacing: 2px; margin-top:10px; margin-bottom:10px; text-shadow:0 0 8px rgba(240,224,0,0.4);">🏆 LEAGUE RANKINGS</div>
-  
-  <!-- Selector de Pestañas de Rankings -->
-  <div style="display:flex; gap:6px; width:100%; max-width:340px; margin-bottom:12px;">
-    <button class="btn btn-tab active" data-rank-tab="machine" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:rgba(255,255,255,0.06); border:1px solid var(--muted); border-radius:8px; color:var(--text); cursor:pointer;">MÁQUINA</button>
-    <button class="btn btn-tab" data-rank-tab="zonal" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:transparent; border:1px solid transparent; border-radius:8px; color:var(--muted); cursor:pointer;">MI ZONA</button>
-    <button class="btn btn-tab" data-rank-tab="global" style="flex:1; padding:10px; font-size:11px; font-weight:bold; background:transparent; border:1px solid transparent; border-radius:8px; color:var(--muted); cursor:pointer;">MUNDIAL</button>
-  </div>
-  
-  <!-- Contenedor de la Tabla de Rankings -->
-  <div id="ranking-list" style="width:100%; max-width:340px; display:flex; flex-direction:column; gap:8px;">
-    <!-- Se rellena dinámicamente con JS -->
-  </div>
-</div>
-
-<!-- Editar Perfil -->
-<div id="scr-edit-profile" class="screen" style="justify-content:flex-start; padding-top:24px; overflow-y:auto; padding-bottom: 40px;">
-  <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; font-size: 24px; color:var(--neon2);">MI PERFIL</div>
-  <div class="subtitle" style="margin-bottom:16px;">PERSONALIZÁ TU AVATAR Y DATOS</div>
-  
-  <div class="card" style="width:100%; max-width:340px; display:flex; flex-direction:column; gap:12px; padding:20px; margin-bottom: 16px;">
-    <!-- Vista previa de la Remera SVG -->
-    <div style="display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.3); border-radius:10px; padding:16px; position:relative; border: 1px solid rgba(255,255,255,0.08);">
-      <svg id="jersey-svg" width="120" height="120" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));">
-        <defs>
-          <clipPath id="body-clip">
-            <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" />
-          </clipPath>
-        </defs>
-        <!-- Mangas -->
-        <path d="M 12 30 L 27 15 L 35 23 L 23 43 Z" fill="#ffffff" id="jersey-svg-sleeve-left" stroke="#07070f" stroke-width="1.5" />
-        <path d="M 88 30 L 73 15 L 65 23 L 77 43 Z" fill="#ffffff" id="jersey-svg-sleeve-right" stroke="#07070f" stroke-width="1.5" />
-        <!-- Puños de las mangas (Secundario) -->
-        <path d="M 12 30 L 15 27 L 19 32 L 16 35 Z" fill="#00ffcc" id="jersey-svg-cuff-left" />
-        <path d="M 88 30 L 85 27 L 81 32 L 84 35 Z" fill="#00ffcc" id="jersey-svg-cuff-right" />
-        <!-- Cuerpo -->
-        <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" fill="#ffffff" id="jersey-svg-body" stroke="#07070f" stroke-width="1.5" />
-        
-        <!-- Patrón: Rayas Verticales (e.g. Racing, Juventus) -->
-        <g id="jersey-pattern-vertical" clip-path="url(#body-clip)" style="display:none;">
-          <rect x="34" y="18" width="8" height="62" fill="#00ffcc" id="jersey-svg-v1" />
-          <rect x="58" y="18" width="8" height="62" fill="#00ffcc" id="jersey-svg-v2" />
-        </g>
-        
-        <!-- Patrón: Franja Horizontal (e.g. Boca Juniors) -->
-        <g id="jersey-pattern-horizontal" clip-path="url(#body-clip)" style="display:none;">
-          <rect x="27" y="42" width="46" height="16" fill="#00ffcc" id="jersey-svg-h" />
-        </g>
-        
-        <!-- Patrón: Banda Diagonal (e.g. River Plate) -->
-        <g id="jersey-pattern-diagonal" clip-path="url(#body-clip)" style="display:none;">
-          <polygon points="27,18 38,18 73,66 73,78" fill="#00ffcc" id="jersey-svg-d" />
-        </g>
-        
-        <!-- Cuello chomba (Secundario) -->
-        <polygon points="37,18 50,32 63,18" fill="#00ffcc" id="jersey-svg-collar" stroke="#07070f" stroke-width="1" />
-        <!-- Detalle central del cuello -->
-        <line x1="50" y1="18" x2="50" y2="28" stroke="#07070f" stroke-width="1.5" />
-      </svg>
-    </div>
-
-    <!-- Campos del Formulario -->
-    <div style="text-align:left; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom:12px; margin-bottom:4px;">
-      <label style="font-size:11px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:6px; font-weight:bold;">FOTO DE PERFIL / AVATAR</label>
-      
-      <!-- Preview de la foto/avatar actual -->
-      <div style="display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
-        <img id="profile-avatar-preview" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Cat" style="width:70px; height:70px; border-radius:50%; border:3px solid var(--neon2); object-fit:cover; background:#07070f; display:block;">
-      </div>
-      
-      <!-- Subir Foto Custom -->
-      <div style="text-align:center; margin-bottom:12px;">
-        <label for="avatar-file-input" style="display:inline-block; padding:8px 14px; background:rgba(255,255,255,0.08); border:1px solid var(--muted); border-radius:6px; font-size:11px; color:var(--text); cursor:pointer; font-weight:bold; letter-spacing:1px;">
-          📷 SUBIR FOTO PROPIA
-        </label>
-        <input type="file" id="avatar-file-input" accept="image/*" style="display:none;">
-        <div id="file-name-label" style="font-size:10px; color:var(--muted); margin-top:4px;"></div>
-      </div>
-      
-      <!-- Grid de 10 Avatares -->
-      <label style="font-size:10px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:6px; font-weight:bold;">O SELECCIONÁ UN AVATAR DE LA LISTA</label>
-      <div id="predefined-avatars-grid" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:6px; margin-bottom:6px;">
-        <!-- Rellenado con JS -->
-      </div>
-    </div>
-
-    <div style="text-align:left;">
-      <label style="font-size:11px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">APODO A MOSTRAR</label>
-      <input type="text" id="profile-name" placeholder="Tu Apodo" maxlength="12" style="font-size:15px; padding:10px; border-radius:6px; width:100%; max-width:none; text-align:left; background:rgba(255,255,255,0.08); border:2px solid var(--muted); color:var(--text); outline:none;">
-    </div>
-
-    <div style="text-align:left;">
-      <label style="font-size:11px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">EDAD</label>
-      <input type="number" id="profile-age" placeholder="Edad" min="1" max="120" style="font-size:15px; padding:10px; border-radius:6px; width:100%; background:rgba(255,255,255,0.08); border:2px solid var(--muted); color:var(--text); outline:none;">
-    </div>
-
-    <div style="text-align:left;">
-      <label style="font-size:11px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">SELECCIONÁ TU CLUB</label>
-      <select id="profile-club" style="font-size:14px; padding:10px; border-radius:6px; width:100%; background:#111122; border:2px solid var(--muted); color:var(--text); outline:none; cursor:pointer; height:45px;">
-        <!-- Se rellena con JS -->
-      </select>
-    </div>
-
-    <div style="display:flex; gap:10px;">
-      <div style="flex:1; text-align:left;">
-        <label style="font-size:10px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">COLOR DE REMERA</label>
-        <input type="color" id="color-primary" value="#ffffff" style="width:100%; height:42px; border:2px solid var(--muted); border-radius:6px; background:none; cursor:pointer; padding:0; outline:none;">
-      </div>
-      <div style="flex:1; text-align:left;">
-        <label style="font-size:10px; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:4px; font-weight:bold;">DETALLES / CUELLO</label>
-        <input type="color" id="color-secondary" value="#00ffcc" style="width:100%; height:42px; border:2px solid var(--muted); border-radius:6px; background:none; cursor:pointer; padding:0; outline:none;">
-      </div>
-    </div>
-  </div>
-
-  <div style="display:flex; gap:10px; width:100%; max-width:340px;">
-    <button class="btn btn-ghost" id="profile-cancel" style="flex:1; border-color:var(--muted); color:var(--muted); border-radius:8px; cursor:pointer; padding:12px;">ATRÁS</button>
-    <button class="btn btn-primary" id="profile-save" style="flex:2; background:var(--neon2); color:#000; box-shadow: 0 0 15px rgba(0,255,204,0.3); border-radius:8px; cursor:pointer; padding:12px;">GUARDAR CAMBIOS</button>
-  </div>
-</div>
-
-<!-- Ingresar nombre / Login -->
-<div id="scr-enter-name" class="screen">
-  <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; font-size: 32px; color:var(--neon2); text-shadow: 0 0 12px var(--neon2);">FUTSPO</div>
-  <div class="subtitle" style="margin-bottom:16px;">ÚNETE A LA PARTIDA</div>
-  
-  <!-- Botón Google Login -->
-  <button class="btn" id="google-login" style="background:#ffffff; color:#111122; display:flex; align-items:center; justify-content:center; gap:10px; font-weight:bold; font-size:14px; width:100%; max-width:280px; box-shadow: 0 4px 15px rgba(255,255,255,0.15);">
-    <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1-.8 1.9-1.6 2.5v2.1h2.6c1.5-1.4 2.8-3.5 2.8-6.2z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.6-2.1c-.7.5-1.6.8-2.6.8-2 0-3.7-1.4-4.3-3.2H2.8v2.2C4.3 16.5 6.5 18 9 18z"/><path fill="#FBBC05" d="M4.7 11.3c-.2-.5-.3-1-.3-1.6s.1-1.1.3-1.6V5.9H2.8C2.2 7.1 2 8.5 2 10s.2 2.9.8 4.1l1.9-2.8z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.4 3.4 1.3l2.6-2.5C13.5 1.1 11.4 0 9 0 6.5 0 4.3 1.5 2.8 3.7l1.9 2.8c.6-1.8 2.3-3.2 4.3-3.2z"/></svg>
-    ACCEDER CON GOOGLE
+  <h1 class="font-display-lg text-[20px] font-extrabold tracking-widest text-primary-container">FUTSPO BOLIRANA</h1>
+  <button id="header-location-btn" class="active:scale-95 duration-150 hover:text-primary-container transition-colors text-primary flex items-center gap-1">
+    <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">location_on</span>
+    <span id="header-location-text" class="text-[10px] font-label-caps hidden sm:inline text-primary-container">Local</span>
   </button>
-  
-  <div id="google-separator" style="font-size:12px; color:var(--muted); margin: 12px 0; letter-spacing: 2px;">— O INGRESA COMO INVITADO —</div>
-  
-  <div style="font-size:11px; color:var(--muted); margin-bottom: 6px; letter-spacing: 2px;">SELECCIONÁ TU AVATAR</div>
-  <div id="avatar-selector-grid" style="display:flex; gap:10px; justify-content:center; margin-bottom:14px; width:100%; max-width:280px;">
-    <img class="avatar-opt" data-avatar-seed="Cat" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Cat" style="width:50px; height:50px; border-radius:10px; border:2px solid var(--neon2); cursor:pointer; background:#07070f;" onclick="selectAvatar('Cat')">
-    <img class="avatar-opt" data-avatar-seed="Dog" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Dog" style="width:50px; height:50px; border-radius:10px; border:2px solid transparent; opacity:0.6; cursor:pointer; background:#07070f;" onclick="selectAvatar('Dog')">
-    <img class="avatar-opt" data-avatar-seed="Frog" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Frog" style="width:50px; height:50px; border-radius:10px; border:2px solid transparent; opacity:0.6; cursor:pointer; background:#07070f;" onclick="selectAvatar('Frog')">
-    <img class="avatar-opt" data-avatar-seed="Robot" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Robot" style="width:50px; height:50px; border-radius:10px; border:2px solid transparent; opacity:0.6; cursor:pointer; background:#07070f;" onclick="selectAvatar('Robot')">
+</header>
+
+<main class="w-full max-w-lg mx-auto flex-1 flex flex-col justify-center">
+
+  <!-- PANTALLA 1: Sumarse a la partida (Home Screen) -->
+  <div id="scr-join-game" class="screen active flex-col items-center justify-center p-6 gap-6 text-center">
+    <div class="logo font-headline-md text-[36px] font-extrabold text-primary-container tracking-widest uppercase">FUTSPO</div>
+    <div class="font-label-caps text-[11px] text-outline tracking-wider -mt-4">PERFIL DE JUGADOR</div>
+    
+    <!-- Info si hay partida activa -->
+    <div id="active-game-card" class="w-full bg-surface-container border border-primary/25 rounded-lg p-5 shadow-lg hidden">
+      <div class="text-[16px] font-bold text-primary-container mb-2">PARTIDA DETECTADA</div>
+      <div class="text-[12px] text-outline mb-4 leading-relaxed">Estás a punto de unirte a la sesión de juego activa en esta máquina.</div>
+      <button class="w-full py-4 bg-primary-container hover:bg-primary-container/80 text-background font-bold text-[14px] font-headline-md rounded-lg active:scale-[0.98] transition-transform shadow-[0_0_20px_rgba(0,243,255,0.4)]" id="join-game-btn">
+        🎮 SUMARSE A LA PARTIDA
+      </button>
+    </div>
+
+    <!-- Tarjeta de sesión de usuario (si está logueado) -->
+    <div id="user-profile-summary" class="w-full bg-surface-container border border-secondary/20 rounded-lg p-5 hidden">
+      <div class="text-[11px] font-label-caps text-outline mb-2">SESIÓN INICIADA</div>
+      <div id="profile-summary-name" class="text-[18px] font-bold text-primary mb-3">Jugador</div>
+      <button class="w-full py-3 bg-secondary-container hover:bg-secondary-container/80 text-background font-bold text-[13px] font-headline-md rounded-lg active:scale-[0.98] transition-transform shadow-[0_0_15px_rgba(254,0,254,0.3)] mb-2" id="direct-edit-profile-btn">
+        👤 EDITAR MI PERFIL
+      </button>
+      <button class="w-full py-2 border border-error/50 hover:bg-error/10 text-error font-bold text-[11px] rounded-lg cursor-pointer transition-colors" id="direct-logout-btn">
+        CERRAR SESIÓN
+      </button>
+    </div>
+
+    <!-- Botón de Login si no está logueado -->
+    <div id="login-container" class="w-full flex flex-col items-center gap-3">
+      <button class="w-full max-w-[280px] py-3.5 bg-white text-surface font-bold text-[13px] rounded-lg flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(255,255,255,0.15)] active:scale-[0.98] transition-transform" id="direct-google-login">
+        <svg width="18" height="18" viewBox="0 0 18 18" class="flex-shrink-0"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1-.8 1.9-1.6 2.5v2.1h2.6c1.5-1.4 2.8-3.5 2.8-6.2z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.6-2.1c-.7.5-1.6.8-2.6.8-2 0-3.7-1.4-4.3-3.2H2.8v2.2C4.3 16.5 6.5 18 9 18z"/><path fill="#FBBC05" d="M4.7 11.3c-.2-.5-.3-1-.3-1.6s.1-1.1.3-1.6V5.9H2.8C2.2 7.1 2 8.5 2 10s.2 2.9.8 4.1l1.9-2.8z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.4 3.4 1.3l2.6-2.5C13.5 1.1 11.4 0 9 0 6.5 0 4.3 1.5 2.8 3.7l1.9 2.8c.6-1.8 2.3-3.2 4.3-3.2z"/></svg>
+        CREAR / EDITAR PERFIL CON GOOGLE
+      </button>
+    </div>
+
+    <!-- Tarjeta de Estadísticas del Jugador (Home Screen) -->
+    <div class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-5 hidden" id="home-player-stats-card">
+      <div class="text-[12px] text-primary-container font-bold font-label-caps tracking-widest mb-4">📊 MIS ESTADÍSTICAS HISTÓRICAS</div>
+      <div class="flex justify-around items-center">
+        <div>
+          <div id="home-stat-games" class="text-[20px] font-bold font-data-numeral text-on-surface">0</div>
+          <div class="text-[9px] text-outline tracking-wider uppercase font-label-caps mt-1">PARTIDAS</div>
+        </div>
+        <div class="w-px h-8 bg-outline-variant/30"></div>
+        <div>
+          <div id="home-stat-high" class="text-[20px] font-bold font-data-numeral text-tertiary-fixed">0</div>
+          <div class="text-[9px] text-outline tracking-wider uppercase font-label-caps mt-1">RÉCORD</div>
+        </div>
+        <div class="w-px h-8 bg-outline-variant/30"></div>
+        <div>
+          <div id="home-stat-streak" class="text-[20px] font-bold font-data-numeral text-secondary">0</div>
+          <div class="text-[9px] text-outline tracking-wider uppercase font-label-caps mt-1">RACHA</div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <input type="text" id="name-input" placeholder="Tu Apodo" maxlength="12" autocomplete="off" autocorrect="off" style="margin-bottom:8px;">
-  <button class="btn btn-ghost" id="name-ok" style="border-color:var(--neon2); color:var(--neon2); width:100%; max-width:280px;">JUGAR COMO INVITADO ▶</button>
-</div>
-
-<!-- En juego -->
-<div id="scr-playing" class="screen">
-  <div class="player-tag" id="my-name">Jugador</div>
-  <div class="card">
-    <div class="score-label">MI PUNTAJE</div>
-    <div class="score-big" id="my-score">0</div>
-    <div id="my-balls" style="font-size:18px;margin-top:8px">⚫⚫⚫⚫⚫</div>
+  <!-- PANTALLA 2: Conectando -->
+  <div id="scr-connecting" class="screen flex-col items-center justify-center p-6 gap-6 text-center">
+    <div class="text-[40px] animate-spin drop-shadow-[0_0_10px_var(--primary-container)]">🎱</div>
+    <div class="logo font-headline-md text-[32px] font-extrabold text-primary-container tracking-widest">BOLIRANA</div>
+    <div class="text-[12px] font-label-caps text-outline">CONECTANDO A LA MÁQUINA...</div>
   </div>
-  <div id="my-turn-badge" class="turn-badge" style="display:none">▶ TU TURNO</div>
-  <div class="other-scores" id="other-scores"></div>
-  <div class="event-log" id="event-log"></div>
-</div>
 
-<!-- Game Over -->
-<div id="scr-gameover" class="screen">
-  <div class="logo" style="font-family:'Orbitron', sans-serif; font-weight:900; color:var(--neon2);">FIN DE PARTIDA</div>
-  <div id="go-winner" style="font-size:18px;color:var(--neon);margin-bottom:12px; font-weight:bold; text-shadow:0 0 10px rgba(240,224,0,0.3);"></div>
-  <div class="other-scores" id="go-scores" style="margin-bottom:16px;"></div>
-  
-  <!-- Contenedor Revancha Móvil -->
-  <div id="go-rematch-container" style="display:none; width:100%; max-width:340px; margin-bottom:12px;">
-    <button class="btn btn-primary" id="go-rematch" style="background:var(--neon); color:#000; box-shadow:0 0 20px var(--neon); width:100%; font-weight:900; font-size:16px; border:2px solid #fff; border-radius:12px; padding:18px; letter-spacing:2px;">
-      🔁 ACEPTAR REVANCHA
+  <!-- PANTALLA 3: Esperando partida en el Lobby -->
+  <div id="scr-waiting" class="screen flex-col items-center justify-start p-6 gap-5 overflow-y-auto">
+    <div class="logo font-headline-md text-[24px] text-primary-container font-extrabold tracking-widest">BOLIRANA</div>
+    <div class="px-5 py-1.5 rounded-full border border-primary-container text-primary-container bg-primary-container/10 font-bold font-label-caps text-[11px] shadow-[0_0_10px_rgba(0,243,255,0.2)] animate-pulse" id="waiting-status-badge">CONECTADO</div>
+    
+    <div class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-5">
+      <div class="text-[13px] text-outline leading-relaxed" id="waiting-msg-text">La máquina está en configuración.<br>Aguardá a que inicie la partida.</div>
+      <button class="w-full py-2.5 mt-4 border border-primary-container text-primary-container hover:bg-primary-container/10 font-bold text-[11px] rounded-lg tracking-wider hidden" id="edit-profile-btn">⚙️ CONFIGURAR MI PERFIL</button>
+    </div>
+
+    <!-- Tarjeta de Estadísticas del Jugador (Google Auth) -->
+    <div class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-5 hidden" id="player-stats-card">
+      <div class="text-[12px] text-primary-container font-bold font-label-caps tracking-widest mb-4">📊 MIS ESTADÍSTICAS HISTÓRICAS</div>
+      <div class="flex justify-around items-center">
+        <div>
+          <div id="stat-games" class="text-[20px] font-bold font-data-numeral text-on-surface">0</div>
+          <div class="text-[9px] text-outline tracking-wider font-label-caps mt-1">PARTIDAS</div>
+        </div>
+        <div class="w-px h-8 bg-outline-variant/30"></div>
+        <div>
+          <div id="stat-high" class="text-[20px] font-bold font-data-numeral text-tertiary-fixed">0</div>
+          <div class="text-[9px] text-outline tracking-wider font-label-caps mt-1">RÉCORD</div>
+        </div>
+        <div class="w-px h-8 bg-outline-variant/30"></div>
+        <div>
+          <div id="stat-streak" class="text-[20px] font-bold font-data-numeral text-secondary">0</div>
+          <div class="text-[9px] text-outline tracking-wider font-label-caps mt-1">RACHA</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA 4: rankings Dedicada (Mockup Design) -->
+  <div id="scr-rankings" class="screen flex-col items-center justify-start p-4 gap-4 overflow-y-auto">
+    <!-- Selector de Pestañas de Rankings -->
+    <nav class="flex w-full bg-surface-container-low rounded-lg p-1 border border-outline-variant/30 backdrop-blur-xl">
+      <button class="flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab active" data-rank-tab="machine">MÁQUINA</button>
+      <button class="flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab text-outline hover:text-primary transition-colors" data-rank-tab="zonal">MI ZONA</button>
+      <button class="flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab text-outline hover:text-primary transition-colors" data-rank-tab="global">MUNDIAL</button>
+    </nav>
+    
+    <!-- Podium Section -->
+    <section class="flex items-end justify-center gap-3 my-4 h-[220px] w-full">
+      <!-- Rank 2 (Second) -->
+      <div id="podium-2-container" class="podium-2 flex flex-col items-center gap-1.5 opacity-0 transition-opacity duration-300">
+        <div class="relative">
+          <img id="podium-2-img" alt="Player 2" class="w-14 h-14 rounded-full border-2 border-secondary object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=John"/>
+          <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-secondary text-secondary font-data-numeral text-[13px] px-2 rounded-full leading-none">2</span>
+        </div>
+        <div class="text-center w-20">
+          <p id="podium-2-name" class="font-label-caps text-[9px] text-on-surface truncate">CYBER_NINJA</p>
+          <p id="podium-2-score" class="font-data-numeral text-[13px] text-secondary">9,420</p>
+        </div>
+        <div class="w-20 h-16 bg-surface-container border-t-2 border-secondary rounded-t-lg bg-gradient-to-b from-secondary/20 to-transparent"></div>
+      </div>
+      
+      <!-- Rank 1 (Winner) -->
+      <div id="podium-1-container" class="podium-1 flex flex-col items-center gap-1.5 -mt-6 z-10 opacity-0 transition-opacity duration-300">
+        <div class="relative">
+          <img id="podium-1-img" alt="Player 1" class="w-20 h-20 rounded-full border-[3px] border-tertiary-fixed shadow-[0_0_20px_rgba(169,249,0,0.4)] object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix"/>
+          <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border-2 border-tertiary-fixed text-tertiary-fixed font-data-numeral text-[15px] px-3 py-0.5 rounded-full leading-none shadow-[0_0_10px_rgba(169,249,0,0.5)]">1</span>
+        </div>
+        <div class="text-center w-24">
+          <p id="podium-1-name" class="font-label-caps text-[11px] text-tertiary-fixed neon-glow truncate">NEON_GHOST</p>
+          <p id="podium-1-score" class="font-data-numeral text-[16px] text-tertiary-fixed">12,850</p>
+        </div>
+        <div class="w-24 h-24 bg-surface-container border-t-[3px] border-tertiary-fixed rounded-t-lg bg-gradient-to-b from-tertiary-fixed/30 to-transparent flex justify-center pt-2">
+          <span class="material-symbols-outlined text-tertiary-fixed text-2xl opacity-50" style="font-variation-settings: 'FILL' 1;">trophy</span>
+        </div>
+      </div>
+      
+      <!-- Rank 3 (Third) -->
+      <div id="podium-3-container" class="podium-3 flex flex-col items-center gap-1.5 opacity-0 transition-opacity duration-300">
+        <div class="relative">
+          <img id="podium-3-img" alt="Player 3" class="w-14 h-14 rounded-full border-2 border-primary-container object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Bella"/>
+          <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-primary-container text-primary-container font-data-numeral text-[13px] px-2 rounded-full leading-none">3</span>
+        </div>
+        <div class="text-center w-20">
+          <p id="podium-3-name" class="font-label-caps text-[9px] text-on-surface truncate">VORTEX_XY</p>
+          <p id="podium-3-score" class="font-data-numeral text-[13px] text-primary-container">8,900</p>
+        </div>
+        <div class="w-20 h-12 bg-surface-container border-t-2 border-primary-container rounded-t-lg bg-gradient-to-b from-primary-container/20 to-transparent"></div>
+      </div>
+    </section>
+
+    <!-- Contenedor de la Tabla de Rankings (Puestos 4+) -->
+    <div id="ranking-list" class="w-full flex flex-col gap-2">
+      <!-- Se rellena dinámicamente con JS -->
+    </div>
+  </div>
+
+  <!-- PANTALLA 5: Editar Perfil -->
+  <div id="scr-edit-profile" class="screen flex-col justify-start p-6 gap-5 overflow-y-auto">
+    <div class="logo font-headline-md text-[24px] text-primary-container font-extrabold">MI PERFIL</div>
+    <div class="text-[11px] font-label-caps text-outline -mt-4">PERSONALIZÁ TU AVATAR Y DATOS</div>
+    
+    <div class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-5 flex flex-col gap-4">
+      
+      <!-- Vista previa de la Remera SVG -->
+      <div class="flex justify-center items-center bg-black/30 border border-outline-variant/30 rounded-lg p-4 relative">
+        <svg id="jersey-svg" width="100" height="100" viewBox="0 0 100 100" class="drop-shadow-[0_0_10px_rgba(255,255,255,0.15)]">
+          <defs>
+            <clipPath id="body-clip">
+              <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" />
+            </clipPath>
+          </defs>
+          <!-- Mangas -->
+          <path d="M 12 30 L 27 15 L 35 23 L 23 43 Z" fill="#ffffff" id="jersey-svg-sleeve-left" stroke="#07070f" stroke-width="1.5" />
+          <path d="M 88 30 L 73 15 L 65 23 L 77 43 Z" fill="#ffffff" id="jersey-svg-sleeve-right" stroke="#07070f" stroke-width="1.5" />
+          <!-- Puños de las mangas (Secundario) -->
+          <path d="M 12 30 L 15 27 L 19 32 L 16 35 Z" fill="#00ffcc" id="jersey-svg-cuff-left" />
+          <path d="M 88 30 L 85 27 L 81 32 L 84 35 Z" fill="#00ffcc" id="jersey-svg-cuff-right" />
+          <!-- Cuerpo -->
+          <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" fill="#ffffff" id="jersey-svg-body" stroke="#07070f" stroke-width="1.5" />
+          
+          <!-- Patrón: Rayas Verticales -->
+          <g id="jersey-pattern-vertical" clip-path="url(#body-clip)" style="display:none;">
+            <rect x="34" y="18" width="8" height="62" fill="#00ffcc" id="jersey-svg-v1" />
+            <rect x="58" y="18" width="8" height="62" fill="#00ffcc" id="jersey-svg-v2" />
+          </g>
+          
+          <!-- Patrón: Franja Horizontal -->
+          <g id="jersey-pattern-horizontal" clip-path="url(#body-clip)" style="display:none;">
+            <rect x="27" y="42" width="46" height="16" fill="#00ffcc" id="jersey-svg-h" />
+          </g>
+          
+          <!-- Patrón: Banda Diagonal -->
+          <g id="jersey-pattern-diagonal" clip-path="url(#body-clip)" style="display:none;">
+            <polygon points="27,18 38,18 73,66 73,78" fill="#00ffcc" id="jersey-svg-d" />
+          </g>
+          
+          <!-- Cuello chomba -->
+          <polygon points="37,18 50,32 63,18" fill="#00ffcc" id="jersey-svg-collar" stroke="#07070f" stroke-width="1" />
+          <!-- Detalle central del cuello -->
+          <line x1="50" y1="18" x2="50" y2="28" stroke="#07070f" stroke-width="1.5" />
+        </svg>
+      </div>
+
+      <!-- Foto de Perfil / Avatar -->
+      <div class="text-left border-b border-outline-variant/30 pb-4">
+        <label class="text-[11px] text-outline font-label-caps tracking-widest block mb-3 font-bold">FOTO DE PERFIL / AVATAR</label>
+        
+        <div class="flex justify-center items-center mb-3">
+          <img id="profile-avatar-preview" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix" class="w-16 h-16 rounded-full border-2 border-primary-container object-cover bg-background">
+        </div>
+        
+        <div class="text-center mb-3">
+          <label for="avatar-file-input" class="inline-block px-3 py-1.5 bg-surface-container border border-outline hover:bg-surface-variant text-[11px] text-on-surface font-bold rounded-lg cursor-pointer transition-colors font-label-caps">
+            📷 SUBIR FOTO PROPIA
+          </label>
+          <input type="file" id="avatar-file-input" accept="image/*" class="hidden">
+          <div id="file-name-label" class="text-[10px] text-outline mt-1 font-label-caps"></div>
+        </div>
+        
+        <label class="text-[9px] text-outline font-label-caps block mb-2 font-bold">O SELECCIONÁ UN AVATAR DE LA LISTA</label>
+        <div id="predefined-avatars-grid" class="grid grid-cols-5 gap-1.5">
+          <!-- Rellenado con JS -->
+        </div>
+      </div>
+
+      <!-- Campos del Formulario -->
+      <div class="text-left flex flex-col gap-3">
+        <div>
+          <label class="text-[11px] text-outline font-label-caps block mb-1 font-bold">APODO A MOSTRAR</label>
+          <input type="text" id="profile-name" placeholder="Tu Apodo" maxlength="12" class="w-full bg-black/40 border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-[15px] focus:ring-1 focus:ring-primary-container focus:border-primary-container outline-none transition-all">
+        </div>
+
+        <div>
+          <label class="text-[11px] text-outline font-label-caps block mb-1 font-bold">EDAD</label>
+          <input type="number" id="profile-age" placeholder="Edad" min="1" max="120" class="w-full bg-black/40 border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-[15px] focus:ring-1 focus:ring-primary-container focus:border-primary-container outline-none transition-all">
+        </div>
+
+        <div>
+          <label class="text-[11px] text-outline font-label-caps block mb-1 font-bold">SELECCIONÁ TU CLUB</label>
+          <select id="profile-club" class="w-full bg-black/40 border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface text-[14px] focus:ring-1 focus:ring-primary-container focus:border-primary-container outline-none cursor-pointer">
+            <!-- Se rellena con JS -->
+          </select>
+        </div>
+
+        <div class="flex gap-3">
+          <div class="flex-1">
+            <label class="text-[10px] text-outline font-label-caps block mb-1 font-bold">COLOR REMERA</label>
+            <input type="color" id="color-primary" value="#ffffff" class="w-full h-10 border border-outline rounded-lg bg-transparent cursor-pointer p-0 outline-none">
+          </div>
+          <div class="flex-1">
+            <label class="text-[10px] text-outline font-label-caps block mb-1 font-bold">DETALLES / CUELLO</label>
+            <input type="color" id="color-secondary" value="#00ffcc" class="w-full h-10 border border-outline rounded-lg bg-transparent cursor-pointer p-0 outline-none">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3 w-full">
+      <button class="flex-1 py-3 border border-outline text-outline rounded-lg font-bold text-[12px] active:scale-[0.98] transition-transform font-headline-md" id="profile-cancel">ATRÁS</button>
+      <button class="flex-[2] py-3 bg-primary-container hover:bg-primary-container/80 text-background rounded-lg font-bold text-[12px] active:scale-[0.98] transition-transform shadow-[0_0_15px_rgba(0,243,255,0.3)] font-headline-md" id="profile-save">GUARDAR CAMBIOS</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA 6: Ingresar nombre / Login Invitado (Fast Setup) -->
+  <div id="scr-enter-name" class="screen flex-col items-center justify-center p-6 gap-5 text-center">
+    <div class="logo font-headline-md text-[32px] font-extrabold text-primary-container tracking-widest">FUTSPO</div>
+    <div class="text-[11px] font-label-caps text-outline -mt-4">ÚNETE A LA PARTIDA</div>
+    
+    <!-- Botón Google Login -->
+    <button class="w-full max-w-[280px] py-3 bg-white text-surface font-bold text-[13px] rounded-lg flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(255,255,255,0.15)] active:scale-[0.98] transition-transform" id="google-login">
+      <svg width="18" height="18" viewBox="0 0 18 18" class="flex-shrink-0"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1-.8 1.9-1.6 2.5v2.1h2.6c1.5-1.4 2.8-3.5 2.8-6.2z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.6-2.1c-.7.5-1.6.8-2.6.8-2 0-3.7-1.4-4.3-3.2H2.8v2.2C4.3 16.5 6.5 18 9 18z"/><path fill="#FBBC05" d="M4.7 11.3c-.2-.5-.3-1-.3-1.6s.1-1.1.3-1.6V5.9H2.8C2.2 7.1 2 8.5 2 10s.2 2.9.8 4.1l1.9-2.8z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.4 3.4 1.3l2.6-2.5C13.5 1.1 11.4 0 9 0 6.5 0 4.3 1.5 2.8 3.7l1.9 2.8c.6-1.8 2.3-3.2 4.3-3.2z"/></svg>
+      ACCEDER CON GOOGLE
     </button>
+    
+    <div id="google-separator" class="text-[10px] text-outline my-1 tracking-widest font-label-caps">— O INGRESA COMO INVITADO —</div>
+    
+    <div class="text-[11px] text-outline font-label-caps tracking-wider mb-1">SELECCIONÁ TU AVATAR</div>
+    <div id="avatar-selector-grid" class="flex gap-2.5 justify-center mb-2 w-full max-w-[280px]">
+      <img class="avatar-opt w-12 h-12 rounded-lg border-2 border-primary-container cursor-pointer bg-black/40" data-avatar-seed="Cat" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Cat" onclick="selectAvatar('Cat')">
+      <img class="avatar-opt w-12 h-12 rounded-lg border-2 border-transparent opacity-60 cursor-pointer bg-black/40" data-avatar-seed="Dog" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Dog" onclick="selectAvatar('Dog')">
+      <img class="avatar-opt w-12 h-12 rounded-lg border-2 border-transparent opacity-60 cursor-pointer bg-black/40" data-avatar-seed="Frog" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Frog" onclick="selectAvatar('Frog')">
+      <img class="avatar-opt w-12 h-12 rounded-lg border-2 border-transparent opacity-60 cursor-pointer bg-black/40" data-avatar-seed="Robot" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Robot" onclick="selectAvatar('Robot')">
+    </div>
+
+    <div class="w-full max-w-[280px] flex flex-col gap-2">
+      <input type="text" id="name-input" placeholder="Tu Apodo" maxlength="12" autocomplete="off" class="w-full bg-black/40 border border-outline rounded-lg px-4 py-2.5 text-on-surface text-[15px] focus:ring-1 focus:ring-primary-container focus:border-primary-container outline-none transition-all">
+      <button class="w-full py-3 border border-primary-container text-primary-container hover:bg-primary-container/10 font-bold text-[12px] rounded-lg tracking-widest active:scale-[0.98] transition-all font-headline-md" id="name-ok">JUGAR COMO INVITADO ▶</button>
+    </div>
   </div>
 
-  <button class="btn btn-ghost" id="go-back" style="width:100%; max-width:340px;">⏏ SALIR</button>
-</div>
+  <!-- PANTALLA 7: En juego -->
+  <div id="scr-playing" class="screen flex-col items-center justify-center p-6 gap-6 text-center">
+    <div class="text-[16px] font-headline-md font-bold text-primary-container drop-shadow-[0_0_10px_rgba(0,243,255,0.4)]" id="my-name">Jugador</div>
+    <div class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-6 flex flex-col items-center gap-1.5 shadow-xl">
+      <div class="text-[11px] text-outline font-label-caps tracking-widest">MI PUNTAJE</div>
+      <div class="score-big text-[64px] font-black text-tertiary-fixed font-headline-md neon-glow" id="my-score">0</div>
+      <div id="my-balls" class="text-[18px] mt-2 tracking-wider">⚫⚫⚫⚫⚫</div>
+    </div>
+    <div id="my-turn-badge" class="px-6 py-2 rounded-full border border-secondary text-secondary bg-secondary/10 font-bold font-label-caps text-[12px] shadow-[0_0_10px_rgba(255,171,243,0.3)] animate-pulse hidden">▶ TU TURNO</div>
+    <div class="w-full flex flex-col gap-2" id="other-scores"></div>
+    <div class="w-full border-t border-outline-variant/30 pt-3 text-[11px] text-outline text-left max-h-[80px] overflow-hidden" id="event-log"></div>
+  </div>
+
+  <!-- PANTALLA 8: Game Over -->
+  <div id="scr-gameover" class="screen flex-col items-center justify-center p-6 gap-5 text-center">
+    <div class="logo font-headline-md text-[28px] font-extrabold text-primary-container tracking-widest">FIN DE PARTIDA</div>
+    <div id="go-winner" class="text-[16px] text-tertiary-fixed font-bold tracking-wide"></div>
+    <div class="w-full flex flex-col gap-2" id="go-scores"></div>
+    
+    <!-- Contenedor Revancha Móvil -->
+    <div id="go-rematch-container" class="w-full hidden">
+      <button class="w-full py-4 bg-tertiary-fixed hover:bg-tertiary-fixed/80 text-background font-black text-[15px] rounded-lg tracking-widest active:scale-[0.98] transition-transform shadow-[0_0_20px_rgba(169,249,0,0.4)]" id="go-rematch">
+        🔁 ACEPTAR REVANCHA
+      </button>
+    </div>
+
+    <button class="w-full py-3 border border-outline text-outline hover:bg-surface-variant font-bold text-[12px] rounded-lg cursor-pointer transition-colors tracking-widest" id="go-back">⏏ SALIR</button>
+  </div>
+
+</main>
+
+<!-- Barra de Navegación Inferior Permanente (BottomNavBar) -->
+<nav id="bottom-nav" class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-4 pt-2 bg-surface-container-low/90 backdrop-blur-xl border-t border-primary/30 shadow-[0_-4px_20px_rgba(0,220,230,0.2)] z-50 rounded-t-[20px]">
+  <button id="nav-btn-home" class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim drop-shadow-[0_0_8px_rgba(0,220,230,0.8)] hover:text-secondary transition-all active:scale-90 duration-200 w-16 h-16 relative bg-surface-container rounded-full border border-primary/30 -mt-4">
+    <span class="material-symbols-outlined mb-1 text-2xl" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+    <span class="font-label-caps text-[10px] tracking-widest text-primary font-bold">INICIO</span>
+  </button>
+  <button id="nav-btn-rankings" class="flex flex-col items-center justify-center text-outline dark:text-outline-variant hover:text-secondary transition-all active:scale-90 duration-200 w-16 h-16 relative">
+    <span class="material-symbols-outlined mb-1 text-2xl" style="font-variation-settings: 'FILL' 0;">leaderboard</span>
+    <span class="font-label-caps text-label-caps text-[10px]">RANKINGS</span>
+  </button>
+  <button id="nav-btn-profile" class="flex flex-col items-center justify-center text-outline dark:text-outline-variant hover:text-secondary transition-all active:scale-90 duration-200 w-16 h-16 relative">
+    <span class="material-symbols-outlined mb-1 text-2xl" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+    <span class="font-label-caps text-label-caps text-[10px]">PERFIL</span>
+  </button>
+</nav>
 
 <script>
 const urlParams = new URLSearchParams(location.search);
@@ -654,6 +497,45 @@ let myScore = 0;
 let myZone = "Buenos Aires, AR";
 let supabaseClient = null;
 
+// Nombres y sufijos rápidos aleatorios para unirse velozmente
+const RANDOM_PREFIXES = ["CYBER", "NEON", "PIXEL", "VORTEX", "SHADOW", "GLITCH", "ALPHA", "OMEGA", "KRONOS", "ZEUS"];
+const RANDOM_SUFFIXES = ["RUNNER", "GHOST", "NINJA", "PUNK", "ZERO", "PILOT", "STRIKER", "SNIPER", "PLAYER", "HUNTER"];
+
+function generateFastRandomName() {
+  const pref = RANDOM_PREFIXES[Math.floor(Math.random() * RANDOM_PREFIXES.length)];
+  const suff = RANDOM_SUFFIXES[Math.floor(Math.random() * RANDOM_SUFFIXES.length)];
+  const num = Math.floor(100 + Math.random() * 900);
+  return `${pref}_${suff}_${num}`;
+}
+
+function prefillFastDetails() {
+  const nameInput = document.getElementById("name-input");
+  if (nameInput && !nameInput.value) {
+    nameInput.value = generateFastRandomName();
+  }
+  
+  const profileName = document.getElementById("profile-name");
+  if (profileName && !profileName.value) {
+    profileName.value = nameInput.value || generateFastRandomName();
+  }
+  
+  // Selecciona un preset por defecto de forma aleatoria para velocidad
+  if (!selectedAvatarUrl && !uploadedImageBase64) {
+    const randomPreset = PRESET_AVATARS[Math.floor(Math.random() * PRESET_AVATARS.length)];
+    selectedAvatarUrl = randomPreset.url;
+    document.getElementById("profile-avatar-preview").src = randomPreset.url;
+    
+    // Seleccionar visualmente en el grid
+    document.querySelectorAll("#predefined-avatars-grid img").forEach(el => {
+      if (el.dataset.url === randomPreset.url) {
+        el.style.borderColor = "var(--neon-primary)";
+      } else {
+        el.style.borderColor = "transparent";
+      }
+    });
+  }
+}
+
 // ── Supabase & Geolocalización ────────────────────────────────────────────────
 async function initCloud() {
   // 1. Detectar ubicación por IP de forma silenciosa
@@ -663,6 +545,7 @@ async function initCloud() {
     if (data && data.city && data.region_code) {
       myZone = `${data.city}, ${data.region_code}`;
       console.log("Zona detectada:", myZone);
+      document.getElementById("header-location-text").textContent = myZone;
     }
   } catch (e) {
     console.warn("Error detectando IP:", e);
@@ -684,6 +567,7 @@ async function initCloud() {
         console.log("Sesión activa recuperada:", myName);
         
         const avatarUrl = user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
+        document.getElementById("header-avatar-img").src = avatarUrl;
         
         // Registrar en backend local si ya está conectado
         if (sock && sock.readyState === 1) {
@@ -712,6 +596,9 @@ async function initCloud() {
             myName = profile.name;
             document.getElementById("my-name").textContent = myName;
           }
+          if (profile.avatar_url) {
+            document.getElementById("header-avatar-img").src = profile.avatar_url;
+          }
           // Actualizar estadísticas históricas
           const games = profile.games_played || 0;
           const highScore = profile.high_score || 0;
@@ -729,7 +616,6 @@ async function initCloud() {
           document.getElementById("edit-profile-btn").style.display = "block";
           document.getElementById("player-stats-card").style.display = "block";
           document.getElementById("home-player-stats-card").style.display = "block";
-          document.getElementById("home-rankings-container").style.display = "flex";
         }
 
         // Mostrar resumen de usuario en pantalla de inicio
@@ -739,7 +625,7 @@ async function initCloud() {
       } else {
         // No hay sesión activa
         document.getElementById("user-profile-summary").style.display = "none";
-        document.getElementById("login-container").style.display = "block";
+        document.getElementById("login-container").style.display = "flex";
       }
     } else {
       // Ocultar botones e interfaces de Google en modo offline
@@ -762,6 +648,7 @@ async function initCloud() {
   // Rellenar selector de clubes y grid de avatares
   populateClubsDropdown();
   populatePredefinedAvatarsGrid();
+  prefillFastDetails();
 
   loadRankings();
 }
@@ -804,10 +691,12 @@ function populateClubsDropdown() {
   for (const [league, teams] of Object.entries(LEAGUES)) {
     const optgroup = document.createElement("optgroup");
     optgroup.label = league;
+    optgroup.className = "bg-surface text-on-surface";
     teams.forEach(team => {
       const option = document.createElement("option");
       option.value = team;
       option.textContent = team;
+      option.className = "bg-surface text-on-surface";
       optgroup.appendChild(option);
     });
     select.appendChild(optgroup);
@@ -842,20 +731,14 @@ function populatePredefinedAvatarsGrid() {
     const img = document.createElement("img");
     img.src = preset.url;
     img.title = preset.name;
-    img.style.width = "100%";
-    img.style.aspectRatio = "1";
-    img.style.borderRadius = "8px";
-    img.style.border = "2px solid transparent";
-    img.style.cursor = "pointer";
-    img.style.background = "#111122";
-    img.style.boxSizing = "border-box";
+    img.className = "w-full aspect-square rounded-[8px] border-2 border-transparent cursor-pointer bg-black/40 box-border p-1";
     img.dataset.url = preset.url;
     
     img.addEventListener("click", () => {
       document.querySelectorAll("#predefined-avatars-grid img").forEach(el => {
         el.style.borderColor = "transparent";
       });
-      img.style.borderColor = "var(--neon2)";
+      img.style.borderColor = "var(--neon-primary)";
       selectedAvatarUrl = preset.url;
       uploadedImageBase64 = null;
       document.getElementById("file-name-label").textContent = "";
@@ -1029,6 +912,7 @@ document.getElementById("avatar-file-input").addEventListener("change", (e) => {
       selectedAvatarUrl = "";
       
       document.getElementById("profile-avatar-preview").src = compressedDataUrl;
+      document.getElementById("header-avatar-img").src = compressedDataUrl;
       
       document.querySelectorAll("#predefined-avatars-grid img").forEach(el => {
         el.style.borderColor = "transparent";
@@ -1041,6 +925,10 @@ document.getElementById("avatar-file-input").addEventListener("change", (e) => {
 
 // ── Eventos de Configuración de Perfil ─────────────────────────────────────────
 document.getElementById("edit-profile-btn").addEventListener("click", async () => {
+  openProfileEditor();
+});
+
+async function openProfileEditor() {
   if (!supabaseClient) return;
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session || !session.user) return;
@@ -1087,7 +975,7 @@ document.getElementById("edit-profile-btn").addEventListener("click", async () =
         
         document.querySelectorAll("#predefined-avatars-grid img").forEach(el => {
           if (el.dataset.url === avatar) {
-            el.style.borderColor = "var(--neon2)";
+            el.style.borderColor = "var(--neon-primary)";
           }
         });
       }
@@ -1097,22 +985,26 @@ document.getElementById("edit-profile-btn").addEventListener("click", async () =
       uploadedImageBase64 = null;
       document.getElementById("profile-avatar-preview").src = firstPreset;
       const firstImg = document.querySelector("#predefined-avatars-grid img");
-      if (firstImg) firstImg.style.borderColor = "var(--neon2)";
+      if (firstImg) firstImg.style.borderColor = "var(--neon-primary)";
     }
   }
   showScreen("scr-edit-profile");
-});
-
-
+}
 
 // ── Google Login click ────────────────────────────────────────────────────────
 document.getElementById("google-login").addEventListener("click", async () => {
+  triggerGoogleLogin();
+});
+document.getElementById("direct-google-login").addEventListener("click", async () => {
+  triggerGoogleLogin();
+});
+
+async function triggerGoogleLogin() {
   if (!supabaseClient) {
     alert("Supabase Cloud no está habilitado o configurado en esta máquina.");
     return;
   }
   
-  // Google OAuth requiere origen seguro (HTTPS, localhost o 127.0.0.1)
   const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   if (!window.isSecureContext && !isLocalhost) {
     alert("🔒 Seguridad de Google:\n\nEl inicio de sesión con Google requiere una conexión segura (HTTPS o localhost).\n\nPara jugar desde el celular en red local, por favor usa 'JUGAR COMO INVITADO' (ingresando tu apodo abajo), o configura un túnel seguro (como ngrok) para habilitar Google en móviles.");
@@ -1126,109 +1018,141 @@ document.getElementById("google-login").addEventListener("click", async () => {
     }
   });
   if (error) alert("Error al conectar con Google: " + error.message);
-});
+}
 
 // ── Rankings con pestañas ──────────────────────────────────────────────────────
 let activeRankTab = "machine";
-document.querySelectorAll(".btn-tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".btn-tab").forEach(t => t.classList.remove("active"));
-    tab.classList.add("active");
-    activeRankTab = tab.dataset.rankTab;
-    loadRankings();
+
+// Capturar click en botones de ranking generales y sincronizar
+function registerRankTabs() {
+  document.querySelectorAll(".btn-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      const tabName = tab.dataset.rankTab;
+      if (!tabName) return;
+      
+      activeRankTab = tabName;
+      
+      document.querySelectorAll(".btn-tab").forEach(t => {
+        if (t.dataset.rankTab === activeRankTab) {
+          t.className = "flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab active bg-primary-container/10 text-primary-container border border-primary-container/50 shadow-[0_0_10px_rgba(0,243,255,0.2)]";
+        } else {
+          t.className = "flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab text-outline hover:text-primary transition-colors";
+        }
+      });
+      
+      loadRankings();
+    });
   });
-});
+}
+
+registerRankTabs();
 
 async function loadRankings() {
   const list = document.getElementById("ranking-list");
-  const homeList = document.getElementById("home-ranking-list");
+  if (!list) return;
   
-  const loadingHtml = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Cargando rankings...</div>`;
-  if (list) list.innerHTML = loadingHtml;
-  if (homeList) homeList.innerHTML = loadingHtml;
+  // Clean elements and show loading
+  document.getElementById("podium-1-container").classList.add("opacity-0");
+  document.getElementById("podium-2-container").classList.add("opacity-0");
+  document.getElementById("podium-3-container").classList.add("opacity-0");
+  list.innerHTML = `<div class="text-center text-outline text-[12px] py-4">Cargando rankings...</div>`;
 
   try {
     let data = [];
     if (activeRankTab === "machine") {
-      // Rankings locales de la base de datos de esta máquina particular
       const res = await fetch(`/api/state?arcade_id=${arcadeId}`);
       const state = await res.json();
       data = (state.players || [])
-        .map((p, i) => ({ name: p.name || `Jugador ${i+1}`, score: p.score, zone: "Local" }))
+        .map((p, i) => ({ name: p.name || `Jugador ${i+1}`, score: p.score, zone: "Local", avatar_url: p.avatar }))
         .sort((a,b) => b.score - a.score);
     } else if (activeRankTab === "zonal") {
       if (!supabaseClient) {
-        const noCloudHtml = `<div style="text-align:center; color:var(--muted); font-size:12px;">Nube no disponible en esta máquina.</div>`;
-        if (list) list.innerHTML = noCloudHtml;
-        if (homeList) homeList.innerHTML = noCloudHtml;
+        list.innerHTML = `<div class="text-center text-outline text-[12px] py-4">Nube no disponible en esta máquina.</div>`;
         return;
       }
-      // Consultar Supabase tabla rankings filtrando por zona
       const { data: scores, error } = await supabaseClient
         .from("rankings")
-        .select("player_name, score, zone")
+        .select("player_name, score, zone, avatar_url")
         .eq("zone", myZone)
         .order("score", { ascending: false })
-        .limit(6);
+        .limit(10);
       if (error) throw error;
-      data = scores.map(s => ({ name: s.player_name, score: s.score, zone: s.zone }));
+      data = scores.map(s => ({ name: s.player_name, score: s.score, zone: s.zone, avatar_url: s.avatar_url }));
     } else if (activeRankTab === "global") {
       if (!supabaseClient) {
-        const noCloudHtml = `<div style="text-align:center; color:var(--muted); font-size:12px;">Nube no disponible en esta máquina.</div>`;
-        if (list) list.innerHTML = noCloudHtml;
-        if (homeList) homeList.innerHTML = noCloudHtml;
+        list.innerHTML = `<div class="text-center text-outline text-[12px] py-4">Nube no disponible en esta máquina.</div>`;
         return;
       }
-      // Consultar Supabase tabla rankings global ordenada
       const { data: scores, error } = await supabaseClient
         .from("rankings")
-        .select("player_name, score, zone")
+        .select("player_name, score, zone, avatar_url")
         .order("score", { ascending: false })
-        .limit(6);
+        .limit(10);
       if (error) throw error;
-      data = scores.map(s => ({ name: s.player_name, score: s.score, zone: s.zone }));
+      data = scores.map(s => ({ name: s.player_name, score: s.score, zone: s.zone, avatar_url: s.avatar_url }));
     }
 
     if (data.length === 0) {
-      const emptyHtml = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Sin puntajes aún. ¡Sé el primero!</div>`;
-      if (list) list.innerHTML = emptyHtml;
-      if (homeList) homeList.innerHTML = emptyHtml;
+      list.innerHTML = `<div class="text-center text-outline text-[12px] py-4">Sin puntajes aún. ¡Sé el primero!</div>`;
       return;
     }
 
-    const rowsHtml = data.map((r, idx) => {
-      let medal = `#${idx+1}`;
-      let extraStyle = "";
-      if (idx === 0) {
-        medal = "🥇";
-        extraStyle = "border-color: rgba(255, 215, 0, 0.4); box-shadow: 0 0 12px rgba(255, 215, 0, 0.15); background: rgba(255, 215, 0, 0.03);";
-      } else if (idx === 1) {
-        medal = "🥈";
-        extraStyle = "border-color: rgba(192, 192, 192, 0.4); box-shadow: 0 0 12px rgba(192, 192, 192, 0.15); background: rgba(192, 192, 192, 0.03);";
-      } else if (idx === 2) {
-        medal = "🥉";
-        extraStyle = "border-color: rgba(205, 127, 50, 0.4); box-shadow: 0 0 12px rgba(205, 127, 50, 0.15); background: rgba(205, 127, 50, 0.03);";
-      }
-      
+    // Renderizar Podio (Top 3)
+    if (data[0]) {
+      document.getElementById("podium-1-img").src = data[0].avatar_url || `https://api.dicebear.com/7.x/lorelei/svg?seed=${data[0].name}`;
+      document.getElementById("podium-1-name").textContent = data[0].name;
+      document.getElementById("podium-1-score").textContent = Number(data[0].score).toLocaleString();
+      document.getElementById("podium-1-container").classList.remove("opacity-0");
+    }
+    if (data[1]) {
+      document.getElementById("podium-2-img").src = data[1].avatar_url || `https://api.dicebear.com/7.x/lorelei/svg?seed=${data[1].name}`;
+      document.getElementById("podium-2-name").textContent = data[1].name;
+      document.getElementById("podium-2-score").textContent = Number(data[1].score).toLocaleString();
+      document.getElementById("podium-2-container").classList.remove("opacity-0");
+    } else {
+      document.getElementById("podium-2-container").classList.add("opacity-0");
+    }
+    if (data[2]) {
+      document.getElementById("podium-3-img").src = data[2].avatar_url || `https://api.dicebear.com/7.x/lorelei/svg?seed=${data[2].name}`;
+      document.getElementById("podium-3-name").textContent = data[2].name;
+      document.getElementById("podium-3-score").textContent = Number(data[2].score).toLocaleString();
+      document.getElementById("podium-3-container").classList.remove("opacity-0");
+    } else {
+      document.getElementById("podium-3-container").classList.add("opacity-0");
+    }
+
+    // Renderizar el resto de la lista (Puestos 4+)
+    const restData = data.slice(3);
+    if (restData.length === 0) {
+      list.innerHTML = `<div class="text-center text-outline text-[11px] py-4">FALTAN COMPETIDORES</div>`;
+      return;
+    }
+
+    list.innerHTML = restData.map((r, idx) => {
+      const pos = idx + 4;
+      const isMe = r.name === myName;
+      const rowClass = isMe 
+        ? "flex items-center p-4 bg-surface-container rounded border border-primary-container shadow-[0_0_15px_rgba(0,243,255,0.15)] scanning-border my-2 relative overflow-hidden" 
+        : "flex items-center p-4 bg-surface-container-low rounded border border-outline-variant/20 hover:border-outline/50 transition-colors";
+      const nameClass = isMe ? "font-label-caps text-primary-container" : "font-label-caps text-on-surface";
+      const scoreClass = isMe ? "font-data-numeral text-[16px] text-primary-container font-bold relative z-10" : "font-data-numeral text-[16px] text-primary-fixed-dim";
+
       return `
-        <div class="ranking-row" style="${extraStyle}">
-          <span class="ranking-pos">${medal}</span>
-          <div class="ranking-name">
-            <div style="font-weight:bold; color:var(--text);">${r.name}</div>
-            <span class="ranking-zone">📍 ${r.zone || "Desconocida"}</span>
+        <div class="${rowClass}">
+          ${isMe ? '<div class="absolute inset-0 bg-gradient-to-r from-primary-container/10 to-transparent pointer-events-none"></div>' : ''}
+          <span class="font-data-numeral text-outline w-8 text-center relative z-10">${pos}</span>
+          <img alt="Avatar" class="w-10 h-10 rounded-full mx-4 border border-outline/30 object-cover bg-background relative z-10" src="${r.avatar_url || 'https://api.dicebear.com/7.x/lorelei/svg?seed=' + r.name}"/>
+          <div class="flex-1 relative z-10">
+            <p class="${nameClass}">${r.name} ${isMe ? '(TÚ)' : ''}</p>
+            <p class="font-label-caps text-[9px] text-outline/70 mt-1">📍 ${r.zone || "Desconocida"}</p>
           </div>
-          <span class="ranking-score">${r.score} pts</span>
+          <span class="${scoreClass}">${Number(r.score).toLocaleString()}</span>
         </div>
       `;
     }).join("");
-
-    if (list) list.innerHTML = rowsHtml;
-    if (homeList) homeList.innerHTML = rowsHtml;
   } catch (e) {
     console.error(e);
-    const errHtml = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:12px;">Rankings no disponibles temporalmente.</div>`;
-    if (list) list.innerHTML = errHtml;
-    if (homeList) homeList.innerHTML = errHtml;
+    list.innerHTML = `<div class="text-center text-outline text-[12px] py-4">Rankings no disponibles temporalmente.</div>`;
   }
 }
 
@@ -1258,7 +1182,7 @@ function connect() {
 function send(msg){ if(sock?.readyState===1) sock.send(JSON.stringify(msg)); }
 function btn(id){ send({type:"btn",id}); }
 
-// ── Pantallas ────────────────────────────────────────────────────────────────
+// ── Pantallas & Tabbed Navigation ────────────────────────────────────────────
 function showScreen(id){
   const screens = document.querySelectorAll(".screen");
   const target = document.getElementById(id);
@@ -1278,9 +1202,66 @@ function showScreen(id){
   });
   
   target.style.display = "flex";
-  // Force reflow
-  target.offsetHeight;
+  target.offsetHeight; // Force reflow
   target.classList.add("active");
+  
+  // Control de visibilidad del Header y BottomNavBar
+  const header = document.getElementById("app-header");
+  const bottomNav = document.getElementById("bottom-nav");
+  
+  if (id === "scr-playing" || id === "scr-connecting") {
+    if (header) header.classList.add("hidden");
+    if (bottomNav) bottomNav.classList.add("hidden");
+    document.body.style.paddingBottom = "0px";
+  } else {
+    if (header) header.classList.remove("hidden");
+    if (bottomNav) bottomNav.classList.remove("hidden");
+    document.body.style.paddingBottom = "86px";
+    
+    // Asignar el tab activo en la barra inferior
+    if (id === "scr-rankings") {
+      updateBottomNavActive("rankings");
+    } else if (id === "scr-edit-profile") {
+      updateBottomNavActive("profile");
+    } else {
+      updateBottomNavActive("home");
+    }
+  }
+}
+
+function updateBottomNavActive(activeTabId) {
+  const tabs = {
+    'home': { btn: 'nav-btn-home', icon: 'grid_view' },
+    'rankings': { btn: 'nav-btn-rankings', icon: 'leaderboard' },
+    'profile': { btn: 'nav-btn-profile', icon: 'account_circle' }
+  };
+  
+  Object.keys(tabs).forEach(tabKey => {
+    const tab = tabs[tabKey];
+    const btn = document.getElementById(tab.btn);
+    if (!btn) return;
+    
+    const iconSpan = btn.querySelector('.material-symbols-outlined');
+    const labelSpan = btn.querySelector('.font-label-caps');
+    
+    if (tabKey === activeTabId) {
+      // Activo
+      btn.className = "flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim drop-shadow-[0_0_8px_rgba(0,220,230,0.8)] hover:text-secondary transition-all active:scale-90 duration-200 w-16 h-16 relative bg-surface-container rounded-full border border-primary/30 -mt-4";
+      if (iconSpan) {
+        iconSpan.style.setProperty("font-variation-settings", "'FILL' 1");
+        iconSpan.className = "material-symbols-outlined mb-1 text-3xl text-primary-fixed-dim";
+      }
+      if (labelSpan) labelSpan.className = "font-label-caps text-[10px] tracking-widest text-primary font-bold";
+    } else {
+      // Inactivo
+      btn.className = "flex flex-col items-center justify-center text-outline dark:text-outline-variant hover:text-secondary transition-all active:scale-90 duration-200 w-16 h-16 relative";
+      if (iconSpan) {
+        iconSpan.style.setProperty("font-variation-settings", "'FILL' 0");
+        iconSpan.className = "material-symbols-outlined mb-1 text-2xl text-outline";
+      }
+      if (labelSpan) labelSpan.className = "font-label-caps text-label-caps text-[10px]";
+    }
+  });
 }
 
 // ── Manejo de mensajes ───────────────────────────────────────────────────────
@@ -1290,7 +1271,8 @@ function handle(msg) {
     sock.close();
     showScreen("scr-waiting");
     document.getElementById("waiting-status-badge").textContent = "SESIÓN VENCIDA";
-    document.getElementById("waiting-msg-text").innerHTML = `<strong style="color:var(--neon)">${msg.message}</strong>`;
+    document.getElementById("waiting-status-badge").className = "px-5 py-1.5 rounded-full border border-error text-error bg-error/10 font-bold font-label-caps text-[11px] shadow-[0_0_10px_rgba(255,0,0,0.2)]";
+    document.getElementById("waiting-msg-text").innerHTML = `<strong class="text-error">${msg.message}</strong>`;
     return;
   }
 
@@ -1299,6 +1281,7 @@ function handle(msg) {
     if (st === "attract" || st === "select_players" || st === "select_mode" || st === "payment") {
       showScreen("scr-waiting");
       document.getElementById("waiting-status-badge").textContent = "CONECTADO";
+      document.getElementById("waiting-status-badge").className = "px-5 py-1.5 rounded-full border border-primary-container text-primary-container bg-primary-container/10 font-bold font-label-caps text-[11px] shadow-[0_0_10px_rgba(0,243,255,0.2)]";
       document.getElementById("waiting-msg-text").innerHTML = "La máquina está en modo espera.<br>Aguardá a que inicie la partida.";
     }
     else if (st === "connect_phone" || st === "waiting_start") {
@@ -1316,7 +1299,6 @@ function handle(msg) {
     }
     else if (st === "game_over") {
       showScreen("scr-gameover");
-      // Mostrar botón de revancha rápida si el servidor lo ofrece
       const rematchEl = document.getElementById("go-rematch-container");
       if (rematchEl) rematchEl.style.display = "block";
     }
@@ -1335,7 +1317,13 @@ function handle(msg) {
 
   if (msg.type === "turn") {
     const badge = document.getElementById("my-turn-badge");
-    badge.style.display = msg.current_player === playerIndex ? "block" : "none";
+    if (msg.current_player === playerIndex) {
+      badge.classList.remove("hidden");
+      badge.style.display = "block";
+    } else {
+      badge.classList.add("hidden");
+      badge.style.display = "none";
+    }
     const balls = msg.balls_left || 0;
     if (msg.current_player === playerIndex) {
       document.getElementById("my-balls").textContent = "⚫".repeat(balls) + "⚪".repeat(5-balls);
@@ -1358,8 +1346,8 @@ function renderPlayersState(msg) {
   players.forEach((p, i) => {
     if (i === playerIndex) return;
     const d = document.createElement("div");
-    d.className = "other-row";
-    d.innerHTML = `<span class="other-name">${p.name||"J"+(i+1)}</span><span class="other-score">${p.score}</span>`;
+    d.className = "flex justify-between items-center p-3 bg-surface-container-low border border-outline-variant/20 rounded-lg text-[14px]";
+    d.innerHTML = `<span class="text-outline font-medium">${p.name||"J"+(i+1)}</span><span class="text-on-background font-bold font-data-numeral">${p.score}</span>`;
     others.appendChild(d);
   });
 }
@@ -1373,8 +1361,8 @@ function renderGameOver(msg) {
   const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
   scores.forEach((s,i)=>{
     const d = document.createElement("div");
-    d.className = "other-row";
-    d.innerHTML = `<span class="other-name">${medals[i]} ${s.name}</span><span class="other-score">${s.score}</span>`;
+    d.className = "flex justify-between items-center p-3 bg-surface-container-low border border-outline-variant/20 rounded-lg text-[14px]";
+    d.innerHTML = `<span class="text-outline font-medium">${medals[i] || "🔹"} ${s.name}</span><span class="text-on-background font-bold font-data-numeral">${s.score}</span>`;
     wrap.appendChild(d);
   });
 }
@@ -1382,7 +1370,7 @@ function renderGameOver(msg) {
 function logEvent(text) {
   const el = document.getElementById("event-log");
   if (!el) return;
-  el.innerHTML = `<div>${text}</div>` + el.innerHTML;
+  el.innerHTML = `<div class="py-0.5 border-b border-outline-variant/10 text-outline">${text}</div>` + el.innerHTML;
   if (el.children.length > 4) el.removeChild(el.lastChild);
 }
 
@@ -1392,8 +1380,11 @@ function selectAvatar(seed) {
   selectedAvatarSeed = seed;
   document.querySelectorAll(".avatar-opt").forEach(img => {
     const isSelected = img.dataset.avatarSeed === seed;
-    img.style.borderColor = isSelected ? "var(--neon2)" : "transparent";
-    img.style.opacity = isSelected ? "1" : "0.6";
+    if (isSelected) {
+      img.className = "avatar-opt w-12 h-12 rounded-lg border-2 border-primary-container cursor-pointer bg-black/40 opacity-100";
+    } else {
+      img.className = "avatar-opt w-12 h-12 rounded-lg border-2 border-transparent opacity-60 cursor-pointer bg-black/40";
+    }
   });
 }
 
@@ -1402,6 +1393,7 @@ document.getElementById("name-ok").addEventListener("click", () => {
   if (!val) return;
   myName = val;
   const avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${selectedAvatarSeed}`;
+  document.getElementById("header-avatar-img").src = avatarUrl;
   send({ type: "player_name", name: myName, avatar: avatarUrl });
   showScreen("scr-waiting");
   document.getElementById("my-name").textContent = myName;
@@ -1444,6 +1436,7 @@ document.getElementById("join-game-btn").addEventListener("click", async () => {
     alert("Error al unirse a la partida: " + e.message);
   }
 });
+
 function goBackToHome() {
   if (sock && sock.readyState === 1) {
     showScreen("scr-waiting");
@@ -1456,15 +1449,38 @@ function goBackToHome() {
   }
 }
 
+// Asignar eventos de BottomNavBar
+document.getElementById("nav-btn-home").addEventListener("click", () => {
+  if (sock && sock.readyState === 1) {
+    showScreen("scr-waiting");
+  } else {
+    showScreen("scr-join-game");
+  }
+});
+document.getElementById("nav-btn-rankings").addEventListener("click", () => {
+  showScreen("scr-rankings");
+  loadRankings();
+});
+document.getElementById("nav-btn-profile").addEventListener("click", async () => {
+  if (supabaseClient) {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session && session.user) {
+      openProfileEditor();
+      return;
+    }
+  }
+  
+  // Si no está registrado con Google, pre-cargar el creador de perfil invitado
+  showScreen("scr-edit-profile");
+  prefillFastDetails();
+});
+
+// Registrar eventos de profile cancel/save
 document.getElementById("profile-cancel").addEventListener("click", () => {
   goBackToHome();
 });
 
 document.getElementById("profile-save").addEventListener("click", async () => {
-  if (!supabaseClient) return;
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session || !session.user) return;
-
   const newName = document.getElementById("profile-name").value.trim();
   const ageVal = parseInt(document.getElementById("profile-age").value);
   const clubVal = document.getElementById("profile-club").value;
@@ -1476,49 +1492,46 @@ document.getElementById("profile-save").addEventListener("click", async () => {
     return;
   }
 
-  const user = session.user;
-  const avatarUrl = uploadedImageBase64 || selectedAvatarUrl || `https://api.dicebear.com/7.x/lorelei/svg?seed=${user.id}`;
+  // Si está autenticado, guardar en Supabase. Si no, guardar localmente para el juego
+  let avatarUrl = uploadedImageBase64 || selectedAvatarUrl;
+  
+  if (supabaseClient) {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session && session.user) {
+      const user = session.user;
+      if (!avatarUrl) avatarUrl = `https://api.dicebear.com/7.x/lorelei/svg?seed=${user.id}`;
+      try {
+        const { error } = await supabaseClient.from("profiles").upsert({
+          id: user.id,
+          name: newName,
+          age: isNaN(ageVal) ? null : ageVal,
+          club: clubVal || null,
+          jersey_primary_color: colorPrimary,
+          jersey_secondary_color: colorSecondary,
+          avatar_url: avatarUrl,
+          zone: myZone,
+          updated_at: new Date().toISOString()
+        });
 
-  try {
-    const { error } = await supabaseClient.from("profiles").upsert({
-      id: user.id,
-      name: newName,
-      age: isNaN(ageVal) ? null : ageVal,
-      club: clubVal || null,
-      jersey_primary_color: colorPrimary,
-      jersey_secondary_color: colorSecondary,
-      avatar_url: avatarUrl,
-      zone: myZone,
-      updated_at: new Date().toISOString()
-    });
-
-    if (error) throw error;
-
-    myName = newName;
-    document.getElementById("my-name").textContent = myName;
-
-    // Enviar nombre actualizado por websocket a la máquina si está conectada
-    send({ type: "player_name", name: myName, google_id: user.id, avatar: avatarUrl });
-
-    alert("Perfil guardado correctamente.");
-    goBackToHome();
-  } catch (e) {
-    alert("Error al guardar perfil: " + e.message);
-  }
-});
-// Eventos directos del menú de inicio
-document.getElementById("direct-google-login").addEventListener("click", async () => {
-  if (!supabaseClient) {
-    alert("Supabase Cloud no está habilitado o configurado en esta máquina.");
-    return;
-  }
-  const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.href
+        if (error) throw error;
+        alert("Perfil de nube guardado correctamente.");
+      } catch (e) {
+        console.warn("Error guardando en nube:", e);
+      }
     }
-  });
-  if (error) alert("Error al conectar con Google: " + error.message);
+  }
+
+  if (!avatarUrl) avatarUrl = `https://api.dicebear.com/7.x/lorelei/svg?seed=${newName}`;
+  
+  myName = newName;
+  document.getElementById("my-name").textContent = myName;
+  document.getElementById("header-avatar-img").src = avatarUrl;
+
+  // Enviar nombre actualizado por websocket a la máquina si está conectada
+  send({ type: "player_name", name: myName, avatar: avatarUrl });
+
+  alert("Perfil guardado localmente.");
+  goBackToHome();
 });
 
 document.getElementById("direct-logout-btn").addEventListener("click", async () => {
@@ -1530,29 +1543,7 @@ document.getElementById("direct-logout-btn").addEventListener("click", async () 
 });
 
 document.getElementById("direct-edit-profile-btn").addEventListener("click", () => {
-  document.getElementById("edit-profile-btn").click();
-});
-
-// Sincronizar las pestañas de rankings entre el home y la pantalla de espera
-document.querySelectorAll(".btn-tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    const tabName = tab.dataset.rankTab || tab.dataset.homeRankTab;
-    if (!tabName) return;
-    
-    activeRankTab = tabName;
-    
-    // Sincronizar clases activas en todos los selectores de pestañas
-    document.querySelectorAll(".btn-tab").forEach(t => {
-      const tName = t.dataset.rankTab || t.dataset.homeRankTab;
-      if (tName === activeRankTab) {
-        t.classList.add("active");
-      } else {
-        t.classList.remove("active");
-      }
-    });
-    
-    loadRankings();
-  });
+  openProfileEditor();
 });
 
 async function checkActiveGameStatus() {
@@ -1569,34 +1560,6 @@ async function checkActiveGameStatus() {
     document.getElementById("active-game-card").style.display = "none";
   }
 }
-
-document.getElementById("join-game-btn").addEventListener("click", async () => {
-  try {
-    const res = await fetch(`/api/state?arcade_id=${arcadeId}`);
-    const state = await res.json();
-    const players = state.players || [];
-    
-    // Buscar el primer slot disponible (no conectado)
-    let availableIndex = -1;
-    for (let i = 0; i < players.length; i++) {
-      if (!players[i].connected) {
-        availableIndex = i;
-        break;
-      }
-    }
-    
-    if (availableIndex === -1) {
-      alert("La partida está llena o no tiene slots de celular libres.");
-      return;
-    }
-    
-    playerIndex = availableIndex;
-    showScreen("scr-connecting");
-    connect();
-  } catch (e) {
-    alert("Error al unirse a la partida: " + e.message);
-  }
-});
 
 // Inicialización
 initCloud().then(() => {
