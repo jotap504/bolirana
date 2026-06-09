@@ -245,6 +245,17 @@
   <img id="floating-avatar-img" alt="Avatar" class="w-full h-full object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix"/>
 </div>
 
+<!-- Floating QR Code Scanner Button Top-Right -->
+<button id="open-qr-scanner-btn" class="fixed top-4 right-4 z-40 w-10 h-10 rounded-full flex items-center justify-center border border-primary/50 bg-surface/80 backdrop-blur-md shadow-[0_0_10px_rgba(0,243,255,0.2)] active:scale-[0.95] transition-transform hidden">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-container)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-[0_0_5px_rgba(0,243,255,0.4)]">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+    <rect x="6" y="10" width="4" height="4" stroke="var(--primary-container)" stroke-width="1.5" fill="none"/>
+    <rect x="14" y="10" width="4" height="4" stroke="var(--primary-container)" stroke-width="1.5" fill="none"/>
+    <rect x="6" y="15" width="4" height="4" stroke="var(--primary-container)" stroke-width="1.5" fill="none"/>
+    <rect x="15" y="16" width="2" height="2" fill="var(--primary-container)"/>
+  </svg>
+</button>
+
 <!-- QR Scanner Modal Overlay -->
 <div id="qr-scanner-modal">
   <div class="text-[13px] font-bold text-primary-container font-label-caps tracking-widest text-center">
@@ -323,11 +334,7 @@
       </div>
     </div>
 
-    <!-- Botón principal: Escanear QR de la bolirana -->
-    <button id="open-qr-scanner-btn" class="w-full py-4 bg-gradient-to-r from-primary-container/20 to-secondary-container/10 border-2 border-primary-container/60 text-primary-container font-bold text-[15px] font-headline-md rounded-xl flex items-center justify-center gap-3 active:scale-[0.97] transition-all shadow-[0_0_20px_rgba(0,243,255,0.15)] hover:shadow-[0_0_30px_rgba(0,243,255,0.3)]">
-      <span class="text-[22px]">📷</span>
-      ESCANEAR QR DE LA BOLIRANA
-    </button>
+    <!-- El botón de Escanear QR ahora se ubica en la esquina superior derecha -->
   </div>
 
   <!-- PANTALLA 2: Conectando -->
@@ -1434,25 +1441,38 @@ function showScreen(id){
   target.offsetHeight; // Force reflow
   target.classList.add("active");
   
-  // Control de visibilidad del BottomNavBar y Floating Avatar
+  // Control de visibilidad del BottomNavBar, Floating Avatar y Botón QR
   const bottomNav = document.getElementById("bottom-nav");
   const floatingAvatar = document.getElementById("floating-avatar-container");
+  const qrBtn = document.getElementById("open-qr-scanner-btn");
   
-  if (id === "scr-playing" || id === "scr-connecting" || id === "scr-enter-name" || !myName) {
+  if (id === "scr-playing" || id === "scr-connecting" || id === "scr-enter-name") {
     if (bottomNav) bottomNav.classList.add("hidden");
     if (floatingAvatar) floatingAvatar.classList.add("hidden");
+    if (qrBtn) qrBtn.classList.add("hidden");
     document.body.style.paddingBottom = "0px";
   } else {
-    if (bottomNav) bottomNav.classList.remove("hidden");
-    if (floatingAvatar) {
-      floatingAvatar.classList.remove("hidden");
-      // Asegurar que la imagen del avatar flotante esté actualizada
-      const img = document.getElementById("floating-avatar-img");
-      if (img && selectedAvatarUrl) {
-        img.src = selectedAvatarUrl;
+    // Pantallas principales (home, rankings, perfil)
+    
+    // BottomNav y Avatar flotante requieren que haya un nombre/sesión iniciada
+    if (myName) {
+      if (bottomNav) bottomNav.classList.remove("hidden");
+      if (floatingAvatar) {
+        floatingAvatar.classList.remove("hidden");
+        const img = document.getElementById("floating-avatar-img");
+        if (img && selectedAvatarUrl) {
+          img.src = selectedAvatarUrl;
+        }
       }
+      document.body.style.paddingBottom = "86px";
+    } else {
+      if (bottomNav) bottomNav.classList.add("hidden");
+      if (floatingAvatar) floatingAvatar.classList.add("hidden");
+      document.body.style.paddingBottom = "0px";
     }
-    document.body.style.paddingBottom = "86px";
+    
+    // El botón QR siempre visible en pantallas principales para permitir unirse
+    if (qrBtn) qrBtn.classList.remove("hidden");
     
     // Asignar el tab activo en la barra inferior
     if (id === "scr-rankings") {
