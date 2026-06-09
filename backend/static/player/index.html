@@ -1833,11 +1833,13 @@ document.getElementById("profile-save").addEventListener("click", async () => {
   saveBtn.textContent = "GUARDANDO...";
 
   let avatarUrl = selectedAvatarUrl;
+  let googleId = null;
   
   if (supabaseClient) {
     const { data: { session } } = await supabaseClient.auth.getSession();
       if (session && session.user) {
       const user = session.user;
+      googleId = user.id;
       
       // 1. Subir imagen a Storage si el usuario subió una foto
       if (uploadedImageFile) {
@@ -1872,7 +1874,7 @@ document.getElementById("profile-save").addEventListener("click", async () => {
           console.error("Error de Supabase al guardar perfil:", error);
           throw error;
         }
-        console.log("\u2705 Perfil guardado en Supabase:", { name: newName, club: clubVal, avatarUrl });
+        console.log("✅ Perfil guardado en Supabase:", { name: newName, club: clubVal, avatarUrl });
         savedToCloud = true;
       } catch (e) {
         console.warn("Error guardando en nube:", e);
@@ -1900,6 +1902,7 @@ document.getElementById("profile-save").addEventListener("click", async () => {
   send({
     type: "player_name",
     name: myName,
+    google_id: googleId,
     avatar: avatarUrl,
     club: clubVal,
     jersey_primary_color: colorPrimary,
@@ -1957,11 +1960,13 @@ async function sendPlayerProfile() {
   let secondary = "#00ffcc";
   let pattern = "plain";
   let avatar = uploadedImageBase64 || selectedAvatarUrl;
+  let googleId = null;
 
   // Si está autenticado, intentar leer de Supabase
   if (supabaseClient) {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session && session.user) {
+      googleId = session.user.id;
       const { data: profile } = await supabaseClient
         .from("profiles")
         .select("*")
@@ -1989,6 +1994,7 @@ async function sendPlayerProfile() {
   send({
     type: "player_name",
     name: myName,
+    google_id: googleId,
     avatar: avatar,
     club: club,
     jersey_primary_color: primary,
