@@ -39,6 +39,7 @@ alter table public.profiles
   add column if not exists games_played integer default 0,
   add column if not exists high_score integer default 0,
   add column if not exists best_streak integer default 0,
+  add column if not exists total_score integer default 0,
   add column if not exists updated_at timestamptz default now();
 
 -- 3b. Storage: Políticas RLS del bucket 'avatars'
@@ -68,7 +69,8 @@ create table if not exists public.rankings (
   score integer not null,
   zone text,
   is_guest boolean default true,
-  google_id uuid references auth.users(id) on delete set null
+  google_id uuid references auth.users(id) on delete set null,
+  avatar_url text
 );
 
 -- Habilitar RLS para rankings
@@ -85,7 +87,6 @@ create policy "Permitir lectura publica de rankings" on public.rankings
 create policy "Permitir insert publico de rankings" on public.rankings
   for insert to public with check (true);
 
-
 -- 3. Trigger de Postgres para actualizar estadísticas automáticamente
 create or replace function public.update_profile_stats()
 returns trigger as $$
@@ -94,7 +95,8 @@ begin
     update public.profiles
     set 
       games_played = games_played + 1,
-      high_score = greatest(high_score, new.score)
+      high_score = greatest(high_score, new.score),
+      total_score = coalesce(total_score, 0) + new.score
     where id = new.google_id;
   end if;
   return new;
@@ -107,3 +109,77 @@ drop trigger if exists on_ranking_inserted on public.rankings;
 create trigger on_ranking_inserted
   after insert on public.rankings
   for each row execute function public.update_profile_stats();
+
+-- 4. Tabla de Máquinas (machines)
+create table if not exists public.machines (
+  arcade_id text primary key,
+  name text not null,
+  latitude double precision,
+  longitude double precision,
+  zone text,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Habilitar RLS para machines
+alter table public.machines enable row level security;
+
+drop policy if exists "Permitir lectura publica de maquinas" on public.machines;
+drop policy if exists "Permitir insert/update publico de maquinas" on public.machines;
+
+create policy "Permitir lectura publica de maquinas" on public.machines
+  for select to public using (true);
+
+create policy "Permitir insert/update publico de maquinas" on public.machines
+  for all to public using (true) with check (true);
+
+-- 5. Función de Postgres (RPC) para calcular el Ranking Zonal (Fórmula de Haversine en SQL puro)
+create or replace function public.get_zonal_rankings(
+  machine_lat double precision,
+  machine_lon double precision,
+  radius_km double precision
+)
+returns table (
+  player_name text,
+  score integer,
+  zone text,
+  avatar_url text,
+  arcade_id text,
+  distance double precision
+) as $$
+begin
+  return query
+  select 
+    r.player_name,
+    r.score,
+    r.zone,
+    coalesce(p.avatar_url, r.avatar_url) as avatar_url,
+    r.arcade_id,
+    (6371 * acos(
+      cos(radians(machine_lat)) * cos(radians(m.latitude)) * 
+      cos(radians(m.longitude) - radians(machine_lon)) + 
+      sin(radians(machine_lat)) * sin(radians(m.latitude))
+    )) as distance
+  from public.rankings r
+  join public.machines m on r.arcade_id = m.arcade_id
+  left join public.profiles p on r.google_id = p.id
+  where (6371 * acos(
+    cos(radians(machine_lat)) * cos(radians(m.latitude)) * 
+    cos(radians(m.longitude) - radians(machine_lon)) + 
+    sin(radians(machine_lat)) * sin(radians(m.latitude))
+  )) <= radius_km
+  order by r.score desc
+  limit 10;
+end;
+$$ language plpgsql security definer;
+
+-- 6. Crear Vista de Efectividad (Rendimiento)
+create or replace view public.effectiveness_ranking as
+select 
+  id,
+  name,
+  avatar_url,
+  zone,
+  games_played,
+  (coalesce(total_score, 0)::double precision / nullif(games_played, 0)) as avg_score
+from public.profiles
+where games_played > 0;

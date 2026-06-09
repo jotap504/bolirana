@@ -379,10 +379,11 @@
   <!-- PANTALLA 4: rankings Dedicada -->
   <div id="scr-rankings" class="screen flex-col items-center justify-start p-4 gap-4 overflow-y-auto">
     <!-- Selector de Pestañas de Rankings -->
-    <nav class="flex w-full bg-surface-container-low/90 backdrop-blur-md rounded-lg p-1 border border-outline-variant/30">
-      <button class="flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab active bg-primary-container/10 text-primary-container border border-primary-container/50 shadow-[0_0_10px_rgba(0,243,255,0.2)]" data-rank-tab="machine">MÁQUINA</button>
-      <button class="flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab text-outline hover:text-primary transition-colors" data-rank-tab="zonal">MI ZONA</button>
-      <button class="flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab text-outline hover:text-primary transition-colors" data-rank-tab="global">MUNDIAL</button>
+    <nav class="flex w-full bg-surface-container-low/90 backdrop-blur-md rounded-lg p-1 border border-outline-variant/30 gap-1 overflow-x-auto">
+      <button class="flex-1 py-2 px-1 rounded text-center font-label-caps text-[10px] btn-tab active bg-primary-container/10 text-primary-container border border-primary-container/50 shadow-[0_0_10px_rgba(0,243,255,0.2)]" data-rank-tab="machine">MÁQUINA</button>
+      <button class="flex-1 py-2 px-1 rounded text-center font-label-caps text-[10px] btn-tab text-outline hover:text-primary transition-colors" data-rank-tab="zonal">MI ZONA</button>
+      <button class="flex-1 py-2 px-1 rounded text-center font-label-caps text-[10px] btn-tab text-outline hover:text-primary transition-colors" data-rank-tab="global">MUNDIAL</button>
+      <button class="flex-1 py-2 px-1 rounded text-center font-label-caps text-[10px] btn-tab text-outline hover:text-primary transition-colors" data-rank-tab="effectiveness">RENDIMIENTO</button>
     </nav>
     
     <!-- Podium Section -->
@@ -821,6 +822,8 @@ async function initCloud() {
       if (zonalTab) zonalTab.style.display = "none";
       const globalTab = document.querySelector('[data-rank-tab="global"]');
       if (globalTab) globalTab.style.display = "none";
+      const effectivenessTab = document.querySelector('[data-rank-tab="effectiveness"]');
+      if (effectivenessTab) effectivenessTab.style.display = "none";
     }
   } catch (e) {
     console.warn("Error en initCloud:", e);
@@ -1243,6 +1246,18 @@ async function triggerGoogleLogin() {
 // ── Rankings con pestañas ──────────────────────────────────────────────────────
 let activeRankTab = "machine";
 
+function formatScore(score) {
+  if (activeRankTab === "machine" || activeRankTab === "zonal") {
+    return Number(score).toLocaleString() + " Pts";
+  } else if (activeRankTab === "global") {
+    const val = Math.round(score);
+    return val + (val === 1 ? " Partida" : " Partidas");
+  } else if (activeRankTab === "effectiveness") {
+    return Math.round(score).toLocaleString() + " Prom.";
+  }
+  return Number(score).toLocaleString();
+}
+
 // Capturar click en botones de ranking generales y sincronizar
 function registerRankTabs() {
   document.querySelectorAll(".btn-tab").forEach(tab => {
@@ -1254,9 +1269,9 @@ function registerRankTabs() {
       
       document.querySelectorAll(".btn-tab").forEach(t => {
         if (t.dataset.rankTab === activeRankTab) {
-          t.className = "flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab active bg-primary-container/10 text-primary-container border border-primary-container/50 shadow-[0_0_10px_rgba(0,243,255,0.2)]";
+          t.className = "flex-1 py-2 px-1 rounded text-center font-label-caps text-[10px] btn-tab active bg-primary-container/10 text-primary-container border border-primary-container/50 shadow-[0_0_10px_rgba(0,243,255,0.2)]";
         } else {
-          t.className = "flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab text-outline hover:text-primary transition-colors";
+          t.className = "flex-1 py-2 px-1 rounded text-center font-label-caps text-[10px] btn-tab text-outline hover:text-primary transition-colors";
         }
       });
       
@@ -1280,22 +1295,60 @@ async function loadRankings() {
   try {
     let data = [];
     if (activeRankTab === "machine") {
-      const res = await fetch(`/api/state?arcade_id=${arcadeId}`);
-      const state = await res.json();
-      data = (state.players || [])
-        .map((p, i) => ({ name: p.name || `Jugador ${i+1}`, score: p.score, zone: "Local", avatar_url: p.avatar }))
-        .sort((a,b) => b.score - a.score);
+      // Intentar obtener rankings históricos en Supabase de esta máquina
+      if (supabaseClient) {
+        try {
+          const { data: scores, error } = await supabaseClient
+            .from("rankings")
+            .select("player_name, score, zone, avatar_url")
+            .eq("arcade_id", arcadeId)
+            .order("score", { ascending: false })
+            .limit(10);
+          if (!error && scores && scores.length > 0) {
+            data = scores.map(s => ({ name: s.player_name, score: s.score, zone: s.zone, avatar_url: s.avatar_url }));
+          }
+        } catch (e) {
+          console.warn("Fallo al obtener rankings de máquina en Supabase:", e);
+        }
+      }
+      
+      // Fallback a los jugadores locales activos de la sesión actual
+      if (data.length === 0) {
+        const res = await fetch(`/api/state?arcade_id=${arcadeId}`);
+        const state = await res.json();
+        data = (state.players || [])
+          .map((p, i) => ({ name: p.name || `Jugador ${i+1}`, score: p.score, zone: "Local", avatar_url: p.avatar }))
+          .sort((a,b) => b.score - a.score);
+      }
     } else if (activeRankTab === "zonal") {
       if (!supabaseClient) {
         list.innerHTML = `<div class="text-center text-outline text-[12px] py-4">Nube no disponible en esta máquina.</div>`;
         return;
       }
-      const { data: scores, error } = await supabaseClient
-        .from("rankings")
-        .select("player_name, score, zone, avatar_url")
-        .eq("zone", myZone)
-        .order("score", { ascending: false })
-        .limit(10);
+      
+      let lat = -34.6037;
+      let lon = -58.3816;
+      
+      // Intentar obtener lat/lon de la máquina actual
+      try {
+        const { data: machine, error: mError } = await supabaseClient
+          .from("machines")
+          .select("latitude, longitude")
+          .eq("arcade_id", arcadeId)
+          .maybeSingle();
+        if (machine) {
+          lat = machine.latitude;
+          lon = machine.longitude;
+        }
+      } catch (err) {
+        console.warn("No se pudieron recuperar las coordenadas de la máquina, usando Buenos Aires por defecto:", err);
+      }
+      
+      const { data: scores, error } = await supabaseClient.rpc("get_zonal_rankings", {
+        machine_lat: lat,
+        machine_lon: lon,
+        radius_km: 20.0
+      });
       if (error) throw error;
       data = scores.map(s => ({ name: s.player_name, score: s.score, zone: s.zone, avatar_url: s.avatar_url }));
     } else if (activeRankTab === "global") {
@@ -1303,13 +1356,25 @@ async function loadRankings() {
         list.innerHTML = `<div class="text-center text-outline text-[12px] py-4">Nube no disponible en esta máquina.</div>`;
         return;
       }
-      const { data: scores, error } = await supabaseClient
-        .from("rankings")
-        .select("player_name, score, zone, avatar_url")
-        .order("score", { ascending: false })
+      const { data: profiles, error } = await supabaseClient
+        .from("profiles")
+        .select("name, games_played, zone, avatar_url")
+        .order("games_played", { ascending: false })
         .limit(10);
       if (error) throw error;
-      data = scores.map(s => ({ name: s.player_name, score: s.score, zone: s.zone, avatar_url: s.avatar_url }));
+      data = profiles.map(p => ({ name: p.name, score: p.games_played, zone: p.zone, avatar_url: p.avatar_url }));
+    } else if (activeRankTab === "effectiveness") {
+      if (!supabaseClient) {
+        list.innerHTML = `<div class="text-center text-outline text-[12px] py-4">Nube no disponible en esta máquina.</div>`;
+        return;
+      }
+      const { data: scores, error } = await supabaseClient
+        .from("effectiveness_ranking")
+        .select("name, avg_score, zone, avatar_url")
+        .order("avg_score", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      data = scores.map(s => ({ name: s.name, score: s.avg_score, zone: s.zone, avatar_url: s.avatar_url }));
     }
 
     if (data.length === 0) {
@@ -1321,13 +1386,13 @@ async function loadRankings() {
     if (data[0]) {
       document.getElementById("podium-1-img").src = data[0].avatar_url || `https://api.dicebear.com/7.x/lorelei/svg?seed=${data[0].name}`;
       document.getElementById("podium-1-name").textContent = data[0].name;
-      document.getElementById("podium-1-score").textContent = Number(data[0].score).toLocaleString();
+      document.getElementById("podium-1-score").textContent = formatScore(data[0].score);
       document.getElementById("podium-1-container").classList.remove("opacity-0");
     }
     if (data[1]) {
       document.getElementById("podium-2-img").src = data[1].avatar_url || `https://api.dicebear.com/7.x/lorelei/svg?seed=${data[1].name}`;
       document.getElementById("podium-2-name").textContent = data[1].name;
-      document.getElementById("podium-2-score").textContent = Number(data[1].score).toLocaleString();
+      document.getElementById("podium-2-score").textContent = formatScore(data[1].score);
       document.getElementById("podium-2-container").classList.remove("opacity-0");
     } else {
       document.getElementById("podium-2-container").classList.add("opacity-0");
@@ -1335,7 +1400,7 @@ async function loadRankings() {
     if (data[2]) {
       document.getElementById("podium-3-img").src = data[2].avatar_url || `https://api.dicebear.com/7.x/lorelei/svg?seed=${data[2].name}`;
       document.getElementById("podium-3-name").textContent = data[2].name;
-      document.getElementById("podium-3-score").textContent = Number(data[2].score).toLocaleString();
+      document.getElementById("podium-3-score").textContent = formatScore(data[2].score);
       document.getElementById("podium-3-container").classList.remove("opacity-0");
     } else {
       document.getElementById("podium-3-container").classList.add("opacity-0");
@@ -1366,7 +1431,7 @@ async function loadRankings() {
             <p class="${nameClass}">${r.name} ${isMe ? '(TÚ)' : ''}</p>
             <p class="font-label-caps text-[9px] text-outline/70 mt-1">📍 ${r.zone || "Desconocida"}</p>
           </div>
-          <span class="${scoreClass}">${Number(r.score).toLocaleString()}</span>
+          <span class="${scoreClass}">${formatScore(r.score)}</span>
         </div>
       `;
     }).join("");

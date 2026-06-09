@@ -8,10 +8,14 @@ log = logging.getLogger(__name__)
 
 # Ubicación por defecto de la máquina recreativa
 MACHINE_ZONE = "Buenos Aires, AR"
+MACHINE_LAT = -34.6037
+MACHINE_LON = -58.3816
 
 async def detect_machine_location() -> None:
-    """Detecta la ubicación de la máquina recreativa por IP al arrancar."""
-    global MACHINE_ZONE
+    """Detecta la ubicación de la máquina recreativa por IP al arrancar y la registra en la nube."""
+    global MACHINE_ZONE, MACHINE_LAT, MACHINE_LON
+    from datetime import datetime
+    
     def _fetch():
         try:
             req = urllib.request.Request(
@@ -21,13 +25,57 @@ async def detect_machine_location() -> None:
             with urllib.request.urlopen(req, timeout=4) as response:
                 data = json.loads(response.read().decode())
                 if data.get("status") == "success":
-                    return f"{data.get('city')}, {data.get('region')}"
+                    return {
+                        "zone": f"{data.get('city')}, {data.get('region')}",
+                        "lat": float(data.get("lat", -34.6037)),
+                        "lon": float(data.get("lon", -58.3816))
+                    }
         except Exception as e:
             log.warning("No se pudo geolocalizar la máquina por IP: %s", e)
-        return "Buenos Aires, AR"
+        return {"zone": "Buenos Aires, AR", "lat": -34.6037, "lon": -58.3816}
 
-    MACHINE_ZONE = await asyncio.to_thread(_fetch)
-    log.info("Ubicación geográfica de la máquina configurada en: %s", MACHINE_ZONE)
+    result = await asyncio.to_thread(_fetch)
+    MACHINE_ZONE = result["zone"]
+    MACHINE_LAT = result["lat"]
+    MACHINE_LON = result["lon"]
+    log.info("Ubicación geográfica de la máquina configurada en: %s (Lat: %s, Lon: %s)", MACHINE_ZONE, MACHINE_LAT, MACHINE_LON)
+
+    # Registrar la máquina en Supabase
+    cfg = get_config().get("supabase", {})
+    if cfg.get("enabled"):
+        arcade_id = get_config().get("arcade_id", "FUTSPO_01")
+        url = f"{cfg.get('url')}/rest/v1/machines"
+        anon_key = cfg.get("anon_key")
+        
+        payload = {
+            "arcade_id": arcade_id,
+            "name": arcade_id,
+            "latitude": MACHINE_LAT,
+            "longitude": MACHINE_LON,
+            "zone": MACHINE_ZONE,
+            "updated_at": datetime.utcnow().isoformat() + "Z"
+        }
+        
+        def _register():
+            try:
+                # Upsert de PostgREST
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={
+                        "Content-Type": "application/json",
+                        "apikey": anon_key,
+                        "Authorization": f"Bearer {anon_key}",
+                        "Prefer": "resolution=merge-duplicates"
+                    },
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    log.info("Máquina registrada en Supabase Cloud. Status: %s", response.status)
+            except Exception as e:
+                log.error("Error al registrar máquina en Supabase: %s", e)
+                
+        asyncio.create_task(asyncio.to_thread(_register))
 
 
 async def sync_scores_to_supabase(players: list, mode: str) -> None:
@@ -39,6 +87,7 @@ async def sync_scores_to_supabase(players: list, mode: str) -> None:
 
     url = f"{cfg.get('url')}/rest/v1/rankings"
     anon_key = cfg.get("anon_key")
+    arcade_id = get_config().get("arcade_id", "FUTSPO_01")
 
     # Mapear los scores de los jugadores
     payload = []
@@ -46,14 +95,16 @@ async def sync_scores_to_supabase(players: list, mode: str) -> None:
         name = p.name or f"Jugador {p.index + 1}"
         is_guest = not hasattr(p, "google_id") or p.google_id is None
         google_id = getattr(p, "google_id", None)
+        avatar = getattr(p, "avatar", None)
         
         payload.append({
-            "arcade_id": "FUTSPO_01",
+            "arcade_id": arcade_id,
             "player_name": name,
             "score": p.score,
             "zone": MACHINE_ZONE,
             "is_guest": is_guest,
-            "google_id": google_id or None
+            "google_id": google_id or None,
+            "avatar_url": avatar or None
         })
 
     def _send():

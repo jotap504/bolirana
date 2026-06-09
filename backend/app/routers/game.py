@@ -237,3 +237,16 @@ async def get_supabase_config(request: Request):
         "anon_key": sb.get("anon_key", "your-anon-key"),
         "enabled": sb.get("enabled", False)
     }
+
+
+@router.get("/api/machine/info")
+async def get_machine_info(request: Request):
+    from app.config import get_config
+    from app.game.cloud_sync import MACHINE_LAT, MACHINE_LON, MACHINE_ZONE
+    cfg = get_config()
+    return {
+        "arcade_id": cfg.get("arcade_id", "FUTSPO_01"),
+        "latitude": MACHINE_LAT,
+        "longitude": MACHINE_LON,
+        "zone": MACHINE_ZONE
+    }

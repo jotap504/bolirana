@@ -304,6 +304,8 @@
     <div class="card">
       <div class="card-title">CONFIGURACIÓN DE PARTIDA</div>
       <div class="form-row">
+        <div><label>Identificador Único de Máquina (arcade_id)</label>
+          <input type="text" id="cfg-arcade-id" placeholder="FUTSPO_XXXXX" style="text-transform: uppercase;"></div>
         <div><label>Bolas por jugador (default)</label>
           <input type="number" id="cfg-balls" min="1" max="20" value="5"></div>
         <div><label>Tiempo límite (segundos, modo TIMED)</label>
@@ -515,6 +517,7 @@ document.querySelectorAll(".tab").forEach(t => {
 let cfg = {};
 async function loadConfig() {
   cfg = await api("/api/admin/config");
+  document.getElementById("cfg-arcade-id").value = cfg.arcade_id || "";
   const g = cfg.game || {};
   document.getElementById("cfg-balls").value   = g.balls_default || 5;
   document.getElementById("cfg-time").value    = g.time_limit_seconds || 120;
@@ -573,6 +576,24 @@ function renderSimSensors(sensors) {
 
 // ── Guardar ───────────────────────────────────────────────────────────────────
 document.getElementById("save-game").addEventListener("click", async () => {
+  const newArcadeId = document.getElementById("cfg-arcade-id").value.trim().toUpperCase();
+  const oldArcadeId = cfg.arcade_id || "";
+  
+  if (newArcadeId && newArcadeId !== oldArcadeId) {
+    try {
+      const renameRes = await api("/api/admin/config/rename-machine", "POST", { arcade_id: newArcadeId });
+      if (renameRes.status !== "success") {
+        alert("Error al renombrar la máquina: " + (renameRes.detail || "Nombre en uso o error de red."));
+        return;
+      }
+      cfg.arcade_id = newArcadeId;
+      toast("Identificador de máquina cambiado con éxito");
+    } catch (e) {
+      alert("Error al renombrar la máquina: " + e.message);
+      return;
+    }
+  }
+
   await api("/api/admin/config/game", "PATCH", {
     balls_default:          +document.getElementById("cfg-balls").value,
     time_limit_seconds:     +document.getElementById("cfg-time").value,

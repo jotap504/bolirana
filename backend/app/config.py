@@ -5,6 +5,7 @@ DB_PATH   = Path(__file__).parent.parent / "bolirana.db"
 ASSETS_DIR = Path(__file__).parent.parent / "static" / "display" / "assets"
 
 DEFAULT_CONFIG = {
+    "arcade_id": "FUTSPO_01",
     "game": {
         "balls_default": 5,
         "ball_options": [3, 5, 7, 10],
@@ -75,3 +76,17 @@ def _deep_merge(target: dict, source: dict) -> None:
             _deep_merge(target[k], v)
         else:
             target[k] = v
+
+
+async def save_config_to_db(session) -> None:
+    from .models import ConfigEntry
+    from sqlalchemy import select
+    import json
+    res = await session.execute(select(ConfigEntry).where(ConfigEntry.key == "app_config"))
+    entry = res.scalar_one_or_none()
+    if entry:
+        entry.value = json.dumps(get_config())
+    else:
+        entry = ConfigEntry(key="app_config", value=json.dumps(get_config()))
+        session.add(entry)
+    await session.commit()
