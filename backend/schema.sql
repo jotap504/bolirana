@@ -184,3 +184,17 @@ select
   (coalesce(total_score, 0)::double precision / nullif(games_played, 0)) as avg_score
 from public.profiles
 where games_played > 0;
+
+-- 7. Crear Vista de Rankings vinculada con Perfiles (para avatar_url en tiempo real)
+create or replace view public.rankings_view as
+select 
+  r.id,
+  r.created_at,
+  r.arcade_id,
+  r.player_name,
+  r.score,
+  r.zone,
+  r.google_id,
+  coalesce(p.avatar_url, r.avatar_url) as avatar_url
+from public.rankings r
+left join public.profiles p on r.google_id = p.id;

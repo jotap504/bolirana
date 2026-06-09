@@ -1299,7 +1299,7 @@ async function loadRankings() {
       if (supabaseClient) {
         try {
           const { data: scores, error } = await supabaseClient
-            .from("rankings")
+            .from("rankings_view")
             .select("player_name, score, zone, avatar_url")
             .eq("arcade_id", arcadeId)
             .not("google_id", "is", null) // Excluir invitados de los rankings históricos
