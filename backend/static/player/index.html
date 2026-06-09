@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>Bolirana FUTSPO</title>
+  <title>FutSapo Player</title>
   
   <!-- Tailwind CSS & Fonts -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -87,6 +87,13 @@
   </script>
 
   <style>
+    body {
+      background-image: linear-gradient(to bottom, rgba(18, 19, 24, 0.88), rgba(18, 19, 24, 0.94)), url('futuristic_soccer_field.png');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    
     .neon-glow { text-shadow: 0 0 10px theme('colors.primary-container'); }
     .neon-border { box-shadow: 0 0 15px rgba(0, 243, 255, 0.25); border-color: theme('colors.primary-container'); }
     
@@ -135,29 +142,17 @@
     }
   </style>
 </head>
-<body class="bg-background text-on-background min-h-screen pb-[86px] flex flex-col font-body-md select-none">
-
-<!-- Header Superior Permanente -->
-<header id="app-header" class="w-full top-0 sticky bg-surface/80 backdrop-blur-md border-b border-primary/20 shadow-[0_0_15px_rgba(0,220,230,0.1)] z-40 flex justify-between items-center px-4 py-3">
-  <div class="w-10 h-10 rounded-full overflow-hidden border border-primary/50 relative">
-    <img id="header-avatar-img" alt="Avatar" class="w-full h-full object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix"/>
-  </div>
-  <h1 class="font-display-lg text-[20px] font-extrabold tracking-widest text-primary-container">FUTSPO BOLIRANA</h1>
-  <button id="header-location-btn" class="active:scale-95 duration-150 hover:text-primary-container transition-colors text-primary flex items-center gap-1">
-    <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">location_on</span>
-    <span id="header-location-text" class="text-[10px] font-label-caps hidden sm:inline text-primary-container">Local</span>
-  </button>
-</header>
+<body class="text-on-background min-h-screen pb-[86px] flex flex-col font-body-md select-none">
 
 <main class="w-full max-w-lg mx-auto flex-1 flex flex-col justify-center">
 
   <!-- PANTALLA 1: Sumarse a la partida (Home Screen) -->
   <div id="scr-join-game" class="screen active flex-col items-center justify-center p-6 gap-6 text-center">
-    <div class="logo font-headline-md text-[36px] font-extrabold text-primary-container tracking-widest uppercase">FUTSPO</div>
+    <div class="logo font-headline-md text-[36px] font-extrabold text-primary-container tracking-widest uppercase">FutSapo</div>
     <div class="font-label-caps text-[11px] text-outline tracking-wider -mt-4">PERFIL DE JUGADOR</div>
     
     <!-- Info si hay partida activa -->
-    <div id="active-game-card" class="w-full bg-surface-container border border-primary/25 rounded-lg p-5 shadow-lg hidden">
+    <div id="active-game-card" class="w-full bg-surface-container/90 backdrop-blur-md border border-primary/25 rounded-lg p-5 shadow-lg hidden">
       <div class="text-[16px] font-bold text-primary-container mb-2">PARTIDA DETECTADA</div>
       <div class="text-[12px] text-outline mb-4 leading-relaxed">Estás a punto de unirte a la sesión de juego activa en esta máquina.</div>
       <button class="w-full py-4 bg-primary-container hover:bg-primary-container/80 text-background font-bold text-[14px] font-headline-md rounded-lg active:scale-[0.98] transition-transform shadow-[0_0_20px_rgba(0,243,255,0.4)]" id="join-game-btn">
@@ -166,7 +161,7 @@
     </div>
 
     <!-- Tarjeta de sesión de usuario (si está logueado) -->
-    <div id="user-profile-summary" class="w-full bg-surface-container border border-secondary/20 rounded-lg p-5 hidden">
+    <div id="user-profile-summary" class="w-full bg-surface-container/90 backdrop-blur-md border border-secondary/20 rounded-lg p-5 hidden">
       <div class="text-[11px] font-label-caps text-outline mb-2">SESIÓN INICIADA</div>
       <div id="profile-summary-name" class="text-[18px] font-bold text-primary mb-3">Jugador</div>
       <button class="w-full py-3 bg-secondary-container hover:bg-secondary-container/80 text-background font-bold text-[13px] font-headline-md rounded-lg active:scale-[0.98] transition-transform shadow-[0_0_15px_rgba(254,0,254,0.3)] mb-2" id="direct-edit-profile-btn">
@@ -186,7 +181,7 @@
     </div>
 
     <!-- Tarjeta de Estadísticas del Jugador (Home Screen) -->
-    <div class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-5 hidden" id="home-player-stats-card">
+    <div class="w-full bg-surface-container/90 backdrop-blur-md border border-outline-variant/30 rounded-lg p-5 hidden" id="home-player-stats-card">
       <div class="text-[12px] text-primary-container font-bold font-label-caps tracking-widest mb-4">📊 MIS ESTADÍSTICAS HISTÓRICAS</div>
       <div class="flex justify-around items-center">
         <div>
@@ -210,22 +205,22 @@
   <!-- PANTALLA 2: Conectando -->
   <div id="scr-connecting" class="screen flex-col items-center justify-center p-6 gap-6 text-center">
     <div class="text-[40px] animate-spin drop-shadow-[0_0_10px_var(--primary-container)]">🎱</div>
-    <div class="logo font-headline-md text-[32px] font-extrabold text-primary-container tracking-widest">BOLIRANA</div>
+    <div class="logo font-headline-md text-[32px] font-extrabold text-primary-container tracking-widest">FutSapo</div>
     <div class="text-[12px] font-label-caps text-outline">CONECTANDO A LA MÁQUINA...</div>
   </div>
 
   <!-- PANTALLA 3: Esperando partida en el Lobby -->
   <div id="scr-waiting" class="screen flex-col items-center justify-start p-6 gap-5 overflow-y-auto">
-    <div class="logo font-headline-md text-[24px] text-primary-container font-extrabold tracking-widest">BOLIRANA</div>
+    <div class="logo font-headline-md text-[24px] text-primary-container font-extrabold tracking-widest">FutSapo</div>
     <div class="px-5 py-1.5 rounded-full border border-primary-container text-primary-container bg-primary-container/10 font-bold font-label-caps text-[11px] shadow-[0_0_10px_rgba(0,243,255,0.2)] animate-pulse" id="waiting-status-badge">CONECTADO</div>
     
-    <div class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-5">
+    <div class="w-full bg-surface-container/90 backdrop-blur-md border border-outline-variant/30 rounded-lg p-5">
       <div class="text-[13px] text-outline leading-relaxed" id="waiting-msg-text">La máquina está en configuración.<br>Aguardá a que inicie la partida.</div>
       <button class="w-full py-2.5 mt-4 border border-primary-container text-primary-container hover:bg-primary-container/10 font-bold text-[11px] rounded-lg tracking-wider hidden" id="edit-profile-btn">⚙️ CONFIGURAR MI PERFIL</button>
     </div>
 
     <!-- Tarjeta de Estadísticas del Jugador (Google Auth) -->
-    <div class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-5 hidden" id="player-stats-card">
+    <div class="w-full bg-surface-container/90 backdrop-blur-md border border-outline-variant/30 rounded-lg p-5 hidden" id="player-stats-card">
       <div class="text-[12px] text-primary-container font-bold font-label-caps tracking-widest mb-4">📊 MIS ESTADÍSTICAS HISTÓRICAS</div>
       <div class="flex justify-around items-center">
         <div>
@@ -246,18 +241,18 @@
     </div>
   </div>
 
-  <!-- PANTALLA 4: rankings Dedicada (Mockup Design) -->
+  <!-- PANTALLA 4: rankings Dedicada -->
   <div id="scr-rankings" class="screen flex-col items-center justify-start p-4 gap-4 overflow-y-auto">
     <!-- Selector de Pestañas de Rankings -->
-    <nav class="flex w-full bg-surface-container-low rounded-lg p-1 border border-outline-variant/30 backdrop-blur-xl">
-      <button class="flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab active" data-rank-tab="machine">MÁQUINA</button>
+    <nav class="flex w-full bg-surface-container-low/90 backdrop-blur-md rounded-lg p-1 border border-outline-variant/30">
+      <button class="flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab active bg-primary-container/10 text-primary-container border border-primary-container/50 shadow-[0_0_10px_rgba(0,243,255,0.2)]" data-rank-tab="machine">MÁQUINA</button>
       <button class="flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab text-outline hover:text-primary transition-colors" data-rank-tab="zonal">MI ZONA</button>
       <button class="flex-1 py-2 rounded text-center font-label-caps text-[11px] btn-tab text-outline hover:text-primary transition-colors" data-rank-tab="global">MUNDIAL</button>
     </nav>
     
     <!-- Podium Section -->
     <section class="flex items-end justify-center gap-3 my-4 h-[220px] w-full">
-      <!-- Rank 2 (Second) -->
+      <!-- Rank 2 -->
       <div id="podium-2-container" class="podium-2 flex flex-col items-center gap-1.5 opacity-0 transition-opacity duration-300">
         <div class="relative">
           <img id="podium-2-img" alt="Player 2" class="w-14 h-14 rounded-full border-2 border-secondary object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=John"/>
@@ -270,7 +265,7 @@
         <div class="w-20 h-16 bg-surface-container border-t-2 border-secondary rounded-t-lg bg-gradient-to-b from-secondary/20 to-transparent"></div>
       </div>
       
-      <!-- Rank 1 (Winner) -->
+      <!-- Rank 1 -->
       <div id="podium-1-container" class="podium-1 flex flex-col items-center gap-1.5 -mt-6 z-10 opacity-0 transition-opacity duration-300">
         <div class="relative">
           <img id="podium-1-img" alt="Player 1" class="w-20 h-20 rounded-full border-[3px] border-tertiary-fixed shadow-[0_0_20px_rgba(169,249,0,0.4)] object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix"/>
@@ -285,7 +280,7 @@
         </div>
       </div>
       
-      <!-- Rank 3 (Third) -->
+      <!-- Rank 3 -->
       <div id="podium-3-container" class="podium-3 flex flex-col items-center gap-1.5 opacity-0 transition-opacity duration-300">
         <div class="relative">
           <img id="podium-3-img" alt="Player 3" class="w-14 h-14 rounded-full border-2 border-primary-container object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Bella"/>
@@ -299,7 +294,7 @@
       </div>
     </section>
 
-    <!-- Contenedor de la Tabla de Rankings (Puestos 4+) -->
+    <!-- Contenedor de la Tabla de Rankings -->
     <div id="ranking-list" class="w-full flex flex-col gap-2">
       <!-- Se rellena dinámicamente con JS -->
     </div>
@@ -310,7 +305,7 @@
     <div class="logo font-headline-md text-[24px] text-primary-container font-extrabold">MI PERFIL</div>
     <div class="text-[11px] font-label-caps text-outline -mt-4">PERSONALIZÁ TU AVATAR Y DATOS</div>
     
-    <div class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-5 flex flex-col gap-4">
+    <div class="w-full bg-surface-container/90 backdrop-blur-md border border-outline-variant/30 rounded-lg p-5 flex flex-col gap-4">
       
       <!-- Vista previa de la Remera SVG -->
       <div class="flex justify-center items-center bg-black/30 border border-outline-variant/30 rounded-lg p-4 relative">
@@ -414,7 +409,7 @@
 
   <!-- PANTALLA 6: Ingresar nombre / Login Invitado (Fast Setup) -->
   <div id="scr-enter-name" class="screen flex-col items-center justify-center p-6 gap-5 text-center">
-    <div class="logo font-headline-md text-[32px] font-extrabold text-primary-container tracking-widest">FUTSPO</div>
+    <div class="logo font-headline-md text-[32px] font-extrabold text-primary-container tracking-widest">FutSapo</div>
     <div class="text-[11px] font-label-caps text-outline -mt-4">ÚNETE A LA PARTIDA</div>
     
     <!-- Botón Google Login -->
@@ -442,7 +437,7 @@
   <!-- PANTALLA 7: En juego -->
   <div id="scr-playing" class="screen flex-col items-center justify-center p-6 gap-6 text-center">
     <div class="text-[16px] font-headline-md font-bold text-primary-container drop-shadow-[0_0_10px_rgba(0,243,255,0.4)]" id="my-name">Jugador</div>
-    <div class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-6 flex flex-col items-center gap-1.5 shadow-xl">
+    <div class="w-full bg-surface-container/90 backdrop-blur-md border border-outline-variant/30 rounded-lg p-6 flex flex-col items-center gap-1.5 shadow-xl">
       <div class="text-[11px] text-outline font-label-caps tracking-widest">MI PUNTAJE</div>
       <div class="score-big text-[64px] font-black text-tertiary-fixed font-headline-md neon-glow" id="my-score">0</div>
       <div id="my-balls" class="text-[18px] mt-2 tracking-wider">⚫⚫⚫⚫⚫</div>
@@ -454,7 +449,7 @@
 
   <!-- PANTALLA 8: Game Over -->
   <div id="scr-gameover" class="screen flex-col items-center justify-center p-6 gap-5 text-center">
-    <div class="logo font-headline-md text-[28px] font-extrabold text-primary-container tracking-widest">FIN DE PARTIDA</div>
+    <div class="logo font-headline-md text-[28px] font-extrabold text-primary-container tracking-widest">FutSapo - FIN</div>
     <div id="go-winner" class="text-[16px] text-tertiary-fixed font-bold tracking-wide"></div>
     <div class="w-full flex flex-col gap-2" id="go-scores"></div>
     
@@ -545,7 +540,6 @@ async function initCloud() {
     if (data && data.city && data.region_code) {
       myZone = `${data.city}, ${data.region_code}`;
       console.log("Zona detectada:", myZone);
-      document.getElementById("header-location-text").textContent = myZone;
     }
   } catch (e) {
     console.warn("Error detectando IP:", e);
@@ -567,7 +561,6 @@ async function initCloud() {
         console.log("Sesión activa recuperada:", myName);
         
         const avatarUrl = user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
-        document.getElementById("header-avatar-img").src = avatarUrl;
         
         // Registrar en backend local si ya está conectado
         if (sock && sock.readyState === 1) {
@@ -595,9 +588,6 @@ async function initCloud() {
           if (profile.name) {
             myName = profile.name;
             document.getElementById("my-name").textContent = myName;
-          }
-          if (profile.avatar_url) {
-            document.getElementById("header-avatar-img").src = profile.avatar_url;
           }
           // Actualizar estadísticas históricas
           const games = profile.games_played || 0;
@@ -912,7 +902,6 @@ document.getElementById("avatar-file-input").addEventListener("change", (e) => {
       selectedAvatarUrl = "";
       
       document.getElementById("profile-avatar-preview").src = compressedDataUrl;
-      document.getElementById("header-avatar-img").src = compressedDataUrl;
       
       document.querySelectorAll("#predefined-avatars-grid img").forEach(el => {
         el.style.borderColor = "transparent";
@@ -1205,16 +1194,13 @@ function showScreen(id){
   target.offsetHeight; // Force reflow
   target.classList.add("active");
   
-  // Control de visibilidad del Header y BottomNavBar
-  const header = document.getElementById("app-header");
+  // Control de visibilidad del BottomNavBar
   const bottomNav = document.getElementById("bottom-nav");
   
   if (id === "scr-playing" || id === "scr-connecting") {
-    if (header) header.classList.add("hidden");
     if (bottomNav) bottomNav.classList.add("hidden");
     document.body.style.paddingBottom = "0px";
   } else {
-    if (header) header.classList.remove("hidden");
     if (bottomNav) bottomNav.classList.remove("hidden");
     document.body.style.paddingBottom = "86px";
     
@@ -1393,7 +1379,6 @@ document.getElementById("name-ok").addEventListener("click", () => {
   if (!val) return;
   myName = val;
   const avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${selectedAvatarSeed}`;
-  document.getElementById("header-avatar-img").src = avatarUrl;
   send({ type: "player_name", name: myName, avatar: avatarUrl });
   showScreen("scr-waiting");
   document.getElementById("my-name").textContent = myName;
@@ -1525,7 +1510,6 @@ document.getElementById("profile-save").addEventListener("click", async () => {
   
   myName = newName;
   document.getElementById("my-name").textContent = myName;
-  document.getElementById("header-avatar-img").src = avatarUrl;
 
   // Enviar nombre actualizado por websocket a la máquina si está conectada
   send({ type: "player_name", name: myName, avatar: avatarUrl });
