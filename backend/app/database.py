@@ -13,6 +13,7 @@ class Base(DeclarativeBase):
     pass
 
 async def init_db():
+    from . import models  # Asegura el registro de los modelos en Base.metadata
     log.info("Inicializando base de datos SQLite en: %s", db_url)
     try:
         async with engine.begin() as conn:

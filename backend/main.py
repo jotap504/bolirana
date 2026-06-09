@@ -25,37 +25,44 @@ STATIC = Path(__file__).parent / "static"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
-    
-    # Cargar configuración desde base de datos SQLite
-    from app.database import AsyncSessionLocal
-    from app.models import ConfigEntry
-    from app.config import update_config, get_config
-    from sqlalchemy import select
-    import json
-    import random
-    
-    async with AsyncSessionLocal() as session:
-        res = await session.execute(select(ConfigEntry).where(ConfigEntry.key == "app_config"))
-        entry = res.scalar_one_or_none()
-        if entry:
-            try:
-                patch = json.loads(entry.value)
-                update_config(patch)
-                log.info("Configuración cargada desde base de datos local SQLite.")
-            except Exception as e:
-                log.error("Error al decodificar la configuración de la base de datos: %s", e)
-        else:
-            # Primer inicio: Generar identificador de máquina único
-            rand_num = random.randint(10000, 99999)
-            default_arcade_id = f"FUTSPO_{rand_num}"
-            update_config({"arcade_id": default_arcade_id})
-            
-            # Guardar en SQLite
-            new_entry = ConfigEntry(key="app_config", value=json.dumps(get_config()))
-            session.add(new_entry)
-            await session.commit()
-            log.info("Primer inicio: se generó el identificador de máquina único: %s", default_arcade_id)
+    try:
+        await init_db()
+        
+        # Cargar configuración desde base de datos SQLite
+        from app.database import AsyncSessionLocal
+        from app.models import ConfigEntry
+        from app.config import update_config, get_config
+        from sqlalchemy import select
+        import json
+        import random
+        
+        async with AsyncSessionLocal() as session:
+            res = await session.execute(select(ConfigEntry).where(ConfigEntry.key == "app_config"))
+            entry = res.scalar_one_or_none()
+            if entry:
+                try:
+                    patch = json.loads(entry.value)
+                    update_config(patch)
+                    log.info("Configuración cargada desde base de datos local SQLite.")
+                except Exception as e:
+                    log.error("Error al decodificar la configuración de la base de datos: %s", e)
+            else:
+                # Primer inicio: Generar identificador de máquina único
+                rand_num = random.randint(10000, 99999)
+                default_arcade_id = f"FUTSPO_{rand_num}"
+                update_config({"arcade_id": default_arcade_id})
+                
+                # Guardar en SQLite
+                new_entry = ConfigEntry(key="app_config", value=json.dumps(get_config()))
+                session.add(new_entry)
+                await session.commit()
+                log.info("Primer inicio: se generó el identificador de máquina único: %s", default_arcade_id)
+    except Exception as err:
+        log.error("Fallo critico durante el arranque de la aplicacion: %s", err, exc_info=True)
+        print(f"!!! STARTUP ERROR: {err}")
+        import traceback
+        traceback.print_exc()
+        raise err
 
     is_cloud = get_config().get("cloud_mode")
     app.state.ws     = WSManager()
