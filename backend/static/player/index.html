@@ -144,6 +144,11 @@
 </head>
 <body class="text-on-background min-h-screen pb-[86px] flex flex-col font-body-md select-none">
 
+<!-- Floating Small Avatar Top-Left -->
+<div id="floating-avatar-container" class="fixed top-4 left-4 z-40 w-10 h-10 rounded-full overflow-hidden border border-primary/50 shadow-[0_0_10px_rgba(0,243,255,0.2)] bg-surface hidden">
+  <img id="floating-avatar-img" alt="Avatar" class="w-full h-full object-cover" src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix"/>
+</div>
+
 <main class="w-full max-w-lg mx-auto flex-1 flex flex-col justify-center">
 
   <!-- PANTALLA 1: Sumarse a la partida (Home Screen) -->
@@ -561,6 +566,7 @@ async function initCloud() {
         console.log("Sesión activa recuperada:", myName);
         
         const avatarUrl = user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`;
+        selectedAvatarUrl = avatarUrl;
         
         // Registrar en backend local si ya está conectado
         if (sock && sock.readyState === 1) {
@@ -589,6 +595,11 @@ async function initCloud() {
             myName = profile.name;
             document.getElementById("my-name").textContent = myName;
           }
+          if (profile.avatar_url) {
+            selectedAvatarUrl = profile.avatar_url;
+          }
+          updateFloatingAvatar(selectedAvatarUrl);
+          
           // Actualizar estadísticas históricas
           const games = profile.games_played || 0;
           const highScore = profile.high_score || 0;
@@ -1172,6 +1183,22 @@ function send(msg){ if(sock?.readyState===1) sock.send(JSON.stringify(msg)); }
 function btn(id){ send({type:"btn",id}); }
 
 // ── Pantallas & Tabbed Navigation ────────────────────────────────────────────
+function updateFloatingAvatar(url) {
+  if (!url) return;
+  const img = document.getElementById("floating-avatar-img");
+  if (img) img.src = url;
+  
+  const currentScreen = document.querySelector(".screen.active")?.id;
+  const container = document.getElementById("floating-avatar-container");
+  if (container) {
+    if (myName && currentScreen && currentScreen !== "scr-playing" && currentScreen !== "scr-connecting" && currentScreen !== "scr-enter-name") {
+      container.classList.remove("hidden");
+    } else {
+      container.classList.add("hidden");
+    }
+  }
+}
+
 function showScreen(id){
   const screens = document.querySelectorAll(".screen");
   const target = document.getElementById(id);
@@ -1194,14 +1221,17 @@ function showScreen(id){
   target.offsetHeight; // Force reflow
   target.classList.add("active");
   
-  // Control de visibilidad del BottomNavBar
+  // Control de visibilidad del BottomNavBar y Floating Avatar
   const bottomNav = document.getElementById("bottom-nav");
+  const floatingAvatar = document.getElementById("floating-avatar-container");
   
-  if (id === "scr-playing" || id === "scr-connecting") {
+  if (id === "scr-playing" || id === "scr-connecting" || id === "scr-enter-name" || !myName) {
     if (bottomNav) bottomNav.classList.add("hidden");
+    if (floatingAvatar) floatingAvatar.classList.add("hidden");
     document.body.style.paddingBottom = "0px";
   } else {
     if (bottomNav) bottomNav.classList.remove("hidden");
+    if (floatingAvatar) floatingAvatar.classList.remove("hidden");
     document.body.style.paddingBottom = "86px";
     
     // Asignar el tab activo en la barra inferior
@@ -1213,6 +1243,10 @@ function showScreen(id){
       updateBottomNavActive("home");
     }
   }
+  
+  // Sincronizar el avatar flotante
+  const currentAvatarUrl = document.getElementById("profile-avatar-preview")?.src || selectedAvatarUrl || uploadedImageBase64;
+  updateFloatingAvatar(currentAvatarUrl);
 }
 
 function updateBottomNavActive(activeTabId) {
