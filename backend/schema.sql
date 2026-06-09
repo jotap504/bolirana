@@ -155,27 +155,39 @@ returns table (
 ) as $$
 begin
   return query
-  select 
-    r.player_name,
-    r.score,
-    r.zone,
-    coalesce(p.avatar_url, r.avatar_url) as avatar_url,
-    r.arcade_id,
-    (6371 * acos(
+  with zonal_grouped as (
+    select 
+      r.google_id,
+      max(r.player_name) as player_name,
+      max(r.score) as score,
+      max(r.zone) as zone,
+      max(coalesce(p.avatar_url, r.avatar_url)) as avatar_url,
+      max(r.arcade_id) as arcade_id,
+      min(6371 * acos(
+        cos(radians(machine_lat)) * cos(radians(m.latitude)) * 
+        cos(radians(m.longitude) - radians(machine_lon)) + 
+        sin(radians(machine_lat)) * sin(radians(m.latitude))
+      )) as distance
+    from public.rankings r
+    join public.machines m on r.arcade_id = m.arcade_id
+    left join public.profiles p on r.google_id = p.id
+    where (6371 * acos(
       cos(radians(machine_lat)) * cos(radians(m.latitude)) * 
       cos(radians(m.longitude) - radians(machine_lon)) + 
       sin(radians(machine_lat)) * sin(radians(m.latitude))
-    )) as distance
-  from public.rankings r
-  join public.machines m on r.arcade_id = m.arcade_id
-  left join public.profiles p on r.google_id = p.id
-  where (6371 * acos(
-    cos(radians(machine_lat)) * cos(radians(m.latitude)) * 
-    cos(radians(m.longitude) - radians(machine_lon)) + 
-    sin(radians(machine_lat)) * sin(radians(m.latitude))
-  )) <= radius_km
-    and r.google_id is not null
-  order by r.score desc
+    )) <= radius_km
+      and r.google_id is not null
+    group by r.google_id
+  )
+  select 
+    zg.player_name,
+    zg.score,
+    zg.zone,
+    zg.avatar_url,
+    zg.arcade_id,
+    zg.distance
+  from zonal_grouped zg
+  order by zg.score desc
   limit 10;
 end;
 $$ language plpgsql security definer;
@@ -192,16 +204,18 @@ select
 from public.profiles
 where games_played > 0;
 
--- 7. Crear Vista de Rankings vinculada con Perfiles (para avatar_url en tiempo real)
+-- 7. Crear Vista de Rankings vinculada con Perfiles (agrupado por jugador para evitar duplicados en ranking)
 create or replace view public.rankings_view as
 select 
-  r.id,
-  r.created_at,
+  min(r.id) as id,
+  max(r.created_at) as created_at,
   r.arcade_id,
-  r.player_name,
-  r.score,
-  r.zone,
+  max(r.player_name) as player_name,
+  max(r.score) as score,
+  max(r.zone) as zone,
   r.google_id,
-  coalesce(p.avatar_url, r.avatar_url) as avatar_url
+  max(coalesce(p.avatar_url, r.avatar_url)) as avatar_url
 from public.rankings r
-left join public.profiles p on r.google_id = p.id;
+left join public.profiles p on r.google_id = p.id
+where r.google_id is not null
+group by r.arcade_id, r.google_id;
