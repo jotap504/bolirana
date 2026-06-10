@@ -99,11 +99,12 @@ begin
   if new.google_id is not null then
     update public.profiles
     set 
-      games_played = games_played + 1,
-      high_score = greatest(high_score, new.score),
+      games_played = coalesce(games_played, 0) + 1,
+      high_score = greatest(coalesce(high_score, 0), new.score),
       total_score = coalesce(total_score, 0) + new.score,
       current_streak = case when new.is_winner = true then coalesce(current_streak, 0) + 1 else 0 end,
-      best_streak = greatest(coalesce(best_streak, 0), case when new.is_winner = true then coalesce(current_streak, 0) + 1 else 0 end)
+      best_streak = greatest(coalesce(best_streak, 0), case when new.is_winner = true then coalesce(current_streak, 0) + 1 else 0 end),
+      updated_at = now()
     where id = new.google_id;
   end if;
   return new;
