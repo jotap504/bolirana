@@ -101,8 +101,10 @@ class SerialBridge:
         """Genera eventos de prueba periódicos y simula salidas de bola."""
         cfg = get_config()
         zones = [s["id"] for s in cfg["sensors"] if s.get("enabled")]
+        import os
         while self._running:
-            await asyncio.sleep(random.uniform(4, 8))
+            sleep_time = random.uniform(60, 120) if os.getenv("SLOW_MOCK") else random.uniform(4, 8)
+            await asyncio.sleep(sleep_time)
             if zones:
                 zone = random.choice(zones)
                 # 1. Simular impacto en sensor

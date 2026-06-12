@@ -14,14 +14,15 @@ DEFAULT_CONFIG = {
     "game": {
         "balls_default": 5,
         "ball_options": [3, 5, 7, 10],
-        "time_limit_seconds": 120,
+        "time_per_player_seconds": 60,     # Segundos por turno completo (modo TIMED)
+        "goleador_points_per_ball": 500,   # Puntos al ranking por cada bola embocada (modo GOLEADOR)
         "attract_timeout_seconds": 30,
         "turn_change_seconds": 2,
-        "rotation_mode": "sequential",  # "sequential" (todas las bolas juntas) o "alternate" (1 bola cada uno)
+        "rotation_mode": "sequential",  # "sequential" o "alternate"
     },
     "pricing": {
         "base_credits_per_player": 1,
-        "mode_extra": {"classic": 0, "timed": 0, "battle": 1, "team": 0},
+        "mode_extra": {"classic": 0, "timed": 0, "team": 0, "goleador": 0},
         "coin_to_credits": 1,
         "pesos_per_credit": 200,
         "group_discount": {"5": 1, "6": 2},
@@ -85,6 +86,15 @@ def apply_env_overrides(cfg: dict) -> None:
         if "mercadopago" not in cfg:
             cfg["mercadopago"] = {}
         cfg["mercadopago"]["access_token"] = os.environ["MP_ACCESS_TOKEN"]
+    if "SERIAL_MOCK" in os.environ:
+        if "serial" not in cfg:
+            cfg["serial"] = {}
+        cfg["serial"]["mock"] = os.environ["SERIAL_MOCK"].lower() in ("true", "1", "yes")
+    if "SERIAL_PORT" in os.environ:
+        if "serial" not in cfg:
+            cfg["serial"] = {}
+        cfg["serial"]["port"] = os.environ["SERIAL_PORT"]
+
 
 def get_config() -> dict:
     cfg = _runtime if _runtime else DEFAULT_CONFIG

@@ -92,32 +92,49 @@ async def sync_scores_to_supabase(players: list, mode: str) -> None:
 
     # Mapear los scores de los jugadores
     payload = []
-    max_score = max((p.score for p in players), default=0) if players else 0
+    game_cfg = get_config().get("game", {})
+    is_goleador = str(mode) == "goleador"
+
+    if is_goleador:
+        # En modo GOLEADOR: el score para ranking = bolas_embocadas × puntos_por_bola
+        points_per_ball = game_cfg.get("goleador_points_per_ball", 500)
+        max_balls = max((getattr(p, "balls_pocketed", 0) for p in players), default=0) if players else 0
+    else:
+        max_score = max((p.score for p in players), default=0) if players else 0
 
     for p in players:
         google_id = getattr(p, "google_id", None)
         is_guest = not hasattr(p, "google_id") or google_id is None
-        
+
         # Sincronizar en rankings solo si es un jugador registrado
         if not is_guest and google_id is not None:
             name = p.name or f"Jugador {p.index + 1}"
             avatar = getattr(p, "avatar", None)
-            is_winner = (p.score == max_score) if max_score > 0 else False
-            
+            balls = getattr(p, "balls_pocketed", 0)
+
+            if is_goleador:
+                # Score para ranking = bolas embocadas × puntos configurados
+                sync_score = balls * points_per_ball
+                is_winner = (len(players) == 1) or (balls == max_balls and max_balls >= 0)
+            else:
+                sync_score = p.score
+                is_winner = (len(players) == 1) or (p.score == max_score and max_score > 0)
+
             payload.append({
-                "arcade_id": arcade_id,
+                "arcade_id":   arcade_id,
                 "player_name": name,
-                "score": p.score,
-                "zone": MACHINE_ZONE,
-                "is_guest": False,
-                "google_id": google_id,
-                "avatar_url": avatar or None,
-                "is_winner": is_winner
+                "score":       sync_score,
+                "zone":        MACHINE_ZONE,
+                "is_guest":    False,
+                "google_id":   google_id,
+                "avatar_url":  avatar or None,
+                "is_winner":   is_winner,
             })
 
     if not payload:
         log.info("Sincronización Supabase omitida: no hay jugadores registrados en la partida.")
         return
+
 
     def _send():
         try:

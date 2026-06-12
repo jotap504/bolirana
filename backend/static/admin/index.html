@@ -308,12 +308,14 @@
           <input type="text" id="cfg-arcade-id" placeholder="FUTSPO_XXXXX" style="text-transform: uppercase;"></div>
         <div><label>Bolas por jugador (default)</label>
           <input type="number" id="cfg-balls" min="1" max="20" value="5"></div>
-        <div><label>Tiempo límite (segundos, modo TIMED)</label>
-          <input type="number" id="cfg-time" min="30" max="600" value="120"></div>
+        <div><label>Tiempo por turno (segundos, modo TIMED)</label>
+          <input type="number" id="cfg-time" min="10" max="300" value="60"></div>
         <div><label>Segundos entre turnos</label>
           <input type="number" id="cfg-turn" min="2" max="10" value="4"></div>
         <div><label>Segundos attract timeout</label>
           <input type="number" id="cfg-attract" min="10" max="300" value="30"></div>
+        <div><label>Puntos por bola (ranking, modo GOLEADOR)</label>
+          <input type="number" id="cfg-goleador-points" min="10" max="5000" value="500"></div>
         <div><label>Modalidad de Tiro</label>
           <select id="cfg-rotation">
             <option value="sequential">Secuencial (todas las bolas juntas)</option>
@@ -384,7 +386,7 @@
       <div class="form-row">
         <div><label>Clásico</label><input type="number" id="pr-classic" value="0" min="0"></div>
         <div><label>Contrarreloj</label><input type="number" id="pr-timed" value="0" min="0"></div>
-        <div><label>Batalla</label><input type="number" id="pr-battle" value="1" min="0"></div>
+        <div><label>Goleador</label><input type="number" id="pr-goleador" value="0" min="0"></div>
         <div><label>Equipo</label><input type="number" id="pr-team" value="0" min="0"></div>
       </div>
       <button class="btn btn-save" id="save-pricing">GUARDAR PRECIOS</button>
@@ -520,9 +522,10 @@ async function loadConfig() {
   document.getElementById("cfg-arcade-id").value = cfg.arcade_id || "";
   const g = cfg.game || {};
   document.getElementById("cfg-balls").value   = g.balls_default || 5;
-  document.getElementById("cfg-time").value    = g.time_limit_seconds || 120;
+  document.getElementById("cfg-time").value    = g.time_per_player_seconds || 60;
   document.getElementById("cfg-turn").value    = g.turn_change_seconds || 4;
   document.getElementById("cfg-attract").value = g.attract_timeout_seconds || 30;
+  document.getElementById("cfg-goleador-points").value = g.goleador_points_per_ball || 500;
   document.getElementById("cfg-rotation").value = g.rotation_mode || "sequential";
 
   const p = cfg.pricing || {};
@@ -531,7 +534,7 @@ async function loadConfig() {
   document.getElementById("pr-base").value    = p.base_credits_per_player || 1;
   document.getElementById("pr-classic").value = p.mode_extra?.classic || 0;
   document.getElementById("pr-timed").value   = p.mode_extra?.timed || 0;
-  document.getElementById("pr-battle").value  = p.mode_extra?.battle || 1;
+  document.getElementById("pr-goleador").value = p.mode_extra?.goleador || 0;
   document.getElementById("pr-team").value    = p.mode_extra?.team || 0;
 
   renderSensors(cfg.sensors || []);
@@ -596,9 +599,10 @@ document.getElementById("save-game").addEventListener("click", async () => {
 
   await api("/api/admin/config/game", "PATCH", {
     balls_default:          +document.getElementById("cfg-balls").value,
-    time_limit_seconds:     +document.getElementById("cfg-time").value,
+    time_per_player_seconds: +document.getElementById("cfg-time").value,
     turn_change_seconds:    +document.getElementById("cfg-turn").value,
     attract_timeout_seconds:+document.getElementById("cfg-attract").value,
+    goleador_points_per_ball: +document.getElementById("cfg-goleador-points").value,
     rotation_mode:          document.getElementById("cfg-rotation").value,
   });
   toast("Configuración de juego guardada");
@@ -612,7 +616,7 @@ document.getElementById("save-pricing").addEventListener("click", async () => {
     mode_extra: {
       classic:+document.getElementById("pr-classic").value,
       timed:  +document.getElementById("pr-timed").value,
-      battle: +document.getElementById("pr-battle").value,
+      goleador:+document.getElementById("pr-goleador").value,
       team:   +document.getElementById("pr-team").value,
     }
   });

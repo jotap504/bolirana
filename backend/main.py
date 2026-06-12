@@ -7,7 +7,7 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pathlib import Path
 
 from app.database   import init_db
@@ -123,7 +123,7 @@ def _handle_hw_event(app):
         elif t == "btn":
             await engine.handle_button(msg["id"])
         elif t == "ball":
-            await engine.handle_ball_consumed()
+            await engine.handle_ball_consumed(from_hardware=True)
         elif t == "proximity":
             await engine.handle_proximity(msg.get("active", False))
     return _handler
@@ -142,4 +142,4 @@ app.mount("/admin",   StaticFiles(directory=STATIC / "admin",   html=True), name
 
 @app.get("/")
 async def root():
-    return FileResponse(STATIC / "display" / "index.html")
+    return RedirectResponse(url="/display/")

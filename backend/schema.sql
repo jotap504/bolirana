@@ -93,18 +93,37 @@ create policy "Permitir insert publico de rankings" on public.rankings
   for insert to public with check (true);
 
 -- 3. Trigger de Postgres para actualizar estadísticas automáticamente
+-- NOTA: Se usa una variable local (v_new_streak) para evitar el bug de Postgres
+-- donde todas las expresiones en un UPDATE se evalúan con los valores ORIGINALES.
+-- Sin esto, best_streak nunca captura el valor recién incrementado de current_streak.
 create or replace function public.update_profile_stats()
 returns trigger as $$
+declare
+  v_new_streak integer;
 begin
   if new.google_id is not null then
+    -- Calcular la nueva racha ANTES del UPDATE, usando una variable local
+    select case
+      when new.is_winner = true then coalesce(current_streak, 0) + 1
+      else 0
+    end
+    into v_new_streak
+    from public.profiles
+    where id = new.google_id;
+
+    -- Si no encontró el perfil, usar 0 como base
+    if v_new_streak is null then
+      v_new_streak := case when new.is_winner = true then 1 else 0 end;
+    end if;
+
     update public.profiles
-    set 
-      games_played = coalesce(games_played, 0) + 1,
-      high_score = greatest(coalesce(high_score, 0), new.score),
-      total_score = coalesce(total_score, 0) + new.score,
-      current_streak = case when new.is_winner = true then coalesce(current_streak, 0) + 1 else 0 end,
-      best_streak = greatest(coalesce(best_streak, 0), case when new.is_winner = true then coalesce(current_streak, 0) + 1 else 0 end),
-      updated_at = now()
+    set
+      games_played   = coalesce(games_played, 0) + 1,
+      high_score     = greatest(coalesce(high_score, 0), new.score),
+      total_score    = coalesce(total_score, 0) + new.score,
+      current_streak = v_new_streak,
+      best_streak    = greatest(coalesce(best_streak, 0), v_new_streak),
+      updated_at     = now()
     where id = new.google_id;
   end if;
   return new;

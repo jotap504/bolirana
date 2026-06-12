@@ -1484,7 +1484,15 @@ function connect() {
   };
   sock.onerror   = () => {};
   sock.onmessage = ({data}) => {
-    try { handle(JSON.parse(data)); } catch(e){}
+    try {
+      const msg = JSON.parse(data);
+      // El servidor puede pedir que reenvíemos el perfil (ej: al reconectar en modo cloud)
+      if (msg.type === "resend_profile") {
+        sendPlayerProfile();
+      } else {
+        handle(msg);
+      }
+    } catch(e){}
   };
 }
 function send(msg){ if(sock?.readyState===1) sock.send(JSON.stringify(msg)); }
@@ -1784,12 +1792,12 @@ function renderGameOver(msg) {
     personalCard.style.display = "none";
   }
 
-  // Refrescar automáticamente rankings e historial en la nube después de 1.5s (tiempo para el sync del backend)
+  // Refrescar automáticamente rankings e historial en la nube después de 3s (tiempo para que el trigger de Supabase procese)
   setTimeout(() => {
     console.log("Refrescando rankings zonal/global y estadísticas personales...");
     loadRankings();
     refreshUserProfileStats();
-  }, 1500);
+  }, 3000);
 }
 
 function logEvent(text) {

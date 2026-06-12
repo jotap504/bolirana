@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bolirana Arcade</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=250">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="css/style.css?v=260">
   <style>
     /* Estilos para el Scoreboard Vertical Premium */
     .scores-wrap {
@@ -234,11 +235,11 @@
                 <div class="mode-desc">Goles más rápidos para un desempate en torneo de combo.</div>
               </div>
             </div>
-            <div class="mode-item" data-mode="battle">
-              <div class="mode-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" style="filter: drop-shadow(0 0 4px var(--green));"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-3 8c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm6 0c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm-3 7c-2.3 0-4.1-1.4-4.9-3h9.8c-.8 1.6-2.6 3-4.9 3z"></path></svg></div>
+            <div class="mode-item" data-mode="goleador">
+              <div class="mode-icon">🏆</div>
               <div class="mode-info">
-                <div class="mode-name">SAPO EXTREMO</div>
-                <div class="mode-desc">Como una partida de sapo extremo, completo más sumatoria extrema.</div>
+                <div class="mode-name">GOLEADOR</div>
+                <div class="mode-desc">Gana quien emboca más bolas, sin importar la zona.</div>
               </div>
             </div>
             <div class="mode-item" data-mode="team">
@@ -288,13 +289,13 @@
               </div>
               <div class="mode-extra">base</div>
             </div>
-            <div class="mode-item" data-mode="battle">
-              <div class="mode-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" style="filter: drop-shadow(0 0 4px var(--green));"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-3 8c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm6 0c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm-3 7c-2.3 0-4.1-1.4-4.9-3h9.8c-.8 1.6-2.6 3-4.9 3z"></path></svg></div>
+            <div class="mode-item" data-mode="goleador">
+              <div class="mode-icon">🏆</div>
               <div class="mode-info">
-                <div class="mode-name">SAPO EXTREMO</div>
-                <div class="mode-desc">Como una partida de sapo extremo, completo más sumatoria extrema.</div>
+                <div class="mode-name">GOLEADOR</div>
+                <div class="mode-desc">Gana quien emboca más bolas, sin importar la zona.</div>
               </div>
-              <div class="mode-extra">+1</div>
+              <div class="mode-extra">base</div>
             </div>
             <div class="mode-item" data-mode="team">
               <div class="mode-icon">🤝</div>
@@ -428,12 +429,58 @@
       </button>
       <div class="nav-hint">Presioná START para comenzar</div>
     </div>
+ 
+    <!-- ── SELECT TEAM ────────────────────────────────────────────────── -->
+    <div id="screen-select_team" class="screen">
+      <div class="sel-topbadge">ASIGNACIÓN DE EQUIPOS</div>
+      <div class="team-selection-container" style="display: flex; gap: 40px; width: 100%; max-width: 1000px; flex: 1; align-items: stretch; justify-content: space-between; min-height: 0; padding: 10px;">
+        
+        <!-- COLUMNA EQUIPO A -->
+        <div class="team-panel team-a" style="flex: 1; border: 3px solid var(--p0); background: rgba(255, 68, 85, 0.08); border-radius: 16px; padding: 20px; box-shadow: 0 0 20px rgba(255, 68, 85, 0.25); display: flex; flex-direction: column; gap: 15px; align-items: center;">
+          <h2 style="font-family: 'Orbitron', sans-serif; font-size: 24px; color: var(--p0); text-shadow: 0 0 10px var(--p0); font-weight: 900; letter-spacing: 2px;">EQUIPO ROJO</h2>
+          <div id="team-a-players" style="display: flex; flex-direction: column; gap: 10px; width: 100%; overflow-y: auto; flex: 1;"></div>
+        </div>
+
+        <!-- COLUMNA EQUIPO B -->
+        <div class="team-panel team-b" style="flex: 1; border: 3px solid var(--p1); background: rgba(68, 170, 255, 0.08); border-radius: 16px; padding: 20px; box-shadow: 0 0 20px rgba(68, 170, 255, 0.25); display: flex; flex-direction: column; gap: 15px; align-items: center;">
+          <h2 style="font-family: 'Orbitron', sans-serif; font-size: 24px; color: var(--p1); text-shadow: 0 0 10px var(--p1); font-weight: 900; letter-spacing: 2px;">EQUIPO AZUL</h2>
+          <div id="team-b-players" style="display: flex; flex-direction: column; gap: 10px; width: 100%; overflow-y: auto; flex: 1;"></div>
+        </div>
+      </div>
+
+      <div id="team-balance-warning" style="color: #ff4455; font-size: 14px; font-weight: bold; font-family: 'Orbitron', sans-serif; text-align: center; margin-top: 15px; display: none; text-shadow: 0 0 8px rgba(255, 68, 85, 0.5);">
+        ⚠️ EQUIPOS DESBALANCEADOS. ¡DEBE HABER EL MISMO NÚMERO DE JUGADORES!
+      </div>
+      <div style="display: flex; gap: 20px; margin-top: 15px; align-items: center;">
+        <button class="btn-ok" id="team-random" style="font-size: 16px; padding: 8px 24px; border-color: var(--gold); color: var(--gold); text-shadow: 0 0 10px var(--gold);">🎲 ALEATORIO (R)</button>
+        <button class="btn-start-big" id="team-confirm" style="font-size: 18px; padding: 10px 40px; margin-top: 0;">JUGAR START</button>
+      </div>
+      <div class="nav-hint">◄ ► elegir equipo &nbsp;|&nbsp; START confirmar</div>
+    </div>
+
+    <!-- ── TIEBREAK ───────────────────────────────────────────────────── -->
+    <div id="screen-tiebreak" class="screen">
+      <div class="sel-topbadge" style="border-color: var(--gold); color: var(--gold); box-shadow: 0 0 22px rgba(245, 192, 0, 0.35);">Muerte Súbita - Bola de Oro</div>
+      <div class="tiebreak-container" style="display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; max-width: 800px; flex: 1; justify-content: center;">
+        <h1 style="font-family: 'Press Start 2P', monospace; font-size: clamp(28px, 5vw, 52px); color: var(--gold); text-shadow: 0 0 25px rgba(245, 192, 0, 0.85); text-align: center; animation: blink 1s infinite alternate;">¡DESEMPATE!</h1>
+        <div style="font-size: 18px; color: var(--text); letter-spacing: 2px; text-align: center; max-width: 600px; line-height: 1.6;">
+          Los siguientes jugadores han empatado y competirán con <span style="color: var(--gold); font-weight: bold;">1 bola extra ("Bola de Oro")</span> en orden secuencial hasta definir un ganador único.
+        </div>
+        <div id="tiebreak-tied-list" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 20px; width: 100%;"></div>
+      </div>
+      <div class="nav-hint">Tire la bola de oro para desempatar</div>
+    </div>
 
     <!-- ── PLAYING ─────────────────────────────────────────────────────── -->
     <div id="screen-playing" class="screen">
       <div class="game-header">
         <div class="game-mode-badge" id="game-mode-badge">CLÁSICO</div>
-        <div class="game-timer" id="game-timer" style="display:none">
+        <div id="team-scores-header" style="display: none; margin: 0 auto; gap: 20px; font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; letter-spacing: 2px;">
+          <span style="color: var(--p0); text-shadow: 0 0 10px var(--p0);">ROJO: <span id="team-a-score-val">0</span></span>
+          <span style="color: #fff;">VS</span>
+          <span style="color: var(--p1); text-shadow: 0 0 10px var(--p1);">AZUL: <span id="team-b-score-val">0</span></span>
+        </div>
+        <div class="game-timer" id="game-timer" style="display:none; margin: 0 auto;">
           <span id="timer-val">120</span>s
         </div>
         <div class="game-credits">
@@ -508,11 +555,11 @@
 
   </div><!-- #app -->
 
-  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
-  <script src="js/ws.js?v=250"></script>
-  <script src="js/fx.js?v=250"></script>
-  <script src="js/audio.js?v=250"></script>
-  <script src="js/screens.js?v=250"></script>
-  <script src="js/app.js?v=250"></script>
+  <script src="js/pixi.min.js"></script>
+  <script src="js/ws.js?v=260"></script>
+  <script src="js/fx.js?v=260"></script>
+  <script src="js/audio.js?v=260"></script>
+  <script src="js/screens.js?v=260"></script>
+  <script src="js/app.js?v=260"></script>
 </body>
 </html>

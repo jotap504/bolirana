@@ -57,6 +57,13 @@ async def ws_player(ws: WebSocket, index: int):
         except Exception as e:
             log.warning("Fallo al avisar conexión a la máquina: %s", e)
 
+        # Pedir al celular que reenvíe su perfil (google_id, nombre, avatar)
+        # Esto es crítico cuando el jugador reconecta — la máquina local pierde el google_id
+        try:
+            await ws.send_json({"type": "resend_profile"})
+        except Exception as e:
+            log.warning("Fallo al solicitar re-envío de perfil al celular: %s", e)
+
         try:
             while True:
                 raw = await ws.receive_text()
@@ -201,7 +208,7 @@ async def sim_button(btn_id: str, request: Request):
 
 @router.post("/api/sim/ball")
 async def sim_ball(request: Request):
-    await request.app.state.engine.handle_ball_consumed()
+    await request.app.state.engine.handle_ball_consumed(from_hardware=False)
     return {"ok": True}
 
 @router.post("/api/sim/reset")
