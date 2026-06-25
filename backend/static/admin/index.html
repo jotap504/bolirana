@@ -865,7 +865,7 @@ function playAttractAudio(filename) {
 }
 
 async function deleteAttractAudio(filename) {
-  if (!confirm("¿Estás seguro de que quieres eliminar el audio \\"" + filename + "\\"?")) return;
+  if (!confirm('¿Estás seguro de que quieres eliminar el audio "' + filename + '"?')) return;
   try {
     const res = await api('/api/admin/attract/audios/' + encodeURIComponent(filename), "DELETE");
     if (res.status === "success") {
