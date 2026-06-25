@@ -209,11 +209,21 @@
     }
     .sensor-row{
       display:grid;
-      grid-template-columns:1fr 2.5fr 1.2fr 100px;
+      grid-template-columns:1fr 2.5fr 1.2fr 100px 50px;
       gap:12px;
       align-items:center;
-      padding:12px 0;
+      padding:5px 0;
       border-bottom:1px solid rgba(255, 255, 255, 0.05);
+    }
+    .sensor-row input {
+      padding: 6px 10px !important;
+      font-size: 13px !important;
+      border-radius: 6px !important;
+    }
+    .sensor-row .toggle {
+      height: 24px !important;
+      border-radius: 12px !important;
+      font-size: 10px !important;
     }
     .sensor-row:last-child{border:none}
     .sensor-id{
@@ -239,6 +249,19 @@
       background:var(--green);
       color:#000;
       box-shadow: 0 0 8px rgba(0,255,170,0.4);
+    }
+    .indicator-led {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #222;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.05);
+      transition: all 0.15s ease;
+      display: inline-block;
+    }
+    .indicator-led.active {
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green), 0 0 20px var(--green);
     }
     .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
     .stat-card{
@@ -293,6 +316,7 @@
     <button class="tab active" data-tab="juego">JUEGO</button>
     <button class="tab" data-tab="sensores">SENSORES</button>
     <button class="tab" data-tab="precios">PRECIOS</button>
+    <button class="tab" data-tab="promociones">PROMOCIONES</button>
     <button class="tab" data-tab="motores">MOTORES</button>
     <button class="tab" data-tab="luces">LUCES</button>
     <button class="tab" data-tab="simulador">SIMULADOR</button>
@@ -329,7 +353,13 @@
   <!-- ── SENSORES ── -->
   <div id="panel-sensores" class="panel">
     <div class="card">
-      <div class="card-title">ZONAS DE PUNTAJE</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0">ZONAS DE PUNTAJE</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <label style="font-size:12px; color:var(--muted); font-weight:600; letter-spacing:1px; cursor:pointer;" for="test-mode-toggle">PROBADOR DE SENSORES</label>
+          <button class="toggle" id="test-mode-toggle" onclick="toggleTestMode(this)">OFF</button>
+        </div>
+      </div>
       <div id="sensor-list"></div>
       <button class="btn btn-save" id="save-sensors" style="margin-top:12px">GUARDAR SENSORES</button>
     </div>
@@ -390,6 +420,87 @@
         <div><label>Equipo</label><input type="number" id="pr-team" value="0" min="0"></div>
       </div>
       <button class="btn btn-save" id="save-pricing">GUARDAR PRECIOS</button>
+    </div>
+  </div>
+
+  <!-- ── PROMOCIONES ── -->
+  <div id="panel-promociones" class="panel">
+    <div class="card">
+      <div class="card-title">GESTOR DE PROMOCIONES Y DESCUENTOS</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        Creá y administrá promociones que se activarán automáticamente según el día y la hora. Las promociones pueden aplicar descuentos en el costo de los pagos QR o multiplicar los créditos obtenidos al insertar fichas físicas.
+      </p>
+      
+      <div id="admin-promos-list" style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
+        <!-- Cargado dinámicamente -->
+      </div>
+      
+      <div style="border-top:1.5px solid rgba(0, 240, 255, 0.2); padding-top:20px;">
+        <div class="card-title" id="promo-form-title" style="color:var(--neon); border-left-color:var(--neon)">AGREGAR NUEVA PROMOCIÓN</div>
+        <input type="hidden" id="promo-edit-index" value="-1">
+        
+        <div class="form-row">
+          <div>
+            <label>ID Único (solo minúsculas, números y guión bajo)</label>
+            <input type="text" id="promo-id" placeholder="ej. happy_hour">
+          </div>
+          <div>
+            <label>Título de la Promo</label>
+            <input type="text" id="promo-title" placeholder="ej. HAPPY HOUR FUTSAPO">
+          </div>
+          <div>
+            <label>Emoji / Ícono</label>
+            <input type="text" id="promo-icon" placeholder="ej. ⚡">
+          </div>
+          <div>
+            <label>Insignia (Badge)</label>
+            <input type="text" id="promo-badge" placeholder="ej. 2x1 CRÉDITOS">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div style="grid-column: span 2;">
+            <label>Descripción de la Promo</label>
+            <input type="text" id="promo-desc" placeholder="ej. 2x1 en créditos de juego de lunes a jueves de 18:00 a 20:00 hs.">
+          </div>
+          <div>
+            <label>Hora de Inicio (0-23)</label>
+            <input type="number" id="promo-start-hour" min="0" max="23" value="0">
+          </div>
+          <div>
+            <label>Hora de Fin (1-24)</label>
+            <input type="number" id="promo-end-hour" min="1" max="24" value="24">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>Descuento QR (0.0 a 1.0, ej: 0.25 para 25% OFF)</label>
+            <input type="number" id="promo-discount" min="0" max="1" step="0.05" value="0">
+          </div>
+          <div>
+            <label>Multiplicador de Créditos (Fichas, ej: 2 para 2x1)</label>
+            <input type="number" id="promo-multiplier" min="1" max="5" step="1" value="1">
+          </div>
+          <div style="grid-column: span 2;">
+            <label>Días de la semana (Mantén Ctrl para elegir varios)</label>
+            <select id="promo-days" multiple style="height:100px;">
+              <option value="1">Lunes</option>
+              <option value="2">Martes</option>
+              <option value="3">Miércoles</option>
+              <option value="4">Jueves</option>
+              <option value="5">Viernes</option>
+              <option value="6">Sábado</option>
+              <option value="0">Domingo</option>
+            </select>
+          </div>
+        </div>
+        
+        <div style="display:flex; gap:12px; margin-top:16px;">
+          <button class="btn btn-save" id="btn-save-promo">GUARDAR PROMOCIÓN</button>
+          <button class="btn btn-sim" id="btn-cancel-promo" style="display:none; color:var(--muted); border-color:var(--border);">CANCELAR EDICIÓN</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -549,6 +660,9 @@ async function loadConfig() {
   document.getElementById("cfg-prox-right").textContent = ac.right_enabled ? "ON" : "OFF";
   document.getElementById("cfg-prox-invalidate").value = ac.invalidate_throws ? "true" : "false";
   document.getElementById("cfg-prox-duration").value = ac.alert_duration_seconds || 3;
+
+  adminPromotions = cfg.promotions || [];
+  renderAdminPromotions();
 }
 
 function renderSensors(sensors) {
@@ -560,6 +674,9 @@ function renderSensors(sensors) {
       <input type="number" value="${s.points}" id="sn-${i}-pts" min="0" max="9999">
       <button class="toggle ${s.enabled?"on":""}" id="sn-${i}-en"
         onclick="toggleSensor(${i},this)">${s.enabled?"ON":"OFF"}</button>
+      <div style="display:flex; justify-content:center; align-items:center;">
+        <span class="indicator-led" id="test-led-${s.id}"></span>
+      </div>
     </div>`).join("");
 }
 
@@ -677,6 +794,151 @@ async function sendHwCmd(cmd) {
   }
 }
 
+let adminPromotions = [];
+
+function renderAdminPromotions() {
+  const list = document.getElementById("admin-promos-list");
+  if (!list) return;
+  if (adminPromotions.length === 0) {
+    list.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:13px; padding:16px 0;">No hay promociones creadas aún.</div>`;
+    return;
+  }
+  
+  const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+  list.innerHTML = adminPromotions.map((p, idx) => {
+    const daysStr = (p.days || []).map(d => dayNames[d]).join(", ") || "Ninguno";
+    const discountStr = p.discount_pct ? `${p.discount_pct * 100}% OFF QR` : "Sin descuento QR";
+    const multiplierStr = p.credits_multiplier && p.credits_multiplier > 1 ? `${p.credits_multiplier}x1 Fichas` : "Sin multiplicador";
+    
+    return `
+      <div class="card" style="margin-bottom:0; display:flex; align-items:center; justify-content:space-between; padding:16px; border-color:rgba(255,255,255,0.05); background:rgba(255,255,255,0.01);">
+        <div style="display:flex; align-items:center; gap:16px; min-width:0; flex:1; text-align:left;">
+          <span style="font-size:32px; flex-shrink:0;">${p.icon || '🎉'}</span>
+          <div style="min-width:0; flex:1;">
+            <div style="font-weight:bold; color:#fff; font-size:15px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              ${p.title}
+              <span class="badge" style="font-size:10px; padding:1px 6px; text-transform:uppercase; color:var(--neon); border-color:var(--border);">${p.badge}</span>
+            </div>
+            <div style="font-size:12px; color:var(--muted); margin-top:2px; word-break:break-word;">${p.desc}</div>
+            <div style="font-size:11px; color:var(--neon); margin-top:4px;">
+              📅 Días: <strong>${daysStr}</strong> | ⏰ Horario: <strong>${p.start_hour}:00 a ${p.end_hour}:00 hs</strong>
+            </div>
+            <div style="font-size:11px; color:var(--gold); margin-top:2px;">
+              💸 ${discountStr} | 🪙 ${multiplierStr}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-shrink:0; margin-left:12px;">
+          <button class="btn btn-sim" style="padding:6px 12px; font-size:11px;" onclick="editPromo(${idx})">✏️ Editar</button>
+          <button class="btn btn-danger" style="padding:6px 12px; font-size:11px;" onclick="deletePromo(${idx})">🗑️ Borrar</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.editPromo = function(idx) {
+  const p = adminPromotions[idx];
+  document.getElementById("promo-edit-index").value = idx;
+  document.getElementById("promo-id").value = p.id;
+  document.getElementById("promo-id").disabled = true;
+  document.getElementById("promo-title").value = p.title;
+  document.getElementById("promo-icon").value = p.icon;
+  document.getElementById("promo-badge").value = p.badge;
+  document.getElementById("promo-desc").value = p.desc;
+  document.getElementById("promo-start-hour").value = p.start_hour;
+  document.getElementById("promo-end-hour").value = p.end_hour;
+  document.getElementById("promo-discount").value = p.discount_pct || 0;
+  document.getElementById("promo-multiplier").value = p.credits_multiplier || 1;
+  
+  const select = document.getElementById("promo-days");
+  Array.from(select.options).forEach(opt => {
+    opt.selected = (p.days || []).includes(parseInt(opt.value));
+  });
+  
+  document.getElementById("promo-form-title").textContent = "EDITAR PROMOCIÓN";
+  document.getElementById("btn-cancel-promo").style.display = "block";
+  document.getElementById("promo-title").focus();
+}
+
+window.deletePromo = async function(idx) {
+  if (confirm(`¿Seguro que querés borrar la promoción "${adminPromotions[idx].title}"?`)) {
+    adminPromotions.splice(idx, 1);
+    await savePromotions();
+  }
+}
+
+async function savePromotions() {
+  await api("/api/admin/config", "PATCH", { promotions: adminPromotions });
+  renderAdminPromotions();
+  toast("Promociones actualizadas con éxito");
+}
+
+function resetPromoForm() {
+  document.getElementById("promo-edit-index").value = "-1";
+  document.getElementById("promo-id").value = "";
+  document.getElementById("promo-id").disabled = false;
+  document.getElementById("promo-title").value = "";
+  document.getElementById("promo-icon").value = "";
+  document.getElementById("promo-badge").value = "";
+  document.getElementById("promo-desc").value = "";
+  document.getElementById("promo-start-hour").value = 0;
+  document.getElementById("promo-end-hour").value = 24;
+  document.getElementById("promo-discount").value = 0;
+  document.getElementById("promo-multiplier").value = 1;
+  
+  const select = document.getElementById("promo-days");
+  Array.from(select.options).forEach(opt => opt.selected = false);
+  
+  document.getElementById("promo-form-title").textContent = "AGREGAR NUEVA PROMOCIÓN";
+  document.getElementById("btn-cancel-promo").style.display = "none";
+}
+
+document.getElementById("btn-cancel-promo").addEventListener("click", () => {
+  resetPromoForm();
+});
+
+document.getElementById("btn-save-promo").addEventListener("click", async () => {
+  const idx = parseInt(document.getElementById("promo-edit-index").value);
+  const id = document.getElementById("promo-id").value.trim().toLowerCase();
+  const title = document.getElementById("promo-title").value.trim();
+  const icon = document.getElementById("promo-icon").value.trim() || "🎉";
+  const badge = document.getElementById("promo-badge").value.trim() || "OFERTA";
+  const desc = document.getElementById("promo-desc").value.trim();
+  const start_hour = parseInt(document.getElementById("promo-start-hour").value);
+  const end_hour = parseInt(document.getElementById("promo-end-hour").value);
+  const discount_pct = parseFloat(document.getElementById("promo-discount").value);
+  const credits_multiplier = parseInt(document.getElementById("promo-multiplier").value);
+  
+  const select = document.getElementById("promo-days");
+  const days = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+  
+  if (!id || !title || !desc) {
+    alert("Por favor completá los campos ID, Título y Descripción.");
+    return;
+  }
+  
+  if (idx === -1) {
+    if (adminPromotions.some(p => p.id === id)) {
+      alert("Ya existe una promoción con ese ID único.");
+      return;
+    }
+  }
+
+  const promoData = {
+    id, title, icon, badge, desc, start_hour, end_hour, discount_pct, credits_multiplier, days
+  };
+
+  if (idx === -1) {
+    adminPromotions.push(promoData);
+  } else {
+    adminPromotions[idx] = promoData;
+  }
+
+  await savePromotions();
+  resetPromoForm();
+});
+
 function updateRgbLeds() {
   const r = document.getElementById("rgb-r").value;
   const g = document.getElementById("rgb-g").value;
@@ -686,6 +948,94 @@ function updateRgbLeds() {
   sendHwCmd({ cmd: "rgb", r: parseInt(r), g: parseInt(g), b: parseInt(b) });
 }
 
+// ── Probador de Sensores (WebSocket + Diagnostic Audio) ─────────────────────
+let adminSocket = null;
+let testModeActive = false;
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playDiagnosticBeep() {
+  try {
+    initAudio();
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(1000, audioCtx.currentTime); // 1000 Hz beep
+    
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15); // 150ms decay
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch (e) {
+    console.error("Audio beep error:", e);
+  }
+}
+
+function connectAdminWS() {
+  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  const url = `${protocol}//${location.host}/ws/admin`;
+  adminSocket = new WebSocket(url);
+
+  adminSocket.onopen = () => console.log("Admin WS conectado para test de sensores");
+  adminSocket.onclose = () => {
+    console.warn("Admin WS cerrado, reconectando...");
+    setTimeout(connectAdminWS, 3000);
+  };
+  adminSocket.onerror = (e) => console.error("Admin WS error", e);
+
+  adminSocket.onmessage = ({ data }) => {
+    try {
+      const msg = JSON.parse(data);
+      if (msg.type === "sensor_test") {
+        handleSensorTestEvent(msg.sensor_id);
+      }
+    } catch(e) {
+      console.error("Error parsing admin WS message", e);
+    }
+  };
+}
+
+function handleSensorTestEvent(sensorId) {
+  if (!testModeActive) return;
+  
+  const led = document.getElementById(`test-led-${sensorId}`);
+  if (led) {
+    led.classList.add("active");
+    playDiagnosticBeep();
+    setTimeout(() => {
+      led.classList.remove("active");
+    }, 300);
+  }
+}
+
+window.toggleTestMode = function(btn) {
+  testModeActive = !btn.classList.contains("on");
+  btn.classList.toggle("on", testModeActive);
+  btn.textContent = testModeActive ? "ON" : "OFF";
+  
+  if (testModeActive) {
+    initAudio();
+    toast("Probador de sensores activado");
+  } else {
+    toast("Probador de sensores desactivado");
+    document.querySelectorAll(".indicator-led").forEach(led => led.classList.remove("active"));
+  }
+}
+
+connectAdminWS();
 loadConfig();
 loadStats();
 setInterval(loadStats, 3000);

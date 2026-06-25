@@ -4,13 +4,27 @@
  */
 const AudioFX = (() => {
   let ctx = null;
+  let ranaAudio = null;
 
   function init() {
-    if (ctx) return;
+    if (ctx) {
+      if (ctx.state === "suspended") {
+        ctx.resume().then(() => {
+          console.log("AudioContext reanudado por interacción del usuario.");
+        }).catch(err => {
+          console.warn("Error al intentar reanudar el AudioContext:", err);
+        });
+      }
+      return;
+    }
     try {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       ctx = new AudioContextClass();
       console.log("AudioContext de Bolirana inicializado correctamente.");
+      
+      // Pre-cargar audio personalizado de Rana (con cache-buster para evitar cachear versiones viejas)
+      ranaAudio = new Audio('/audios/rana.mp3?v=' + Date.now());
+      ranaAudio.load();
     } catch (e) {
       console.warn("Web Audio API no está soportado en este navegador.", e);
     }
@@ -83,6 +97,26 @@ const AudioFX = (() => {
     }, 250);
   }
 
+  function playRana() {
+    _resume();
+    if (ranaAudio) {
+      ranaAudio.currentTime = 0;
+      ranaAudio.play().catch(err => {
+        console.warn("Fallo al reproducir audio personalizado de Rana:", err);
+        // Fallback sintetizado
+        _playTone(100, 0.6, "sawtooth", 0.25, 1800);
+        setTimeout(() => {
+          _playTone(800, 0.4, "square", 0.15, 100);
+        }, 150);
+      });
+    } else {
+      _playTone(100, 0.6, "sawtooth", 0.25, 1800);
+      setTimeout(() => {
+        _playTone(800, 0.4, "square", 0.15, 100);
+      }, 150);
+    }
+  }
+
   // Al anotar puntos (Barrido que escala en tono y fuerza según la cantidad de puntos)
   function playPoint(val) {
     _resume();
@@ -90,7 +124,7 @@ const AudioFX = (() => {
     if (points <= 0) return;
 
     if (points >= 1000) {
-      // Súper puntos o Rana: Efecto masivo
+      // Súper puntos: Fallback sintetizado de alta puntuación
       _playTone(100, 0.6, "sawtooth", 0.25, 1800);
       setTimeout(() => {
         _playTone(800, 0.4, "square", 0.15, 100);
@@ -123,7 +157,22 @@ const AudioFX = (() => {
     }, 180);
   }
 
-  return { init, playCoin, playTick, playStart, playPoint, playGameOver, playAlarm };
+  // Sonido de transición entre pantallas principales (doble tono ascendente futurista)
+  function playScreenTransition() {
+    _resume();
+    _playTone(180, 0.15, "triangle", 0.08, 900);
+    setTimeout(() => {
+      _playTone(450, 0.2, "sine", 0.06, 1200);
+    }, 60);
+  }
+
+  // Sonido de transición de diapositivas en attract mode (un tick suave y amortiguado)
+  function playSlideTransition() {
+    _resume();
+    _playTone(120, 0.08, "triangle", 0.04, 240);
+  }
+
+  return { init, playCoin, playTick, playStart, playPoint, playGameOver, playAlarm, playRana, playScreenTransition, playSlideTransition };
 })();
 
 // Auto-inicializar cuando el usuario interactúa para saltar la política de reproducción

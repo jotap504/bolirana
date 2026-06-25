@@ -26,6 +26,24 @@ document.addEventListener("DOMContentLoaded", () => {
       FX.startVictoryFireworks();
     }
 
+    // Tocar sonido de transición al cambiar de pantalla
+    if (currentState && currentState !== nextState && nextState !== "playing" && nextState !== "game_over") {
+      if (typeof AudioFX !== 'undefined' && AudioFX.playScreenTransition) {
+        AudioFX.playScreenTransition();
+      }
+    }
+
+    // Carrusel del modo de atracción (Splash, Rankings, Promos)
+    if (nextState === "attract") {
+      if (typeof Screens !== 'undefined' && Screens.startAttractCycle) {
+        Screens.startAttractCycle();
+      }
+    } else {
+      if (typeof Screens !== 'undefined' && Screens.stopAttractCycle) {
+        Screens.stopAttractCycle();
+      }
+    }
+
     currentState = nextState;
     Screens.show(msg.state);
 
@@ -64,8 +82,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const card = document.getElementById("score-card-" + msg.player_index) || document.getElementById("tiebreak-card-" + msg.player_index);
     const cx = card ? card.getBoundingClientRect().left + card.offsetWidth / 2 : window.innerWidth / 2;
     const cy = card ? card.getBoundingClientRect().top + card.offsetHeight / 2 : window.innerHeight / 2;
-    Screens.animateScore(msg.player_index, msg.delta, msg.total, cx, cy);
+    Screens.animateScore(msg.player_index, msg.delta, msg.total, cx, cy, msg.zone_id);
+
+    // 🐸 ¡GOL A LA RANA! → Celebración de Messi
+    if (msg.zone_id === "rana") {
+      _showMessiCelebration();
+      if (typeof AudioFX !== 'undefined' && AudioFX.playRana) {
+        AudioFX.playRana();
+      }
+    }
   });
+
 
   WS.on("credits", (msg) => {
     Screens.updateCredits(msg.total, msg.required);
@@ -99,6 +126,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  WS.on("hw_status", (msg) => {
+    const container = document.getElementById("persistent-hw-status");
+    const overlay = document.getElementById("hw-disconnect-overlay");
+
+    if (msg.connected) {
+      if (container) container.style.display = "block";
+      if (overlay) overlay.style.display = "none";
+    } else {
+      if (container) container.style.display = "none";
+      if (overlay) overlay.style.display = "flex";
+    }
+  });
+
   WS.on("proximity_alert", (msg) => {
     const overlay = document.getElementById("proximity-cheat-overlay");
     if (overlay) {
@@ -116,12 +156,22 @@ document.addEventListener("DOMContentLoaded", () => {
   WS.on("turn", (msg) => {
     const nameEl = document.getElementById("turn-name");
     if (nameEl) nameEl.textContent = msg.player_name;
-    const ballsEl = document.getElementById("ball-icons");
-    if (ballsEl) {
-      const left = msg.balls_left || 0;
-      const total = parseInt(document.querySelector("[data-balls-total]")?.dataset.ballsTotal || 5);
-      ballsEl.textContent = "⚫".repeat(left) + "⚪".repeat(Math.max(0, total - left));
+    
+    // Renderizar las bolas de fútbol tipo penal
+    if (typeof Screens !== 'undefined' && Screens.renderPenaltyBalls) {
+      Screens.renderPenaltyBalls(msg.shots || [], msg.balls_per_player || 5);
     }
+
+    // Controlar el popup de Última Bola
+    const lastBallPopup = document.getElementById("last-ball-popup");
+    if (lastBallPopup) {
+      if (msg.balls_left === 1) {
+        lastBallPopup.style.display = "block";
+      } else {
+        lastBallPopup.style.display = "none";
+      }
+    }
+
     document.querySelectorAll(".score-card, .score-row").forEach((c, i) => {
       c.classList.toggle("current-turn", i === msg.current_player);
       // Restaurar estilos inline para permitir que la clase CSS vuelva a agrandarla
@@ -264,4 +314,25 @@ document.addEventListener("DOMContentLoaded", () => {
       clearInterval(skipInterval);
     }
   });
+  // ── Celebración Messi al embocar en la RANA ──────────────────────────────
+  let _messiAnimating = false;
+  function _showMessiCelebration() {
+    if (_messiAnimating) return;
+    _messiAnimating = true;
+
+    const overlay = document.getElementById("messi-overlay");
+    if (!overlay) { _messiAnimating = false; return; }
+
+    // Fase 1: subir (200ms)
+    overlay.style.transition = "bottom 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+    overlay.style.bottom = "0px";
+
+    // Fase 2: mantener 5s, luego bajar (200ms)
+    setTimeout(() => {
+      overlay.style.transition = "bottom 0.2s ease-in";
+      overlay.style.bottom = "-100%";
+      setTimeout(() => { _messiAnimating = false; }, 220);
+    }, 5000);
+  }
+
 });

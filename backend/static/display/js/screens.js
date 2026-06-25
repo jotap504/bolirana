@@ -5,6 +5,71 @@ const MODE_NAMES    = { classic:"CLÁSICO", timed:"CONTRARRELOJ", goleador:"GOLE
 const Screens = (() => {
   let _current = "";
   let _lastSessionId = ""; // Rastrear el session_id para forzar re-render al iniciar nueva partida
+  let _ballsPerPlayer = 5;  // Bolas configuradas por jugador en la partida actual
+
+  // Variables para Carrusel de Atracción y Rankings
+  let _supabaseClient = null;
+  let _supabaseConfigured = false;
+  let _arcadeId = "FUTSPO_01";
+  let _machineZone = "Buenos Aires";
+  let _machineLat = -34.6037;
+  let _machineLon = -58.3816;
+  let _attractIndex = 0;
+  let _attractInterval = null;
+
+  const MOCK_LOCAL = [
+    { name: "EL FACA", score: 4800, zone: "Local" },
+    { name: "COCO", score: 4200, zone: "Local" },
+    { name: "TITI", score: 3900, zone: "Local" },
+    { name: "Lucho_C", score: 3500, zone: "Local" },
+    { name: "Jona", score: 3000, zone: "Local" },
+    { name: "Sapo_Cyber", score: 2800, zone: "Local" },
+    { name: "Gaby_PRO", score: 2600, zone: "Local" },
+    { name: "Futsapo_1", score: 2400, zone: "Local" },
+    { name: "ArcadeArg", score: 2200, zone: "Local" },
+    { name: "MessiFan", score: 2100, zone: "Local" },
+    { name: "Boli_CABA", score: 2000, zone: "Local" },
+    { name: "PrensaStart", score: 1800, zone: "Local" },
+    { name: "Nico", score: 1600, zone: "Local" },
+    { name: "Tito", score: 1500, zone: "Local" },
+    { name: "Rana_Goleadora", score: 1200, zone: "Local" }
+  ];
+
+  const MOCK_ZONAL = [
+    { name: "Seba_B", score: 5200, zone: "Buenos Aires" },
+    { name: "RanaMaster", score: 4900, zone: "Buenos Aires" },
+    { name: "Gaby", score: 4700, zone: "Santa Fe" },
+    { name: "SapoCyber", score: 4500, zone: "Córdoba" },
+    { name: "Mariano", score: 4300, zone: "Buenos Aires" },
+    { name: "Dibu_Fan", score: 4100, zone: "Mar del Plata" },
+    { name: "BoliRosario", score: 3800, zone: "Santa Fe" },
+    { name: "CordobaPro", score: 3600, zone: "Córdoba" },
+    { name: "MendozaCyber", score: 3400, zone: "Mendoza" },
+    { name: "SapoLaPlata", score: 3200, zone: "La Plata" },
+    { name: "TucumanBoli", score: 3000, zone: "Tucumán" },
+    { name: "NeuquenSapo", score: 2800, zone: "Neuquén" },
+    { name: "ChacoPRO", score: 2600, zone: "Chaco" },
+    { name: "SaltaBoli", score: 2400, zone: "Salta" },
+    { name: "Entrerriano", score: 2200, zone: "Entre Ríos" }
+  ];
+
+  const MOCK_GLOBAL = [
+    { name: "Leo_10", score: 152000, zone: "Rosario, ARG" },
+    { name: "Diego_10", score: 148000, zone: "Lanús, ARG" },
+    { name: "CyberSapo", score: 139000, zone: "Bogotá, COL" },
+    { name: "Futsapero", score: 125000, zone: "Medellín, COL" },
+    { name: "Bolirana_PRO", score: 110000, zone: "Quito, ECU" },
+    { name: "SapoStuttgart", score: 98000, zone: "Stuttgart, GER" },
+    { name: "BoliMiami", score: 92000, zone: "Miami, USA" },
+    { name: "RanaMadrid", score: 85000, zone: "Madrid, ESP" },
+    { name: "SapoSantiago", score: 79000, zone: "Santiago, CHI" },
+    { name: "RanaBrasil", score: 74000, zone: "São Paulo, BRA" },
+    { name: "BoliMontevideo", score: 68000, zone: "Montevideo, URU" },
+    { name: "LimaCyber", score: 62000, zone: "Lima, PER" },
+    { name: "SapoBolivia", score: 58000, zone: "La Paz, BOL" },
+    { name: "MexicoFutsap", score: 54000, zone: "CDMX, MEX" },
+    { name: "BoliParis", score: 50000, zone: "Paris, FRA" }
+  ];
 
   function show(name) {
     if (_current === name) return;
@@ -38,7 +103,7 @@ const Screens = (() => {
 
   // ── Actualiza cada pantalla con datos del servidor ──────────────────
 
-  function updateSelectPlayers(data) {
+  async function updateSelectPlayers(data) {
     const count = data.players?.length || 1;
 
     // Número grande entre flechas
@@ -51,11 +116,18 @@ const Screens = (() => {
     // Costo
     const req = data.credits_required || 1;
     const costEl = document.getElementById("cost-preview-val");
-    if (costEl) costEl.textContent =
-      `${req} ficha${req !== 1 ? "s" : ""} · $${req * 200}`;
+    if (costEl) {
+      try {
+        const res = await fetch(`/api/payment/cost?players=${count}&mode=${data.mode || 'classic'}`);
+        const costData = await res.json();
+        costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${costData.pesos}`;
+      } catch (e) {
+        costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${req * 200}`;
+      }
+    }
   }
 
-  function updateSelectMode(data) {
+  async function updateSelectMode(data) {
     const count = data.players?.length || 1;
 
     // Hex grid del panel izquierdo (bloqueado) en select_mode
@@ -98,8 +170,15 @@ const Screens = (() => {
     // Costo
     const req = data.credits_required || 1;
     const costEl = document.getElementById("mode-cost-val");
-    if (costEl) costEl.textContent =
-      `${req} ficha${req !== 1 ? "s" : ""} · $${req * 200}`;
+    if (costEl) {
+      try {
+        const res = await fetch(`/api/payment/cost?players=${count}&mode=${data.mode || 'classic'}`);
+        const costData = await res.json();
+        costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${costData.pesos}`;
+      } catch (e) {
+        costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${req * 200}`;
+      }
+    }
   }
 
   async function updatePayment(data) {
@@ -112,7 +191,15 @@ const Screens = (() => {
     const payMode = document.getElementById("pay-mode");
     if (payMode) payMode.textContent = modeNames[data.mode] || data.mode;
     const payTotal = document.getElementById("pay-total");
-    if (payTotal) payTotal.textContent = `$${req * 200}`;
+    if (payTotal) {
+      try {
+        const res = await fetch(`/api/payment/cost?players=${players}&mode=${data.mode}`);
+        const costData = await res.json();
+        payTotal.textContent = `$${costData.pesos}`;
+      } catch (e) {
+        payTotal.textContent = `$${req * 200}`;
+      }
+    }
 
     document.getElementById("credits-needed").textContent = req;
     updateCredits(data.credits || 0, req);
@@ -486,12 +573,17 @@ const Screens = (() => {
             <img class="player-avatar-img" id="player-avatar-${i}" src="${avatarUrl}">
           </div>
           ${jerseySvg}
-          <div class="player-name-val" id="player-name-${i}">${p.name || "JUGADOR " + (i + 1)}</div>
+          <div class="player-info-container" style="display: flex; flex-direction: column; flex: 1; min-width: 0; align-items: flex-start; gap: 4px;">
+            <div class="player-name-val" id="player-name-${i}" style="margin: 0; text-align: left; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; width: 100%;">${p.name || "JUGADOR " + (i + 1)}</div>
+            <div class="player-balls-row" id="player-balls-${i}" style="display: flex; gap: 4px;"></div>
+          </div>
           <div class="player-score-val" id="score-val-${i}">${data.mode === "goleador" ? p.balls_pocketed + " BOLAS" : p.score}</div>
           <div class="player-rank-badge" id="rank-badge-${i}">#${rank}</div>`;
         wrap.appendChild(card);
       });
     }
+
+    _ballsPerPlayer = data.balls_per_player || 5;
 
     // Actualizar estados, puntajes y clases en caliente para conservar las transiciones del navegador
     players.forEach((p, i) => {
@@ -516,6 +608,9 @@ const Screens = (() => {
             avatarEl.setAttribute("src", currentUrl);
           }
         }
+
+        // Renderizar mini-bolas tipo penal de fútbol
+        renderPlayerBalls(i, p.shots || [], _ballsPerPlayer);
 
         // Hot-update jersey SVG colors/patterns
         const jerseySvgEl = document.getElementById("player-jersey-svg-" + i);
@@ -581,10 +676,19 @@ const Screens = (() => {
     if (cp) {
       const turnName = document.getElementById("turn-name");
       if (turnName) turnName.textContent = cp.name || `Jugador ${data.current_player + 1}`;
-      const balls = cp.balls_left || 0;
-      const total = data.balls_per_player || 5;
-      const ballIcons = document.getElementById("ball-icons");
-      if (ballIcons) ballIcons.textContent = "⚫".repeat(balls) + "⚪".repeat(Math.max(0, total - balls));
+      
+      // Renderizar penalty balls principal (del jugador de turno)
+      renderPenaltyBalls(cp.shots || [], _ballsPerPlayer);
+
+      // Mostrar popup de última bola
+      const lastBallPopup = document.getElementById("last-ball-popup");
+      if (lastBallPopup) {
+        if (cp.balls_left === 1) {
+          lastBallPopup.style.display = "block";
+        } else {
+          lastBallPopup.style.display = "none";
+        }
+      }
     }
 
     if (data.mode === "timed") {
@@ -593,9 +697,53 @@ const Screens = (() => {
     }
   }
 
+  function renderPenaltyBalls(shots, total) {
+    const ballIcons = document.getElementById("ball-icons");
+    if (!ballIcons) return;
+    ballIcons.innerHTML = "";
+    for (let j = 0; j < total; j++) {
+      const ballSpan = document.createElement("span");
+      if (j < shots.length) {
+        const points = shots[j];
+        if (points > 0) {
+          ballSpan.className = "penalty-ball hit";
+          ballSpan.innerHTML = "⚽";
+        } else {
+          ballSpan.className = "penalty-ball missed";
+          ballSpan.innerHTML = "⚽";
+        }
+      } else {
+        ballSpan.className = "penalty-ball pending";
+      }
+      ballIcons.appendChild(ballSpan);
+    }
+  }
+
+  function renderPlayerBalls(playerIndex, shots, total) {
+    const container = document.getElementById(`player-balls-${playerIndex}`);
+    if (!container) return;
+    container.innerHTML = "";
+    for (let j = 0; j < total; j++) {
+      const ballSpan = document.createElement("span");
+      if (j < shots.length) {
+        const points = shots[j];
+        if (points > 0) {
+          ballSpan.className = "penalty-ball mini hit";
+          ballSpan.innerHTML = "⚽";
+        } else {
+          ballSpan.className = "penalty-ball mini missed";
+          ballSpan.innerHTML = "⚽";
+        }
+      } else {
+        ballSpan.className = "penalty-ball mini pending";
+      }
+      container.appendChild(ballSpan);
+    }
+  }
+
   const PIXI_COLORS = [0xff4455, 0x44aaff, 0x00ff88, 0xffaa00, 0xdd44ff, 0x00ffee];
 
-  function animateScore(playerIndex, delta, total, zoneX, zoneY) {
+  function animateScore(playerIndex, delta, total, zoneX, zoneY, zoneId) {
     const val = document.getElementById("score-val-" + playerIndex);
     if (val) {
       val.textContent = total;
@@ -638,8 +786,10 @@ const Screens = (() => {
     FX.flashScreen(colorHex, delta >= 1000 ? 0.25 : 0.12);
     FX.shakeScreen(delta >= 1000 ? 14 : 7, 220);
     
-    // Disparar Audio sintetizado
-    AudioFX.playPoint(delta);
+    // Disparar Audio sintetizado (solo si no es gol en la rana, para que solo suene rana.mp3)
+    if (zoneId !== "rana") {
+      AudioFX.playPoint(delta);
+    }
   }
 
   function updateGameOver(data) {
@@ -748,8 +898,326 @@ const Screens = (() => {
     if (el) el.textContent = data.player_name || "";
   }
 
+  // ── Funciones Privadas del Carrusel de Atracción y Rankings ──
+
+  async function _initSupabase() {
+    if (_supabaseClient) return;
+    try {
+      const res = await fetch("/api/supabase-config");
+      const cfg = await res.json();
+      if (cfg.enabled && window.supabase && cfg.url && cfg.anon_key) {
+        _supabaseClient = window.supabase.createClient(cfg.url, cfg.anon_key);
+        _supabaseConfigured = true;
+      }
+    } catch (e) {
+      console.warn("Error al inicializar Supabase en display client:", e);
+    }
+  }
+
+  async function _fetchMachineInfo() {
+    try {
+      const res = await fetch("/api/machine/info");
+      const info = await res.json();
+      _arcadeId = info.arcade_id || "FUTSPO_01";
+      _machineZone = info.zone || "Buenos Aires";
+      _machineLat = info.latitude ?? -34.6037;
+      _machineLon = info.longitude ?? -58.3816;
+    } catch (e) {
+      console.warn("Error al obtener información de la máquina:", e);
+    }
+  }
+
+  function _createRankingRowHtml(pos, name, zone, score, avatarUrl) {
+    const isTop5 = pos <= 5;
+    const isPodium = pos <= 3;
+    const rowClass = `ranking-row-item ${isTop5 ? 'top-5-row' : ''} ${isPodium ? 'rank-' + pos : ''}`;
+    const defaultAvatar = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(name)}`;
+    const avatar = avatarUrl || defaultAvatar;
+
+    return `
+      <div class="${rowClass}">
+        <div class="ranking-row-rank">${pos}</div>
+        <div class="ranking-row-player-info">
+          <div class="ranking-row-avatar">
+            <img class="ranking-row-avatar-img" src="${avatar}">
+          </div>
+          <span class="ranking-row-name">${name}</span>
+        </div>
+        <div class="ranking-row-zone">${zone || 'Local'}</div>
+        <div class="ranking-row-score">${score}</div>
+      </div>
+    `;
+  }
+
+  function _renderRankings(containerLeftId, containerRightId, data) {
+    const leftEl = document.getElementById(containerLeftId);
+    const rightEl = document.getElementById(containerRightId);
+    if (!leftEl || !rightEl) return;
+
+    leftEl.innerHTML = "";
+    rightEl.innerHTML = "";
+
+    // Puestos 1-8 (Columna Izquierda)
+    for (let i = 0; i < 8; i++) {
+      if (data[i]) {
+        leftEl.innerHTML += _createRankingRowHtml(i + 1, data[i].name, data[i].zone, data[i].score, data[i].avatar_url);
+      }
+    }
+
+    // Puestos 9-15 (Columna Derecha)
+    for (let i = 8; i < 15; i++) {
+      if (data[i]) {
+        rightEl.innerHTML += _createRankingRowHtml(i + 1, data[i].name, data[i].zone, data[i].score, data[i].avatar_url);
+      }
+    }
+  }
+
+  function _mergeWithMockData(fetched, mock) {
+    const merged = [...fetched];
+    for (let i = merged.length; i < 15; i++) {
+      if (mock[i]) {
+        merged.push(mock[i]);
+      }
+    }
+    return merged.slice(0, 15);
+  }
+
+  async function _fetchSupabaseRankings() {
+    await _initSupabase();
+    await _fetchMachineInfo();
+
+    let localData = [];
+    let zonalData = [];
+    let globalData = [];
+
+    const zonalTitle = document.getElementById("zonal-title-text");
+    if (zonalTitle && _machineZone) {
+      zonalTitle.textContent = `TOP 15 ${_machineZone.toUpperCase()}`;
+    }
+
+    if (_supabaseClient) {
+      // 1. Rankings Locales
+      try {
+        const { data, error } = await _supabaseClient
+          .from("rankings_view")
+          .select("player_name, score, zone, avatar_url")
+          .eq("arcade_id", _arcadeId)
+          .order("score", { ascending: false })
+          .limit(15);
+        if (!error && data) {
+          localData = data.map(d => ({ name: d.player_name, score: d.score, zone: d.zone, avatar_url: d.avatar_url }));
+        }
+      } catch (e) {
+        console.warn("Error al cargar rankings locales de Supabase:", e);
+      }
+
+      // 2. Rankings Provinciales (Zonales)
+      try {
+        const { data, error } = await _supabaseClient
+          .from("rankings_view")
+          .select("player_name, score, zone, avatar_url")
+          .eq("zone", _machineZone)
+          .order("score", { ascending: false })
+          .limit(15);
+        if (!error && data && data.length > 0) {
+          zonalData = data.map(d => ({ name: d.player_name, score: d.score, zone: d.zone, avatar_url: d.avatar_url }));
+        } else {
+          // Backup RPC
+          const { data: rpcData, error: rpcError } = await _supabaseClient.rpc("get_zonal_rankings", {
+            machine_lat: _machineLat,
+            machine_lon: _machineLon,
+            radius_km: 100.0
+          });
+          if (!rpcError && rpcData) {
+            zonalData = rpcData.map(d => ({ name: d.player_name, score: d.score, zone: d.zone, avatar_url: d.avatar_url }));
+          }
+        }
+      } catch (e) {
+        console.warn("Error al cargar rankings zonales de Supabase:", e);
+      }
+
+      // 3. Rankings Globales
+      try {
+        const { data, error } = await _supabaseClient
+          .from("profiles")
+          .select("name, total_score, zone, avatar_url")
+          .order("total_score", { ascending: false })
+          .limit(15);
+        if (!error && data) {
+          globalData = data.map(d => ({ name: d.name, score: d.total_score, zone: d.zone, avatar_url: d.avatar_url }));
+        }
+      } catch (e) {
+        console.warn("Error al cargar rankings globales de Supabase:", e);
+      }
+    }
+
+    // Unificar con Mock Data
+    const finalLocal = _mergeWithMockData(localData, MOCK_LOCAL);
+    const finalZonal = _mergeWithMockData(zonalData, MOCK_ZONAL);
+    const finalGlobal = _mergeWithMockData(globalData, MOCK_GLOBAL);
+
+    // Renderizar
+    _renderRankings("attract-local-rows-left", "attract-local-rows-right", finalLocal);
+    _renderRankings("attract-zonal-rows-left", "attract-zonal-rows-right", finalZonal);
+    _renderRankings("attract-global-rows-left", "attract-global-rows-right", finalGlobal);
+  }
+
+  async function _renderPromotions() {
+    const container = document.getElementById("attract-promos-container");
+    if (!container) return;
+
+    let promotions = [];
+    try {
+      const res = await fetch("/api/config/promotions");
+      promotions = await res.json();
+    } catch (e) {
+      console.warn("Error al cargar promociones de la API:", e);
+    }
+
+    // Fallback si la API no devuelve nada
+    if (!promotions || promotions.length === 0) {
+      promotions = [
+        {
+          id: "happy_hour",
+          title: "HAPPY HOUR FUTSAPO",
+          desc: "2x1 en créditos de juego de lunes a jueves de 18:00 a 20:00 hs.",
+          badge: "2x1 CRÉDITOS",
+          icon: "⚡",
+          days: [1, 2, 3, 4],
+          start_hour: 18,
+          end_hour: 20
+        },
+        {
+          id: "crazy_wednesday",
+          title: "MIÉRCOLES LOCOS",
+          desc: "Todos los miércoles, obtené un 25% de descuento en la carga de fichas.",
+          badge: "25% OFF FICHAS",
+          icon: "🎉",
+          days: [3],
+          start_hour: 0,
+          end_hour: 24
+        },
+        {
+          id: "late_night",
+          title: "TRASNOCHE CYBER",
+          desc: "Viernes y sábados de 23:00 a 02:00 hs, jugá 3 partidas por sólo $500.",
+          badge: "DESCUENTO DE NOCHE",
+          icon: "🌙",
+          days: [5, 6, 0],
+          start_hour: 23,
+          end_hour: 2
+        },
+        {
+          id: "weekend_champions",
+          title: "FIN DE SEMANA",
+          desc: "Sábados y domingos sumás el doble para el Ranking Provincial y Global.",
+          badge: "DOBLE PUNTOS RANKING",
+          icon: "🏆",
+          days: [6, 0],
+          start_hour: 0,
+          end_hour: 24
+        }
+      ];
+    }
+
+    let activePromos = [];
+    try {
+      const res = await fetch("/api/promotions/active");
+      activePromos = await res.json();
+    } catch (e) {
+      console.warn("Error al cargar promociones activas de la API (usando local fallback):", e);
+      const now = new Date();
+      const day = now.getDay();
+      const hour = now.getHours();
+      activePromos = promotions.filter(p => {
+        if (p.days && p.days.includes(day)) {
+          const sh = p.start_hour ?? 0;
+          const eh = p.end_hour ?? 24;
+          if (sh < eh) {
+            return (hour >= sh && hour < eh);
+          } else {
+            return (hour >= sh || hour < eh);
+          }
+        }
+        return false;
+      });
+    }
+
+    const activePromoIds = new Set(activePromos.map(p => p.id));
+
+    container.innerHTML = "";
+    promotions.forEach(promo => {
+      const isActive = activePromoIds.has(promo.id);
+      const activeClass = isActive ? "active" : "";
+      const activeLabel = isActive ? '<div class="promo-active-label">VIGENTE AHORA</div>' : "";
+      
+      container.innerHTML += `
+        <div class="promo-card ${activeClass}">
+          ${activeLabel}
+          <div class="promo-card-icon">${promo.icon || '🎉'}</div>
+          <div class="promo-card-title">${promo.title}</div>
+          <div class="promo-card-desc">${promo.desc}</div>
+          <div class="promo-card-badge">${promo.badge}</div>
+        </div>
+      `;
+    });
+
+    const splashBanner = document.getElementById("splash-active-promo");
+    if (splashBanner) {
+      if (activePromos.length > 0) {
+        const text = activePromos.map(p => `${p.icon || '🔥'} PROMO ACTIVA: ${p.title} (${p.badge})`).join(" | ");
+        splashBanner.innerHTML = text;
+        splashBanner.style.display = "block";
+      } else {
+        splashBanner.style.display = "none";
+      }
+    }
+  }
+
+  function startAttractCycle() {
+    stopAttractCycle();
+
+    _attractIndex = 0;
+    const slides = document.querySelectorAll("#screen-attract .attract-slide");
+    slides.forEach((slide, idx) => slide.classList.toggle("active", idx === 0));
+
+    // Cargar datos
+    _fetchSupabaseRankings();
+    _renderPromotions();
+
+    // Rotar diapositivas cada 10 segundos y refrescar promociones para vigencia exacta
+    _attractInterval = setInterval(() => {
+      const activeSlides = document.querySelectorAll("#screen-attract .attract-slide");
+      if (activeSlides.length === 0) return;
+
+      _attractIndex = (_attractIndex + 1) % activeSlides.length;
+      activeSlides.forEach((slide, idx) => {
+        slide.classList.toggle("active", idx === _attractIndex);
+      });
+
+      // Refrescar vigencia exacta de las promociones en cada ciclo
+      _renderPromotions();
+
+      // Sonido sutil de transición de slide
+      if (typeof AudioFX !== 'undefined' && AudioFX.playSlideTransition) {
+        AudioFX.playSlideTransition();
+      }
+    }, 10000);
+  }
+
+  function stopAttractCycle() {
+    if (_attractInterval) {
+      clearInterval(_attractInterval);
+      _attractInterval = null;
+    }
+    _attractIndex = 0;
+    const slides = document.querySelectorAll("#screen-attract .attract-slide");
+    slides.forEach((slide, idx) => slide.classList.toggle("active", idx === 0));
+  }
+
   return {
     show, updateSelectPlayers, updateSelectMode, updatePayment, updateCredits,
-    updateWaitingStart, updateSelectTeam, updateTiebreak, updateGame, animateScore, updateGameOver, updateTurnChange
+    updateWaitingStart, updateSelectTeam, updateTiebreak, updateGame, animateScore, updateGameOver, updateTurnChange,
+    renderPenaltyBalls, startAttractCycle, stopAttractCycle
   };
 })();

@@ -16,6 +16,14 @@ async def ws_display(ws: WebSocket):
     mgr    = ws.app.state.ws
     engine = ws.app.state.engine
     await mgr.connect_display(ws)
+    
+    # Enviar estado de conexión de hardware inicial
+    try:
+        bridge = ws.app.state.bridge
+        await ws.send_json({"type": "hw_status", "connected": bridge.is_connected()})
+    except Exception:
+        pass
+
     await engine._sync_state()
     try:
         while True:
@@ -257,3 +265,17 @@ async def get_machine_info(request: Request):
         "longitude": MACHINE_LON,
         "zone": MACHINE_ZONE
     }
+
+
+@router.get("/api/config/promotions")
+async def get_config_promotions(request: Request):
+    from app.config import get_config
+    return get_config().get("promotions", [])
+
+
+@router.get("/api/promotions/active")
+async def get_active_promotions_route(request: Request):
+    from app.config import get_config
+    from app.game.promotions import get_active_promotions
+    return get_active_promotions(get_config())
+

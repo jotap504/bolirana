@@ -189,13 +189,128 @@
 
     <!-- ── ATTRACT ─────────────────────────────────────────────────────── -->
     <div id="screen-attract" class="screen active">
-      <div class="attract-topbadge">ARGENTINA CYBER LEAGUE</div>
-      <div class="attract-content">
-        <h1 class="logo">FUTS<span class="logo-frog"><svg class="logo-frog-svg" viewBox="0 0 100 100" width="130" height="130" style="vertical-align: middle; filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.95));"><defs><filter id="neon-glow-logo-attract" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="2.5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><circle cx="76" cy="22" r="13" fill="rgba(0, 5, 20, 0.95)" stroke="#00e5ff" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 76,9 L 76,35 M 63,22 L 89,22 M 67,13 L 85,31 M 67,31 L 85,13" stroke="#00e5ff" stroke-width="1.5" opacity="0.8" /><path d="M 32,44 Q 38,32 45,40 Q 52,32 58,44 Q 60,52 30,52 Z" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><circle cx="38" cy="38" r="4.5" fill="none" stroke="#00ff88" stroke-width="2" /><circle cx="38" cy="38" r="1.5" fill="#00ff88" /><circle cx="52" cy="38" r="4.5" fill="none" stroke="#00ff88" stroke-width="2" /><circle cx="52" cy="38" r="1.5" fill="#00ff88" /><path d="M 36,48 Q 45,53 54,48" fill="none" stroke="#00ff88" stroke-width="2" /><path d="M 34,51 Q 26,68 45,74 Q 64,68 56,51" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 52,54 Q 64,48 70,33" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 38,54 Q 28,52 24,42" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 32,62 Q 18,65 28,78" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 58,62 Q 72,65 62,78" fill="none" stroke="#00ff88" stroke-width="3" filter="url(#neon-glow-logo-attract)" /><path d="M 34,74 L 28,82 M 45,74 L 45,84 M 56,74 L 62,82" stroke="#00ff88" stroke-width="2" /></svg></span>PO</h1>
-        <div class="attract-actions">
-          <div class="insert-coin blink">PRENSA START PARA JUGAR</div>
-          <div class="insert-coin-sub">MODO TORNEO</div>
+      <div class="attract-slides-container">
+        
+        <!-- SLIDE 1: SPLASH PRINCIPAL -->
+        <div class="attract-slide active" id="attract-slide-splash">
+          <div class="attract-topbadge">ARGENTINA CYBER LEAGUE</div>
+          <div class="attract-content">
+            <h1 class="logo">FUTS<span class="logo-sa">SA</span>PO</h1>
+            <div class="attract-actions">
+              <div class="insert-coin blink">PRENSA START PARA JUGAR</div>
+              <div class="insert-coin-sub">MODO TORNEO</div>
+            </div>
+            <div class="active-promo-banner-splash" id="splash-active-promo" style="display: none;"></div>
+          </div>
         </div>
+
+        <!-- SLIDE 2: RANKING MÁQUINA (LOCAL) -->
+        <div class="attract-slide" id="attract-slide-local">
+          <div class="attract-topbadge">STADIUM PRO LEAGUE</div>
+          <div class="ranking-panel-premium">
+            <h2 class="ranking-title-neon">TOP 15 MÁQUINA</h2>
+            <div class="ranking-columns-grid">
+              <div class="ranking-column-col">
+                <div class="ranking-table-header">
+                  <span>POS</span>
+                  <span>JUGADOR</span>
+                  <span>ZONA</span>
+                  <span style="text-align: right; padding-right: 10px;">PUNTAJE</span>
+                </div>
+                <div class="ranking-rows-container" id="attract-local-rows-left">
+                  <!-- Puestos 1-8 -->
+                </div>
+              </div>
+              <div class="ranking-column-col">
+                <div class="ranking-table-header">
+                  <span>POS</span>
+                  <span>JUGADOR</span>
+                  <span>ZONA</span>
+                  <span style="text-align: right; padding-right: 10px;">PUNTAJE</span>
+                </div>
+                <div class="ranking-rows-container" id="attract-local-rows-right">
+                  <!-- Puestos 9-15 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SLIDE 3: RANKING PROVINCIAL (ZONAL) -->
+        <div class="attract-slide" id="attract-slide-zonal">
+          <div class="attract-topbadge">STADIUM PRO LEAGUE</div>
+          <div class="ranking-panel-premium">
+            <h2 class="ranking-title-neon" id="zonal-title-text">TOP 15 PROVINCIA</h2>
+            <div class="ranking-columns-grid">
+              <div class="ranking-column-col">
+                <div class="ranking-table-header">
+                  <span>POS</span>
+                  <span>JUGADOR</span>
+                  <span>ZONA</span>
+                  <span style="text-align: right; padding-right: 10px;">PUNTAJE</span>
+                </div>
+                <div class="ranking-rows-container" id="attract-zonal-rows-left">
+                  <!-- Puestos 1-8 -->
+                </div>
+              </div>
+              <div class="ranking-column-col">
+                <div class="ranking-table-header">
+                  <span>POS</span>
+                  <span>JUGADOR</span>
+                  <span>ZONA</span>
+                  <span style="text-align: right; padding-right: 10px;">PUNTAJE</span>
+                </div>
+                <div class="ranking-rows-container" id="attract-zonal-rows-right">
+                  <!-- Puestos 9-15 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SLIDE 4: RANKING GLOBAL (MUNDIAL) -->
+        <div class="attract-slide" id="attract-slide-global">
+          <div class="attract-topbadge">STADIUM PRO LEAGUE</div>
+          <div class="ranking-panel-premium">
+            <h2 class="ranking-title-neon">TOP 15 GLOBAL</h2>
+            <div class="ranking-columns-grid">
+              <div class="ranking-column-col">
+                <div class="ranking-table-header">
+                  <span>POS</span>
+                  <span>JUGADOR</span>
+                  <span>ZONA</span>
+                  <span style="text-align: right; padding-right: 10px;">TOTAL PTS</span>
+                </div>
+                <div class="ranking-rows-container" id="attract-global-rows-left">
+                  <!-- Puestos 1-8 -->
+                </div>
+              </div>
+              <div class="ranking-column-col">
+                <div class="ranking-table-header">
+                  <span>POS</span>
+                  <span>JUGADOR</span>
+                  <span>ZONA</span>
+                  <span style="text-align: right; padding-right: 10px;">TOTAL PTS</span>
+                </div>
+                <div class="ranking-rows-container" id="attract-global-rows-right">
+                  <!-- Puestos 9-15 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SLIDE 5: PROMOCIONES Y DESCUENTOS -->
+        <div class="attract-slide" id="attract-slide-promos">
+          <div class="attract-topbadge">PROMOCIONES Y DESCUENTOS</div>
+          <div class="promo-panel-premium">
+            <h2 class="promo-title-neon">PROMOCIONES ESPECIALES</h2>
+            <div class="promo-container" id="attract-promos-container">
+              <!-- Cargado dinámicamente -->
+            </div>
+          </div>
+        </div>
+
       </div>
       <video id="attract-video" class="attract-video" muted loop playsinline></video>
     </div>
@@ -499,6 +614,7 @@
       </div>
 
       <div class="score-popup" id="score-popup"></div>
+      <div class="last-ball-popup" id="last-ball-popup">🚨 ¡ÚLTIMA BOLA! 🚨</div>
       <canvas id="fx-canvas"></canvas>
       <button class="btn-pause" id="btn-pause">⏸</button>
     </div>
@@ -546,6 +662,22 @@
       <span style="font-size: 10px; color: var(--muted); font-family: monospace; border-left: 1.5px solid rgba(255,255,255,0.15); padding-left: 10px; margin-left: 5px; opacity: 0.6;">v2.5.0</span>
     </div>
 
+    <!-- ── PERSISTENT ESP32 STATUS INDICATOR ── -->
+    <div id="persistent-hw-status" style="position: absolute; bottom: 24px; left: 24px; z-index: 9999; pointer-events: none; transition: all 0.3s ease-out; display: none;">
+      <span id="hw-status-dot" style="width: 12px; height: 12px; border-radius: 50%; background-color: var(--green); box-shadow: 0 0 10px var(--green); display: inline-block; transition: all 0.3s ease-out;"></span>
+    </div>
+
+    <!-- ── ESP32 DISCONNECT WARNING OVERLAY ── -->
+    <div id="hw-disconnect-overlay" style="position: absolute; inset: 0; background: rgba(12, 0, 0, 0.95); border: 10px solid var(--red); box-shadow: inset 0 0 100px rgba(255, 0, 0, 0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 99999; text-align: center; gap: 30px; font-family: 'Orbitron', sans-serif; transition: all 0.3s ease-out;">
+      <div style="font-size: 80px; animation: blink 0.8s infinite; filter: drop-shadow(0 0 20px var(--red));">⚠️</div>
+      <h1 style="font-family: 'Press Start 2P', monospace; font-size: 28px; color: var(--red); text-shadow: 0 0 20px rgba(255, 0, 85, 0.8); line-height: 1.6; letter-spacing: 2px;">MÁQUINA FUERA DE SERVICIO</h1>
+      <p style="font-size: 20px; font-weight: bold; color: var(--text); letter-spacing: 2px; max-width: 700px; line-height: 1.6;">
+        Se ha perdido la conexión con el hardware de sensores (ESP32).<br>
+        <span style="color: var(--label); font-size: 16px;">El juego ha sido bloqueado temporalmente porque no se podrán contabilizar los puntos de las bolas.</span>
+      </p>
+    </div>
+
+
     <!-- ── PROXIMITY ANTI-CHEAT WARNING OVERLAY ── -->
     <div id="proximity-cheat-overlay" style="position: absolute; inset: 0; background: rgba(18, 0, 0, 0.96); border: 10px solid var(--red); box-shadow: inset 0 0 100px rgba(255, 0, 0, 0.8); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100000; text-align: center; gap: 30px; font-family: 'Orbitron', sans-serif;">
       <div style="font-size: 80px; animation: blink 0.8s infinite; filter: drop-shadow(0 0 20px var(--red));">🚨</div>
@@ -553,8 +685,30 @@
       <p style="font-size: 24px; font-weight: bold; color: var(--text); letter-spacing: 2px;">Aléjate para poder seguir jugando.</p>
     </div>
 
+    <!-- ── MESSI RANA CELEBRATION ─────────────────────────────────────── -->
+    <div id="messi-overlay" style="
+      position: fixed;
+      bottom: -100%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99998;
+      pointer-events: none;
+      transition: none;
+      padding: 0;
+      line-height: 0;
+    ">
+      <img src="/imagenes/messi1.png" id="messi-img" alt="Messi celebra" style="
+        height: clamp(520px, 90vh, 840px);
+        width: auto;
+        display: block;
+      ">
+    </div>
+
+
   </div><!-- #app -->
 
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/pixi.min.js"></script>
   <script src="js/ws.js?v=260"></script>
   <script src="js/fx.js?v=260"></script>

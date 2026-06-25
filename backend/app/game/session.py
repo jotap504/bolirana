@@ -40,6 +40,7 @@ class Player:
     jersey_pattern:         str = "plain"
     club:                   str = ""
     team:        int  = 0     # 0=sin asignar, 1=Equipo A, 2=Equipo B (modo TEAM)
+    shots:       list[int] = field(default_factory=list) # Historial de tiros (1=hit, 2=miss)
 
     def to_dict(self) -> dict:
         return {
@@ -56,6 +57,7 @@ class Player:
             "jersey_pattern":         self.jersey_pattern,
             "club":                   self.club,
             "team":                   self.team,
+            "shots":                  self.shots,
         }
 
 

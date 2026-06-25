@@ -21,6 +21,8 @@ logging.basicConfig(level=logging.INFO,
 log = logging.getLogger(__name__)
 
 STATIC = Path(__file__).parent / "static"
+IMAGENES = Path(__file__).parent.parent / "imagenes"
+AUDIOS = Path(__file__).parent.parent / "audios"
 
 
 @asynccontextmanager
@@ -64,10 +66,16 @@ async def lifespan(app: FastAPI):
         traceback.print_exc()
         raise err
 
+    async def _handle_hw_status(connected: bool) -> None:
+        await app.state.ws.broadcast({"type": "hw_status", "connected": connected})
+
     is_cloud = get_config().get("cloud_mode")
     app.state.ws     = WSManager()
     app.state.engine = GameEngine(broadcast=app.state.ws.broadcast)
-    app.state.bridge = SerialBridge(on_event=_handle_hw_event(app))
+    app.state.bridge = SerialBridge(
+        on_event=_handle_hw_event(app),
+        on_status_change=_handle_hw_status
+    )
     await app.state.bridge.start()
     
     if not is_cloud:
@@ -117,6 +125,7 @@ def _handle_hw_event(app):
 
         t = msg.get("t")
         if t == "sensor":
+            await app.state.ws.send_admin({"type": "sensor_test", "sensor_id": msg["id"]})
             await engine.handle_sensor(msg["id"])
         elif t == "coin":
             await engine.handle_coin(msg.get("count", 1))
@@ -139,6 +148,8 @@ app.include_router(payment.router)
 app.mount("/display", StaticFiles(directory=STATIC / "display", html=True), name="display")
 app.mount("/player",  StaticFiles(directory=STATIC / "player",  html=True), name="player")
 app.mount("/admin",   StaticFiles(directory=STATIC / "admin",   html=True), name="admin_ui")
+app.mount("/imagenes", StaticFiles(directory=IMAGENES), name="imagenes")
+app.mount("/audios", StaticFiles(directory=AUDIOS), name="audios")
 
 @app.get("/")
 async def root():

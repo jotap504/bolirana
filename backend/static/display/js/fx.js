@@ -268,9 +268,9 @@ const FX = (() => {
 
       if (attractScreen && attractScreen.classList.contains("active")) {
         if (!cachedLogoRect) {
-          const frogEl = document.querySelector(".logo-frog-svg");
-          if (frogEl) {
-            cachedLogoRect = frogEl.getBoundingClientRect(); // Solo se llama una vez en vez de 60 FPS
+          const saEl = document.querySelector(".logo-sa");
+          if (saEl) {
+            cachedLogoRect = saEl.getBoundingClientRect(); // Solo se llama una vez en vez de 60 FPS
           }
         }
         if (cachedLogoRect) {

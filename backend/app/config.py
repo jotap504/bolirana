@@ -34,6 +34,11 @@ DEFAULT_CONFIG = {
         {"id": "fosa_2", "name": "Fosa 2", "points": 50, "enabled": True},
         {"id": "fosa_3", "name": "Fosa 3", "points": 20, "enabled": True},
         {"id": "fosa_4", "name": "Fosa 4", "points": 10, "enabled": True},
+        {"id": "fosa_5", "name": "Fosa 5", "points": 10, "enabled": True},
+        {"id": "fosa_6", "name": "Fosa 6", "points": 10, "enabled": True},
+        {"id": "fosa_7", "name": "Fosa 7", "points": 10, "enabled": True},
+        {"id": "fosa_8", "name": "Fosa 8", "points": 10, "enabled": True},
+        {"id": "fosa_9", "name": "Fosa 9", "points": 10, "enabled": True},
         {"id": "cero", "name": "Cero Puntos", "points": 0, "enabled": True},
     ],
     "serial": {
@@ -62,6 +67,48 @@ DEFAULT_CONFIG = {
         "alert_duration_seconds": 3,
         "invalidate_throws": False,
     },
+    "promotions": [
+        {
+            "id": "happy_hour",
+            "title": "HAPPY HOUR FUTSAPO",
+            "desc": "2x1 en créditos de juego de lunes a jueves de 18:00 a 20:00 hs.",
+            "badge": "2x1 CRÉDITOS",
+            "icon": "⚡",
+            "days": [1, 2, 3, 4],
+            "start_hour": 18,
+            "end_hour": 20
+        },
+        {
+            "id": "crazy_wednesday",
+            "title": "MIÉRCOLES LOCOS",
+            "desc": "Todos los miércoles, obtené un 25% de descuento en la carga de fichas.",
+            "badge": "25% OFF FICHAS",
+            "icon": "🎉",
+            "days": [3],
+            "start_hour": 0,
+            "end_hour": 24
+        },
+        {
+            "id": "late_night",
+            "title": "TRASNOCHE CYBER",
+            "desc": "Viernes y sábados de 23:00 a 02:00 hs, jugá 3 partidas por sólo $500.",
+            "badge": "DESCUENTO DE NOCHE",
+            "icon": "🌙",
+            "days": [5, 6, 0],
+            "start_hour": 23,
+            "end_hour": 2
+        },
+        {
+            "id": "weekend_champions",
+            "title": "FIN DE SEMANA",
+            "desc": "Sábados y domingos sumás el doble para el Ranking Provincial y Global.",
+            "badge": "DOBLE PUNTOS RANKING",
+            "icon": "🏆",
+            "days": [6, 0],
+            "start_hour": 0,
+            "end_hour": 24
+        }
+    ]
 }
 
 _runtime: dict = {}
@@ -129,3 +176,5 @@ async def save_config_to_db(session) -> None:
         entry = ConfigEntry(key="app_config", value=json.dumps(get_config()))
         session.add(entry)
     await session.commit()
+
+# Trigger reload

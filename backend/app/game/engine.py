@@ -161,6 +161,7 @@ class GameEngine:
                             p.score = 0
                             p.balls_left = s.balls_per_player
                             p.balls_pocketed = 0
+                            p.shots = []
                         s.current_player = 0
                         s.team_scores = {1: 0, 2: 0}
                         s.tiebreak_players = []
@@ -174,7 +175,9 @@ class GameEngine:
                             if p:
                                 await self._broadcast({"type": "turn", "current_player": 0,
                                                        "player_name": p.name or "Jugador 1",
-                                                       "balls_left":  p.balls_left})
+                                                       "balls_left":  p.balls_left,
+                                                       "shots":       p.shots,
+                                                       "balls_per_player": s.balls_per_player})
                     else:
                         await self._transition(GameState.PAYMENT)
                 elif btn_id == "back":
@@ -183,7 +186,18 @@ class GameEngine:
 
     async def handle_coin(self, count: int = 1) -> None:
         cfg = get_config()
-        credits_added = count * cfg["pricing"]["coin_to_credits"]
+        
+        # Calcular multiplicador según promociones activas
+        from app.game.promotions import get_active_promotions
+        active_promos = get_active_promotions(cfg)
+        multiplier = 1
+        for promo in active_promos:
+            if "credits_multiplier" in promo and promo["credits_multiplier"] > 1:
+                multiplier = max(multiplier, promo["credits_multiplier"])
+            elif promo.get("id") == "happy_hour":
+                multiplier = max(multiplier, 2)
+                
+        credits_added = count * cfg["pricing"]["coin_to_credits"] * multiplier
         self.session.credits += credits_added
         await self._broadcast({"type": "credits", "total": self.session.credits,
                                "required": self.session.credits_required,
@@ -210,6 +224,10 @@ class GameEngine:
         self.last_sensor_time = time.time()
         new_score = self.session.add_score(points)
         player    = self.session.current()
+        if player:
+            if player.shots is None:
+                player.shots = []
+            player.shots.append(points)
 
         if self.session.mode == GameMode.GOLEADOR:
             # En modo GOLEADOR: incrementar bolas embocadas y mostrar ese valor en display
@@ -259,6 +277,14 @@ class GameEngine:
         if s.state != GameState.PLAYING:
             return
 
+        p = s.current()
+        if p:
+            if p.shots is None:
+                p.shots = []
+            expected_shots = s.balls_per_player - p.balls_left
+            if len(p.shots) == expected_shots:
+                p.shots.append(0)
+
         cfg = get_config()
         rotation_mode = cfg["game"].get("rotation_mode", "sequential")
 
@@ -277,6 +303,8 @@ class GameEngine:
                     await self._check_and_start_tiebreak()
                 else:
                     await self._turn_change(next_p)
+            else:
+                await self._sync_state()
 
     async def handle_qr_payment(self, credits: int, reference: str) -> None:
         self.session.credits += credits
@@ -427,6 +455,8 @@ class GameEngine:
                 "player_name":  next_p.name if next_p else "?",
                 "balls_left":   1,
                 "is_tiebreak":  True,
+                "shots":        next_p.shots if next_p else [],
+                "balls_per_player": s.balls_per_player,
             })
             await self._sync_state()  # Sincronizar de nuevo para refrescar la interfaz (cursor de turno activo)
         else:
@@ -489,6 +519,7 @@ class GameEngine:
             p.score = 0
             p.balls_left = self.session.balls_per_player
             p.balls_pocketed = 0
+            p.shots = []
         self.session.current_player = 0
         self.session.team_scores = {1: 0, 2: 0}
         self.session.tiebreak_players = []
@@ -498,7 +529,9 @@ class GameEngine:
         if p:
             await self._broadcast({"type": "turn", "current_player": 0,
                                    "player_name": p.name or "Jugador 1",
-                                   "balls_left":  p.balls_left})
+                                   "balls_left":  p.balls_left,
+                                   "shots":       p.shots,
+                                   "balls_per_player": self.session.balls_per_player})
 
     async def _turn_change(self, next_player: Player) -> None:
         # Cancelar timer del turno anterior
@@ -509,7 +542,9 @@ class GameEngine:
         await self._broadcast({"type": "turn",
                                "current_player": self.session.current_player,
                                "player_name":    next_player.name or f"Jugador {next_player.index+1}",
-                               "balls_left":     next_player.balls_left})
+                               "balls_left":     next_player.balls_left,
+                               "shots":          next_player.shots,
+                               "balls_per_player": self.session.balls_per_player})
         await asyncio.sleep(get_config()["game"]["turn_change_seconds"])
         await self._transition(GameState.PLAYING)
         # Reiniciar timer para el nuevo jugador en modo TIMED
