@@ -29,6 +29,8 @@ class GameEngine:
         self.last_relay_session_id = ""
         self.relay_client = None
         self.last_sensor_time = 0.0
+        self.attract_entered_at = time.time()
+        self.last_attract_sound_time = 0.0
 
     # ── API pública ──────────────────────────────────────────────────────────
 
@@ -341,6 +343,35 @@ class GameEngine:
 
     async def handle_proximity(self, active: bool) -> None:
         cfg = get_config()
+        
+        # Modo captar jugadores (cuando la máquina está sin uso en estado ATTRACT y detecta movimiento)
+        if self.session.state == GameState.ATTRACT:
+            attract_cfg = cfg.get("attract_players", {})
+            if attract_cfg.get("enabled", False) and active:
+                now = time.time()
+                idle_timeout = attract_cfg.get("idle_timeout_seconds", 60)
+                cooldown = attract_cfg.get("cooldown_seconds", 30)
+                
+                # Verificar tiempo transcurrido en ATTRACT y cooldown
+                if (now - self.attract_entered_at >= idle_timeout) and (now - self.last_attract_sound_time >= cooldown):
+                    self.last_attract_sound_time = now
+                    try:
+                        from pathlib import Path
+                        import random
+                        audios_dir = Path(__file__).parent.parent.parent.parent / "audios" / "attract"
+                        if audios_dir.exists():
+                            files = [f.name for f in audios_dir.iterdir() if f.is_file() and f.suffix.lower() in ('.mp3', '.wav', '.ogg')]
+                            if files:
+                                selected_audio = random.choice(files)
+                                log.info("Reproduciendo audio de atracción: %s", selected_audio)
+                                await self._broadcast({
+                                    "type": "play_attract_sound",
+                                    "audio_url": f"/audios/attract/{selected_audio}"
+                                })
+                    except Exception as e:
+                        log.error("Fallo al reproducir audio de atracción: %s", e)
+            return
+
         ac = cfg.get("anti_cheat", {})
         if not (ac.get("front_enabled") or ac.get("left_enabled") or ac.get("right_enabled")):
             return
@@ -495,6 +526,7 @@ class GameEngine:
         self.session.state = new_state
 
         if new_state == GameState.ATTRACT:
+            self.attract_entered_at = time.time()
             self._start_attract_timer()
         elif new_state == GameState.PLAYING:
             if self.session.mode == GameMode.TIMED:

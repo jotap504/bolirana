@@ -60,6 +60,11 @@ DEFAULT_CONFIG = {
         "videos": [],
         "images": [],
     },
+    "attract_players": {
+        "enabled": False,
+        "idle_timeout_seconds": 60,
+        "cooldown_seconds": 30,
+    },
     "anti_cheat": {
         "front_enabled": True,
         "left_enabled": False,

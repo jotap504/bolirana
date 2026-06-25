@@ -153,6 +153,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  WS.on("play_attract_sound", (msg) => {
+    if (msg.audio_url) {
+      console.log("Reproduciendo sonido de atracción:", msg.audio_url);
+      const audio = new Audio(msg.audio_url + "?v=" + Date.now());
+      audio.play().catch(err => console.warn("Error al reproducir audio de atracción:", err));
+    }
+  });
+
   WS.on("turn", (msg) => {
     const nameEl = document.getElementById("turn-name");
     if (nameEl) nameEl.textContent = msg.player_name;

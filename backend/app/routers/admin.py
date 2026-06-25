@@ -192,3 +192,72 @@ async def send_hardware_command(request: Request):
         return {"status": "ok", "command": body}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+from fastapi import UploadFile, File
+from pathlib import Path
+import os
+import shutil
+
+AUDIOS_DIR = Path(__file__).parent.parent.parent.parent / "audios"
+ATTRACT_DIR = AUDIOS_DIR / "attract"
+
+@router.get("/attract/audios")
+async def get_attract_audios():
+    if not ATTRACT_DIR.exists():
+        return []
+    try:
+        files = [f.name for f in ATTRACT_DIR.iterdir() if f.is_file() and f.suffix.lower() in ('.mp3', '.wav', '.ogg')]
+        files.sort()
+        return files
+    except Exception as e:
+        log.error("Error listando audios de atraccion: %s", e)
+        raise HTTPException(status_code=500, detail="Error al listar archivos de audio.")
+
+@router.post("/attract/upload")
+async def upload_attract_audio(file: UploadFile = File(...)):
+    # Crear carpeta si no existe
+    ATTRACT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Contar archivos existentes
+    existing_files = [f for f in ATTRACT_DIR.iterdir() if f.is_file() and f.suffix.lower() in ('.mp3', '.wav', '.ogg')]
+    if len(existing_files) >= 10:
+        raise HTTPException(status_code=400, detail="Límite alcanzado: Máximo 10 archivos de audio.")
+        
+    # Validar extensión
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ('.mp3', '.wav', '.ogg'):
+        raise HTTPException(status_code=400, detail="Formato no soportado. Subir archivos .mp3, .wav o .ogg.")
+        
+    # Limpiar nombre de archivo (reemplazar espacios y caracteres raros)
+    import re
+    clean_name = re.sub(r'[^a-zA-Z0-9_\-\.]', '', file.filename.replace(' ', '_'))
+    if not clean_name:
+        clean_name = f"attract_{len(existing_files) + 1}{ext}"
+    target_path = ATTRACT_DIR / clean_name
+    
+    # Guardar archivo
+    try:
+        with open(target_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        return {"status": "success", "filename": clean_name}
+    except Exception as e:
+        log.error("Error guardando archivo subido: %s", e)
+        raise HTTPException(status_code=500, detail="No se pudo guardar el archivo de audio.")
+
+@router.delete("/attract/audios/{filename}")
+async def delete_attract_audio(filename: str):
+    # Prevenir path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Nombre de archivo inválido.")
+        
+    target_path = ATTRACT_DIR / filename
+    if not target_path.exists():
+        raise HTTPException(status_code=404, detail="El archivo no existe.")
+        
+    try:
+        os.remove(target_path)
+        return {"status": "success", "message": f"Archivo {filename} eliminado."}
+    except Exception as e:
+        log.error("Error eliminando archivo: %s", e)
+        raise HTTPException(status_code=500, detail="No se pudo eliminar el archivo de audio.")

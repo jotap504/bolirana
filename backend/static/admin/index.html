@@ -319,6 +319,7 @@
     <button class="tab" data-tab="promociones">PROMOCIONES</button>
     <button class="tab" data-tab="motores">MOTORES</button>
     <button class="tab" data-tab="luces">LUCES</button>
+    <button class="tab" data-tab="attract-players">LLAMAR JUGADORES</button>
     <button class="tab" data-tab="simulador">SIMULADOR</button>
     <button class="tab" data-tab="stats">ESTADO</button>
   </div>
@@ -504,6 +505,48 @@
     </div>
   </div>
 
+  <!-- ── LLAMAR JUGADORES ── -->
+  <div id="panel-attract-players" class="panel">
+    <div class="card">
+      <div class="card-title">MODO LLAMAR JUGADORES (CAPTACIÓN DE PÚBLICO)</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        Reproduce audios aleatorios grabados con tu celular cuando el radar de proximidad detecta movimiento en frente de la máquina (mientras está sin uso).
+      </p>
+      <div class="form-row">
+        <div>
+          <label>Modo Captar Jugadores</label>
+          <button class="toggle" id="cfg-attract-players-enabled" onclick="this.classList.toggle('on'); this.textContent = this.classList.contains('on') ? 'ON' : 'OFF';">OFF</button>
+        </div>
+        <div>
+          <label>Tiempo de Inactividad Mínimo (segundos)</label>
+          <input type="number" id="cfg-attract-players-timeout" min="5" max="3600" value="60">
+        </div>
+        <div>
+          <label>Tiempo de Espera entre Audios (cooldown, segundos)</label>
+          <input type="number" id="cfg-attract-players-cooldown" min="5" max="600" value="30">
+        </div>
+      </div>
+      <button class="btn btn-save" id="save-attract-players">GUARDAR CONFIGURACIÓN</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">AUDIOS DE LLAMADO DE JUEGO (MÁXIMO 10)</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        Sube grabaciones de audio (.mp3, .wav, .ogg) para reproducirse de forma aleatoria al detectar presencia.
+      </p>
+      
+      <div id="attract-audio-upload-zone" style="margin-bottom: 20px; border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; background: rgba(0,0,0,0.25);">
+        <input type="file" id="attract-audio-file-input" accept=".mp3,.wav,.ogg" style="display: none;" onchange="handleAttractAudioUpload(this)">
+        <button class="btn btn-sim" onclick="document.getElementById('attract-audio-file-input').click()">📁 SELECCIONAR Y SUBIR AUDIO</button>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 8px;">Formatos soportados: .mp3, .wav, .ogg. Tamaño recomendado: &lt; 500 KB</div>
+      </div>
+
+      <div id="attract-audios-list" style="display:flex; flex-direction:column; gap:12px;">
+        <!-- Cargado dinámicamente -->
+      </div>
+    </div>
+  </div>
+
   <!-- ── SIMULADOR ── -->
   <div id="panel-simulador" class="panel">
     <div class="card">
@@ -663,6 +706,14 @@ async function loadConfig() {
 
   adminPromotions = cfg.promotions || [];
   renderAdminPromotions();
+
+  // Cargar configuración de captación de jugadores
+  const ap = cfg.attract_players || {};
+  document.getElementById("cfg-attract-players-enabled").classList.toggle("on", !!ap.enabled);
+  document.getElementById("cfg-attract-players-enabled").textContent = ap.enabled ? "ON" : "OFF";
+  document.getElementById("cfg-attract-players-timeout").value = ap.idle_timeout_seconds || 60;
+  document.getElementById("cfg-attract-players-cooldown").value = ap.cooldown_seconds || 30;
+  loadAttractAudios();
 }
 
 function renderSensors(sensors) {
@@ -766,6 +817,94 @@ document.getElementById("save-anti-cheat").addEventListener("click", async () =>
   await api("/api/admin/config", "PATCH", patch);
   toast("Configuración anti-trampas guardada");
 });
+
+document.getElementById("save-attract-players").addEventListener("click", async () => {
+  const patch = {
+    attract_players: {
+      enabled: document.getElementById("cfg-attract-players-enabled").classList.contains("on"),
+      idle_timeout_seconds: +document.getElementById("cfg-attract-players-timeout").value,
+      cooldown_seconds: +document.getElementById("cfg-attract-players-cooldown").value,
+    }
+  };
+  await api("/api/admin/config", "PATCH", patch);
+  toast("Configuración de captación guardada");
+});
+
+async function loadAttractAudios() {
+  try {
+    const files = await api("/api/admin/attract/audios");
+    renderAttractAudios(files);
+  } catch (e) {
+    console.error("Error al cargar audios de atracción:", e);
+  }
+}
+
+function renderAttractAudios(files) {
+  const wrap = document.getElementById("attract-audios-list");
+  if (!files || files.length === 0) {
+    wrap.innerHTML = `<div style="font-size: 13px; color: var(--muted); text-align: center; padding: 10px;">No hay audios subidos. Sube archivos de voz o silbidos para comenzar.</div>`;
+    return;
+  }
+  wrap.innerHTML = files.map((f, i) => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-family: 'Share Tech Mono', monospace; font-size: 14px; color: var(--neon);">${i + 1}.</span>
+        <span style="font-size: 14px; color: var(--text);">${f}</span>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-sim" style="padding: 6px 12px; font-size: 12px; border-color: var(--green); color: var(--green); text-shadow: none; box-shadow: none;" onclick="playAttractAudio('${f}')">▶ OÍR</button>
+        <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px; background: transparent; border: 1px solid var(--red); color: var(--red); box-shadow: none;" onclick="deleteAttractAudio('${f}')">🗑 BORRAR</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function playAttractAudio(filename) {
+  const audio = new Audio('/audios/attract/' + filename + '?v=' + Date.now());
+  audio.play().catch(err => console.error("Error al pre-escuchar audio:", err));
+}
+
+async function deleteAttractAudio(filename) {
+  if (!confirm("¿Estás seguro de que quieres eliminar el audio \\"" + filename + "\\"?")) return;
+  try {
+    const res = await api('/api/admin/attract/audios/' + encodeURIComponent(filename), "DELETE");
+    if (res.status === "success") {
+      toast("Audio eliminado");
+      loadAttractAudios();
+    } else {
+      alert("Error al eliminar: " + (res.detail || "Error desconocido"));
+    }
+  } catch (e) {
+    alert("Error de conexión: " + e.message);
+  }
+}
+
+async function handleAttractAudioUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  try {
+    toast("Subiendo audio...");
+    const r = await fetch("/api/admin/attract/upload", {
+      method: "POST",
+      body: formData
+    });
+    const res = await r.json();
+    input.value = ""; // Reset file selector
+    
+    if (r.ok && res.status === "success") {
+      toast("Audio subido");
+      loadAttractAudios();
+    } else {
+      alert("Error al subir audio: " + (res.detail || "Error desconocido"));
+    }
+  } catch (e) {
+    alert("Error de conexión: " + e.message);
+  }
+}
 
 // ── Stats polling ─────────────────────────────────────────────────────────────
 async function loadStats() {
