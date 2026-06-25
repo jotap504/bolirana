@@ -44,6 +44,31 @@ async def lifespan(app: FastAPI):
             if entry:
                 try:
                     patch = json.loads(entry.value)
+                    
+                    # Asegurar que todos los sensores de DEFAULT_CONFIG existan en la BD
+                    from app.config import DEFAULT_CONFIG
+                    db_sensors = patch.get("sensors", [])
+                    db_sensor_ids = {s["id"] for s in db_sensors}
+                    
+                    modified = False
+                    for default_s in DEFAULT_CONFIG["sensors"]:
+                        if default_s["id"] not in db_sensor_ids:
+                            # Insertar antes de 'cero' si es posible para mantener el orden
+                            cero_idx = next((idx for idx, s in enumerate(db_sensors) if s["id"] == "cero"), -1)
+                            if cero_idx != -1:
+                                db_sensors.insert(cero_idx, default_s)
+                            else:
+                                db_sensors.append(default_s)
+                            db_sensor_ids.add(default_s["id"])
+                            modified = True
+                            
+                    if modified:
+                        patch["sensors"] = db_sensors
+                        entry.value = json.dumps(patch)
+                        session.add(entry)
+                        await session.commit()
+                        log.info("Base de datos de configuración auto-migrada con nuevos sensores.")
+                        
                     update_config(patch)
                     log.info("Configuración cargada desde base de datos local SQLite.")
                 except Exception as e:
