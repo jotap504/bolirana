@@ -43,6 +43,9 @@ const char* password = "corsa000";
 // Botón de Pausa relocalizado (liberado del sensor fosa_1)
 #define BTN_PAUSE_PIN 27
 
+// Sensor de proximidad radar HLK-LD2410 (Caso A: salida digital en GPIO 16/RX2)
+#define PROXIMITY_PIN 16
+
 // ==========================================
 // CONFIGURACIÓN DE SENSORES EN MCP23017
 // ==========================================
@@ -112,6 +115,11 @@ WebServer server(80);
 // Control de debounce/estado de sensores
 unsigned long lastTriggerTime[NUM_SENSORS] = {0};
 bool lastSensorState[NUM_SENSORS] = {false};
+
+// Control del estado del sensor de proximidad (HLK-LD2410)
+bool lastProximityState = false;
+unsigned long lastProximityCheckTime = 0;
+const unsigned long PROXIMITY_CHECK_INTERVAL = 100; // Intervalo de lectura en ms
 
 // ==========================================
 // INTERFAZ DASHBOARD ENRIQUECIDA (HTML / CSS / JS)
@@ -201,7 +209,8 @@ const char index_html[] PROGMEM = R"rawliteral(
             "fosa_7": "⚪ Fosa 7",
             "fosa_8": "⚪ Fosa 8",
             "fosa_9": "⚪ Fosa 9",
-            "cero": "❌ Bola Cero"
+            "cero": "❌ Bola Cero",
+            "proximity": "🚨 Radar Proximidad"
         };
 
         const grid = document.getElementById('sensorsGrid');
@@ -301,8 +310,8 @@ void handleStop() {
 void handleSensor() {
   // Retorna "1" si algún sensor está activo en este momento (retrocompatible)
   bool active = false;
-  for (int i = 0; i < 11; i++) {
-    if (mcp.digitalRead(i) == SENSOR_ACTIVE_STATE) {
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    if (mcp.digitalRead(SENSOR_PINS[i]) == SENSOR_ACTIVE_STATE) {
       active = true;
       break;
     }
@@ -313,11 +322,14 @@ void handleSensor() {
 void handleStatus() {
   // Retorna un objeto JSON con el estado en tiempo real de todos los sensores
   String json = "{";
-  for (int i = 0; i < 11; i++) {
-    bool state = (mcp.digitalRead(i) == SENSOR_ACTIVE_STATE);
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    bool state = (mcp.digitalRead(SENSOR_PINS[i]) == SENSOR_ACTIVE_STATE);
     json += "\"" + String(SENSOR_IDS[i]) + "\":" + (state ? "true" : "false");
-    if (i < 10) json += ",";
+    json += ",";
   }
+  // Agregar también el sensor de proximidad
+  bool proxState = (digitalRead(PROXIMITY_PIN) == HIGH);
+  json += "\"proximity\":" + String(proxState ? "true" : "false");
   json += "}";
   server.send(200, "application/json", json);
 }
@@ -549,6 +561,9 @@ void setup() {
   // Configuración del botón de pausa relocalizado (Pullup interno)
   pinMode(BTN_PAUSE_PIN, INPUT_PULLUP);
   
+  // Configuración del pin del radar de proximidad (con Pulldown para evitar ruido si se desconecta)
+  pinMode(PROXIMITY_PIN, INPUT_PULLDOWN);
+  
   // Inicialización de LEDs NeoPixel
   strip.begin();
   strip.setBrightness(180); // Brillo alto pero seguro (0-255)
@@ -611,6 +626,35 @@ void setup() {
 }
 
 // ==========================================
+// LECTURA DEL SENSOR DE PROXIMIDAD (RADAR HLK-LD2410)
+// ==========================================
+void readProximity() {
+  unsigned long now = millis();
+  if (now - lastProximityCheckTime >= PROXIMITY_CHECK_INTERVAL) {
+    lastProximityCheckTime = now;
+    
+    // Leer el estado físico de presencia (HIGH cuando detecta movimiento/presencia)
+    bool currentReading = (digitalRead(PROXIMITY_PIN) == HIGH);
+    
+    if (currentReading != lastProximityState) {
+      lastProximityState = currentReading;
+      
+      // 1. Enviar el evento JSON al backend por Serial
+      Serial.print("{\"event\":\"proximity\",\"active\":");
+      Serial.print(currentReading ? "true" : "false");
+      Serial.println("}");
+      
+      // 2. Imprimir mensaje de depuración en el monitor serial
+      if (currentReading) {
+        Serial.println("[DEBUG] Radar Proximidad: ¡PRESENCIA DETECTADA! (Alerta de trampa)");
+      } else {
+        Serial.println("[DEBUG] Radar Proximidad: Área despejada / Sin presencia.");
+      }
+    }
+  }
+}
+
+// ==========================================
 // LOOP PRINCIPAL (Optimizado y no-bloqueante)
 // ==========================================
 void loop() {
@@ -624,4 +668,7 @@ void loop() {
 
   // 3. Lectura periódica de sensores IR a través del Expansor I2C
   readSensors();
+
+  // 4. Lectura periódica del radar de proximidad anti-trampa
+  readProximity();
 }
