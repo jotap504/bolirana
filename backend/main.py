@@ -84,6 +84,24 @@ async def lifespan(app: FastAPI):
                 session.add(new_entry)
                 await session.commit()
                 log.info("Primer inicio: se generó el identificador de máquina único: %s", default_arcade_id)
+
+        # Inicializar audios por defecto desde /audios/llamados/ hacia /audios/attract/ si está vacío
+        try:
+            import shutil
+            import re
+            llamados_dir = Path(__file__).parent.parent / "audios" / "llamados"
+            attract_dir = Path(__file__).parent.parent / "audios" / "attract"
+            attract_dir.mkdir(parents=True, exist_ok=True)
+            existing_attract = [f for f in attract_dir.iterdir() if f.is_file() and f.suffix.lower() in ('.mp3', '.wav', '.ogg')]
+            if not existing_attract and llamados_dir.exists():
+                for f in llamados_dir.iterdir():
+                    if f.is_file() and f.suffix.lower() in ('.mp3', '.wav', '.ogg'):
+                        clean_name = re.sub(r'[^a-zA-Z0-9_\-\.]', '', f.name.replace(' ', '_'))
+                        shutil.copy2(f, attract_dir / clean_name)
+                log.info("Audios por defecto copiados desde 'llamados' a 'attract'.")
+        except Exception as ae:
+            log.error("Error al copiar audios por defecto: %s", ae)
+
     except Exception as err:
         log.error("Fallo critico durante el arranque de la aplicacion: %s", err, exc_info=True)
         print(f"!!! STARTUP ERROR: {err}")

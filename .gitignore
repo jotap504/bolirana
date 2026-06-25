@@ -21,6 +21,9 @@ Thumbs.db
 backend/.env
 backend/bolirana.db
 
+# Attraction mode runtime files
+audios/attract/
+
 # Agent/Claude workspace metadata (optional, keep if you want to avoid pushing AI configs)
 .agents/
 .claude/
