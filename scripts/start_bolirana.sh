@@ -56,7 +56,7 @@ $CHROMIUM_BIN \
   --disable-infobars \
   --disable-session-crashed-bubble \
   --check-for-update-interval=31536000 \
-  --disable-gpu \
+  --no-sandbox \
   "http://127.0.0.1:8000/display/" &
 
 echo "=== Procesos de Bolirana iniciados con éxito ==="
