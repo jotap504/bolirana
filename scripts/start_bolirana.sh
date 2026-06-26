@@ -30,12 +30,14 @@ echo "Esperando 6 segundos para inicialización..."
 sleep 6
 
 # 4. Detectar binario de Chromium disponible en Lubuntu
-if command -v chromium-browser >/dev/null 2>&1; then
+if command -v google-chrome >/dev/null 2>&1; then
+    CHROMIUM_BIN="google-chrome"
+elif command -v chromium-browser >/dev/null 2>&1; then
     CHROMIUM_BIN="chromium-browser"
 elif command -v chromium >/dev/null 2>&1; then
     CHROMIUM_BIN="chromium"
 else
-    echo "ERROR: No se encontró Chromium en el sistema. Por favor instálalo."
+    echo "ERROR: No se encontró un navegador compatible (Chrome/Chromium) en el sistema."
     exit 1
 fi
 
