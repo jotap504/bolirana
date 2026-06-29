@@ -14,7 +14,7 @@ from app.database   import init_db
 from app.ws_manager import WSManager
 from app.game.engine import GameEngine
 from app.hardware.serial_bridge import SerialBridge
-from app.routers import game, admin, payment
+from app.routers import game, admin, payment, system
 
 logging.basicConfig(level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 STATIC = Path(__file__).parent / "static"
 IMAGENES = Path(__file__).parent.parent / "imagenes"
 AUDIOS = Path(__file__).parent.parent / "audios"
+
 
 
 @asynccontextmanager
@@ -173,6 +174,7 @@ def _handle_hw_event(app):
         elif t == "coin":
             await engine.handle_coin(msg.get("count", 1))
         elif t == "btn":
+            await app.state.ws.broadcast({"type": "physical_button", "button_id": msg["id"]})
             await engine.handle_button(msg["id"])
         elif t == "ball":
             await engine.handle_ball_consumed(from_hardware=True)
@@ -186,8 +188,10 @@ app = FastAPI(title="Bolirana Arcade", lifespan=lifespan)
 app.include_router(game.router)
 app.include_router(admin.router)
 app.include_router(payment.router)
+app.include_router(system.router)
 
 # Servir frontends estáticos
+app.mount("/boot-menu", StaticFiles(directory=STATIC / "boot-menu", html=True), name="boot_menu")
 app.mount("/display", StaticFiles(directory=STATIC / "display", html=True), name="display")
 app.mount("/player",  StaticFiles(directory=STATIC / "player",  html=True), name="player")
 app.mount("/admin",   StaticFiles(directory=STATIC / "admin",   html=True), name="admin_ui")
@@ -196,4 +200,4 @@ app.mount("/audios", StaticFiles(directory=AUDIOS), name="audios")
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/display/")
+    return RedirectResponse(url="/boot-menu/")

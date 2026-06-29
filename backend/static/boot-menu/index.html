@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menú de Arranque - Bolirana Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap">
+  <style>
+    :root {
+      --bg: #020712;
+      --bg-card: rgba(6, 15, 38, 0.85);
+      --cyan: #00e5ff;
+      --cyan-glow: rgba(0, 229, 255, 0.35);
+      --gold: #f5c000;
+      --gold-glow: rgba(245, 192, 0, 0.4);
+      --text: #ffffff;
+      --text-muted: #8fa0c0;
+      --red: #ff2244;
+      --green: #00ff88;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Double Neon Border */
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 999;
+      pointer-events: none;
+      box-shadow: 
+        inset 0 0 0 10px var(--cyan),
+        inset 0 0 0 13px var(--bg),
+        inset 0 0 0 17px var(--gold),
+        inset 0 0 80px rgba(0, 229, 255, 0.15);
+      border-radius: 12px;
+    }
+
+    /* Background pattern */
+    .bg-pattern {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(1, 15, 45, 0.8) 0%, rgba(0, 3, 10, 0.95) 100%);
+      z-index: -1;
+    }
+    .bg-pattern::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(18, 18, 18, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      background-size: 100% 4px, 6px 100%;
+      opacity: 0.4;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 800px;
+      background: var(--bg-card);
+      border: 2px solid rgba(0, 229, 255, 0.25);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 229, 255, 0.1);
+      text-align: center;
+      z-index: 10;
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 38px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: var(--cyan);
+      text-shadow: 0 0 15px var(--cyan-glow);
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 16px;
+      margin-bottom: 30px;
+      letter-spacing: 1px;
+    }
+
+    /* Countdown HUD */
+    .countdown-hud {
+      display: inline-flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 10px 25px;
+      border-radius: 30px;
+      border: 1px solid rgba(245, 192, 0, 0.3);
+      margin-bottom: 40px;
+    }
+
+    .countdown-timer {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 24px;
+      color: var(--gold);
+      text-shadow: 0 0 10px var(--gold-glow);
+    }
+
+    .countdown-label {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    /* Menu Buttons */
+    .menu-options {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text);
+      background: rgba(0, 10, 30, 0.7);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 18px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      background: var(--text);
+      opacity: 0;
+      transition: all 0.2s;
+    }
+
+    .btn.active {
+      border-color: var(--cyan);
+      background: rgba(0, 229, 255, 0.08);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+      transform: scale(1.02);
+    }
+
+    .btn.active::before {
+      background: var(--cyan);
+      opacity: 1;
+    }
+
+    .btn:hover {
+      background: rgba(0, 229, 255, 0.05);
+    }
+
+    /* WiFi View */
+    .view {
+      display: none;
+    }
+    .view.show {
+      display: block;
+    }
+
+    .wifi-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 15px;
+    }
+
+    .wifi-list {
+      max-height: 280px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-right: 5px;
+    }
+
+    /* Custom Scrollbar */
+    .wifi-list::-webkit-scrollbar {
+      width: 8px;
+    }
+    .wifi-list::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+    }
+    .wifi-list::-webkit-scrollbar-thumb {
+      background: var(--cyan);
+      border-radius: 4px;
+    }
+
+    .wifi-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 5, 20, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .wifi-item.active, .wifi-item:hover {
+      border-color: var(--cyan);
+      background: rgba(0, 229, 255, 0.05);
+    }
+
+    .wifi-name {
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    .wifi-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-muted);
+    }
+
+    .wifi-signal {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--green);
+    }
+
+    /* Modal dialog */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 3, 10, 0.9);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-content {
+      width: 90%;
+      max-width: 500px;
+      background: #06112c;
+      border: 2px solid var(--gold);
+      box-shadow: 0 0 30px rgba(245, 192, 0, 0.2);
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .modal h3 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--gold);
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: #fff;
+      padding: 14px;
+      font-size: 18px;
+      margin: 15px 0;
+      text-align: center;
+      outline: none;
+      font-family: monospace;
+    }
+
+    .input-field:focus {
+      border-color: var(--cyan);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .btn-modal {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .btn-cancel {
+      background: rgba(255,255,255,0.1);
+      color: var(--text);
+    }
+    .btn-confirm {
+      background: var(--gold);
+      color: #000;
+    }
+
+    /* Virtual Keyboard */
+    .keyboard-container {
+      margin-top: 20px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .keyboard-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .key {
+      flex: 1;
+      height: 38px;
+      background: #111a36;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .key:active {
+      background: var(--cyan);
+      color: #000;
+    }
+
+    .key.wide {
+      flex: 2;
+    }
+    .key.extra-wide {
+      flex: 5;
+      background: #192752;
+    }
+
+    /* Info overlays */
+    .status-toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00e5ff;
+      color: #000;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: bold;
+      box-shadow: 0 0 15px var(--cyan-glow);
+      display: none;
+      z-index: 1100;
+    }
+    
+    .loading-spinner {
+      border: 4px solid rgba(255,255,255,0.1);
+      border-left-color: var(--cyan);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Cabinet button guide */
+    .cabinet-guide {
+      margin-top: 30px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: 15px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .keycap {
+      background: #202d4b;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border-bottom: 2px solid #000;
+      font-family: monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-pattern"></div>
+  
+  <!-- ── MAIN STARTUP MENU ── -->
+  <div id="main-view" class="container view show">
+    <h1>MENU DE ARRANQUE</h1>
+    <p class="subtitle">Bolirana Arcade v7.4 — Stadium Pro</p>
+    
+    <div class="countdown-hud">
+      <span class="countdown-timer" id="countdown-val">15</span>
+      <span class="countdown-label">Iniciando juego...</span>
+    </div>
+    
+    <div class="menu-options">
+      <button class="btn active" id="opt-play" onclick="launchGame()">
+        🎮 ENTRAR AL JUEGO
+      </button>
+      <button class="btn" id="opt-admin" onclick="openAdmin()">
+        ⚙️ CONFIGURACIÓN DEL JUEGO
+      </button>
+      <button class="btn" id="opt-wifi" onclick="showWifiView()">
+        🌐 CONFIGURAR CONEXIÓN WIFI
+      </button>
+      <button class="btn" id="opt-exit" onclick="exitKiosk()">
+        🖥️ SALIR AL ESCRITORIO
+      </button>
+    </div>
+    
+    <div class="cabinet-guide">
+      <span><span class="keycap">BOTÓN PAUSE</span> Navegar</span>
+      <span><span class="keycap">BOTÓN START</span> Seleccionar</span>
+    </div>
+  </div>
+
+  <!-- ── WIFI CONFIGURATION VIEW ── -->
+  <div id="wifi-view" class="container view">
+    <div class="wifi-header">
+      <h2 style="font-family:'Orbitron', sans-serif; color:var(--cyan)">REDES WIFI DISPONIBLES</h2>
+      <button class="btn-modal btn-cancel" style="padding:8px 16px; max-width:100px;" onclick="showMainView()">Atrás</button>
+    </div>
+    
+    <div id="wifi-loading" class="view show">
+      <div class="loading-spinner"></div>
+      <p style="color:var(--text-muted)">Buscando redes WiFi...</p>
+    </div>
+    
+    <div id="wifi-list" class="wifi-list">
+      <!-- Se llenará dinámicamente -->
+    </div>
+    
+    <div class="cabinet-guide" style="margin-top: 10px;">
+      <span><span class="keycap">BOTÓN PAUSE</span> Cambiar Red</span>
+      <span><span class="keycap">BOTÓN START</span> Conectar</span>
+    </div>
+  </div>
+
+  <!-- ── PASSWORD MODAL ── -->
+  <div id="pwd-modal" class="modal">
+    <div class="modal-content">
+      <h3 id="pwd-ssid-title">Red WiFi</h3>
+      <p style="color:var(--text-muted); font-size:14px;">Ingresa la contraseña de seguridad</p>
+      
+      <input type="password" id="wifi-password" class="input-field" placeholder="Contraseña..." readonly>
+      
+      <!-- Virtual Keyboard -->
+      <div class="keyboard-container" id="v-keyboard">
+        <!-- Renglón 1 -->
+        <div class="keyboard-row">
+          <div class="key" onclick="keyPress('1')">1</div>
+          <div class="key" onclick="keyPress('2')">2</div>
+          <div class="key" onclick="keyPress('3')">3</div>
+          <div class="key" onclick="keyPress('4')">4</div>
+          <div class="key" onclick="keyPress('5')">5</div>
+          <div class="key" onclick="keyPress('6')">6</div>
+          <div class="key" onclick="keyPress('7')">7</div>
+          <div class="key" onclick="keyPress('8')">8</div>
+          <div class="key" onclick="keyPress('9')">9</div>
+          <div class="key" onclick="keyPress('0')">0</div>
+        </div>
+        <!-- Renglón 2 -->
+        <div class="keyboard-row">
+          <div class="key" onclick="keyPress('Q')">Q</div>
+          <div class="key" onclick="keyPress('W')">W</div>
+          <div class="key" onclick="keyPress('E')">E</div>
+          <div class="key" onclick="keyPress('R')">R</div>
+          <div class="key" onclick="keyPress('T')">T</div>
+          <div class="key" onclick="keyPress('Y')">Y</div>
+          <div class="key" onclick="keyPress('U')">U</div>
+          <div class="key" onclick="keyPress('I')">I</div>
+          <div class="key" onclick="keyPress('O')">O</div>
+          <div class="key" onclick="keyPress('P')">P</div>
+        </div>
+        <!-- Renglón 3 -->
+        <div class="keyboard-row">
+          <div class="key" onclick="keyPress('A')">A</div>
+          <div class="key" onclick="keyPress('S')">S</div>
+          <div class="key" onclick="keyPress('D')">D</div>
+          <div class="key" onclick="keyPress('F')">F</div>
+          <div class="key" onclick="keyPress('G')">G</div>
+          <div class="key" onclick="keyPress('H')">H</div>
+          <div class="key" onclick="keyPress('J')">J</div>
+          <div class="key" onclick="keyPress('K')">K</div>
+          <div class="key" onclick="keyPress('L')">L</div>
+          <div class="key" onclick="keyPress('_')">_</div>
+        </div>
+        <!-- Renglón 4 -->
+        <div class="keyboard-row">
+          <div class="key" onclick="keyPress('Z')">Z</div>
+          <div class="key" onclick="keyPress('X')">X</div>
+          <div class="key" onclick="keyPress('C')">C</div>
+          <div class="key" onclick="keyPress('V')">V</div>
+          <div class="key" onclick="keyPress('B')">B</div>
+          <div class="key" onclick="keyPress('N')">N</div>
+          <div class="key" onclick="keyPress('M')">M</div>
+          <div class="key" onclick="keyPress('-')">-</div>
+          <div class="key wide" onclick="keyPress('BACKSPACE')">⌫</div>
+        </div>
+        <!-- Renglón 5 (Espacio y Shift/case) -->
+        <div class="keyboard-row">
+          <div class="key wide" id="key-shift" onclick="toggleKeyboardCase()">MAYUS</div>
+          <div class="key extra-wide" onclick="keyPress(' ')">ESPACIO</div>
+          <div class="key wide" onclick="keyPress('CLEAR')">Limpiar</div>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-modal btn-cancel" onclick="closePasswordModal()">Cancelar</button>
+        <button class="btn-modal btn-confirm" id="btn-wifi-connect-submit" onclick="connectToSelectedWifi()">CONECTAR</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="status-toast">Mensaje de estado</div>
+
+  <script>
+    let countdownVal = 15;
+    let countdownInterval = null;
+    let activeIndex = 0;
+    let activeView = "main"; // "main", "wifi", "password"
+    let wifiNetworks = [];
+    let selectedSsid = "";
+    let isUppercase = true;
+    let ws = null;
+
+    // Elementos del DOM
+    const countdownValEl = document.getElementById("countdown-val");
+    const mainViewEl = document.getElementById("main-view");
+    const wifiViewEl = document.getElementById("wifi-view");
+    const pwdModalEl = document.getElementById("pwd-modal");
+    const wifiPasswordInput = document.getElementById("wifi-password");
+    const toastEl = document.getElementById("toast");
+
+    // Iniciar Cuenta Regresiva
+    function startCountdown() {
+      countdownVal = 15;
+      countdownValEl.textContent = countdownVal;
+      countdownInterval = setInterval(() => {
+        countdownVal--;
+        countdownValEl.textContent = countdownVal;
+        if (countdownVal <= 0) {
+          launchGame();
+        }
+      }, 1000);
+    }
+
+    function stopCountdown() {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+    }
+
+    // Vistas
+    function showMainView() {
+      stopCountdown();
+      startCountdown();
+      activeView = "main";
+      mainViewEl.classList.add("show");
+      wifiViewEl.classList.remove("show");
+      pwdModalEl.classList.remove("show");
+      updateSelectionVisuals();
+    }
+
+    function showWifiView() {
+      stopCountdown();
+      activeView = "wifi";
+      mainViewEl.classList.remove("show");
+      wifiViewEl.classList.add("show");
+      pwdModalEl.classList.remove("show");
+      scanWifiNetworks();
+    }
+
+    function showPasswordModal(ssid) {
+      activeView = "password";
+      selectedSsid = ssid;
+      document.getElementById("pwd-ssid-title").textContent = ssid;
+      wifiPasswordInput.value = "";
+      pwdModalEl.classList.add("show");
+    }
+
+    function closePasswordModal() {
+      pwdModalEl.classList.remove("show");
+      activeView = "wifi";
+    }
+
+    // Acciones de los botones
+    function launchGame() {
+      stopCountdown();
+      window.location.href = "/display/";
+    }
+
+    function openAdmin() {
+      stopCountdown();
+      window.location.href = "/admin/";
+    }
+
+    function exitKiosk() {
+      stopCountdown();
+      showToast("Cerrando navegador, regresando al escritorio...");
+      fetch("/api/system/exit-kiosk", { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) showToast("Error al salir: " + data.message);
+        })
+        .catch(err => showToast("Error de conexión con el backend."));
+    }
+
+    // Escaneo de redes WiFi
+    function scanWifiNetworks() {
+      const loadingEl = document.getElementById("wifi-loading");
+      const listEl = document.getElementById("wifi-list");
+      
+      loadingEl.classList.add("show");
+      listEl.innerHTML = "";
+      
+      fetch("/api/system/wifi/list")
+        .then(res => res.json())
+        .then(networks => {
+          loadingEl.classList.remove("show");
+          wifiNetworks = networks;
+          
+          if (networks.length === 0) {
+            listEl.innerHTML = '<p style="color:var(--text-muted); margin: 20px;">No se encontraron redes WiFi.</p>';
+            return;
+          }
+          
+          networks.forEach((net, idx) => {
+            const item = document.createElement("div");
+            item.className = "wifi-item" + (idx === 0 ? " active" : "");
+            item.id = `wifi-item-${idx}`;
+            item.onclick = () => showPasswordModal(net.ssid);
+            
+            item.innerHTML = `
+              <span class="wifi-name">${net.ssid}</span>
+              <div class="wifi-meta">
+                <span class="wifi-signal">${net.signal}%</span>
+                <span>${net.secured ? "🔒" : "🔓"}</span>
+              </div>
+            `;
+            listEl.appendChild(item);
+          });
+          
+          activeIndex = 0;
+          activeView = "wifi";
+        })
+        .catch(err => {
+          loadingEl.classList.remove("show");
+          listEl.innerHTML = '<p style="color:var(--red); margin: 20px;">Fallo al escanear redes WiFi.</p>';
+        });
+    }
+
+    // Conectar a WiFi seleccionado
+    function connectToSelectedWifi() {
+      const password = wifiPasswordInput.value;
+      const connectBtn = document.getElementById("btn-wifi-connect-submit");
+      
+      connectBtn.disabled = true;
+      connectBtn.textContent = "CONECTANDO...";
+      showToast(`Conectando a ${selectedSsid}...`);
+
+      fetch("/api/system/wifi/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ssid: selectedSsid, password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        connectBtn.disabled = false;
+        connectBtn.textContent = "CONECTAR";
+        
+        if (data.success) {
+          showToast("¡CONECTADO CON ÉXITO!");
+          setTimeout(() => {
+            closePasswordModal();
+            launchGame(); // Ir al juego una vez conectados
+          }, 2000);
+        } else {
+          showToast(data.message || "Error al conectar.");
+        }
+      })
+      .catch(err => {
+        connectBtn.disabled = false;
+        connectBtn.textContent = "CONECTAR";
+        showToast("Error de comunicación.");
+      });
+    }
+
+    // Navegación por Teclas Físicas de la Arcade
+    function handleCabinetButton(buttonId) {
+      if (activeView === "main") {
+        const btns = [
+          document.getElementById("opt-play"),
+          document.getElementById("opt-admin"),
+          document.getElementById("opt-wifi"),
+          document.getElementById("opt-exit")
+        ];
+        
+        if (buttonId === "pause") {
+          // Cambiar foco
+          stopCountdown(); // Parar la cuenta regresiva si el usuario navega
+          btns[activeIndex].classList.remove("active");
+          activeIndex = (activeIndex + 1) % btns.length;
+          btns[activeIndex].classList.add("active");
+        } else if (buttonId === "start") {
+          // Confirmar / Hacer clic
+          btns[activeIndex].click();
+        }
+      } 
+      else if (activeView === "wifi") {
+        if (wifiNetworks.length === 0) return;
+        
+        if (buttonId === "pause") {
+          // Cambiar selección de red
+          const oldItem = document.getElementById(`wifi-item-${activeIndex}`);
+          if (oldItem) oldItem.classList.remove("active");
+          
+          activeIndex = (activeIndex + 1) % wifiNetworks.length;
+          
+          const newItem = document.getElementById(`wifi-item-${activeIndex}`);
+          if (newItem) {
+            newItem.classList.add("active");
+            newItem.scrollIntoView({ block: "nearest" });
+          }
+        } 
+        else if (buttonId === "start") {
+          // Seleccionar red actual
+          const net = wifiNetworks[activeIndex];
+          if (net) {
+            showPasswordModal(net.ssid);
+          }
+        }
+      }
+    }
+
+    function updateSelectionVisuals() {
+      if (activeView === "main") {
+        const btns = [
+          document.getElementById("opt-play"),
+          document.getElementById("opt-admin"),
+          document.getElementById("opt-wifi"),
+          document.getElementById("opt-exit")
+        ];
+        btns.forEach((b, idx) => {
+          if (idx === activeIndex) b.classList.add("active");
+          else b.classList.remove("active");
+        });
+      }
+    }
+
+    // Teclado en Pantalla Virtual
+    function keyPress(char) {
+      if (char === 'BACKSPACE') {
+        wifiPasswordInput.value = wifiPasswordInput.value.slice(0, -1);
+      } else if (char === 'CLEAR') {
+        wifiPasswordInput.value = "";
+      } else {
+        wifiPasswordInput.value += char;
+      }
+    }
+
+    function toggleKeyboardCase() {
+      isUppercase = !isUppercase;
+      const keys = document.querySelectorAll("#v-keyboard .key");
+      const shiftBtn = document.getElementById("key-shift");
+      
+      shiftBtn.textContent = isUppercase ? "MAYUS" : "minus";
+      
+      keys.forEach(k => {
+        const text = k.textContent;
+        // Solo cambiar letras de un carácter
+        if (text.length === 1 && text.match(/[A-Za-z]/)) {
+          k.textContent = isUppercase ? text.toUpperCase() : text.toLowerCase();
+          k.setAttribute("onclick", `keyPress('${isUppercase ? text.toUpperCase() : text.toLowerCase()}')`);
+        }
+      });
+    }
+
+    // Toast de notificaciones
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.style.display = "block";
+      setTimeout(() => {
+        toastEl.style.display = "none";
+      }, 4000);
+    }
+
+    // Conexión WebSockets para recibir botones de la placa física
+    function connectWS() {
+      const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+      ws = new WebSocket(`${protocol}//${location.host}/ws/display`);
+
+      ws.onopen = () => console.log("WebSocket del Menú de Arranque conectado.");
+      
+      ws.onclose = () => {
+        console.warn("WebSocket cerrado, reconectando...");
+        setTimeout(connectWS, 2000);
+      };
+
+      ws.onmessage = ({ data }) => {
+        try {
+          const msg = JSON.parse(data);
+          // Escuchar el evento de botón físico propagado por main.py
+          if (msg.type === "physical_button") {
+            handleCabinetButton(msg.button_id);
+          }
+        } catch(e) {
+          console.error("WS error parseando mensaje", e);
+        }
+      };
+    }
+
+    // Soporte para teclado físico en desarrollo local (Flechas y Enter / Esc)
+    window.addEventListener("keydown", (e) => {
+      if (activeView === "main" || activeView === "wifi") {
+        if (e.key === "ArrowDown" || e.key === "Tab") {
+          e.preventDefault();
+          handleCabinetButton("pause");
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          handleCabinetButton("start");
+        } else if (e.key === "Escape" && activeView === "wifi") {
+          showMainView();
+        }
+      }
+    });
+
+    // Inicialización al cargar la página
+    document.addEventListener("DOMContentLoaded", () => {
+      startCountdown();
+      connectWS();
+      updateSelectionVisuals();
+    });
+  </script>
+</body>
+</html>

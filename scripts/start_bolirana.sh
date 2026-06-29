@@ -79,6 +79,6 @@ $CHROMIUM_BIN \
   --disable-features=Translate \
   --start-maximized \
   --no-sandbox \
-  "http://127.0.0.1:8000/display/" &
+  "http://127.0.0.1:8000/" &
 
 echo "=== Procesos de Bolirana iniciados con éxito ==="
