@@ -705,8 +705,12 @@ volatile unsigned long lastCoinPulseTime = 0;
 const unsigned long COIN_FLUSH_DELAY_MS = 300; // Esperar 300ms de inactividad de pulsos antes de consolidar la moneda
 
 void IRAM_ATTR coinInterrupt() {
-  coinPulses++;
-  lastCoinPulseTime = millis();
+  unsigned long now = millis();
+  // Filtrar rebotes mecánicos rápidos (cualquier señal que ocurra a menos de 30ms del último pulso válido)
+  if (now - lastCoinPulseTime > 30) {
+    coinPulses++;
+  }
+  lastCoinPulseTime = now;
 }
 
 void checkCoin() {
