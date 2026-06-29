@@ -76,6 +76,8 @@ $CHROMIUM_BIN \
   --disable-session-crashed-bubble \
   --check-for-update-interval=31536000 \
   --password-store=basic \
+  --disable-features=Translate \
+  --start-maximized \
   --no-sandbox \
   "http://127.0.0.1:8000/display/" &
 
