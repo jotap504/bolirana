@@ -41,6 +41,13 @@ else
     exit 1
 fi
 
+# 3.5. Desactivar protector de pantalla y ocultar cursor
+echo "Ocultando cursor y desactivando protector de pantalla..."
+unclutter -idle 2 -root &
+xset s off 2>/dev/null
+xset -dpms 2>/dev/null
+xset s noblank 2>/dev/null
+
 echo "Iniciando $CHROMIUM_BIN en modo Kiosco..."
 # Flags optimizados para cabinas arcade en Lubuntu:
 # --autoplay-policy=no-user-gesture-required (Habilita el sonido automático sin clic del usuario)
