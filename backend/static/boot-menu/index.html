@@ -477,7 +477,10 @@
   <div id="wifi-view" class="container view">
     <div class="wifi-header">
       <h2 style="font-family:'Orbitron', sans-serif; color:var(--cyan)">REDES WIFI DISPONIBLES</h2>
-      <button class="btn-modal btn-cancel" style="padding:8px 16px; max-width:100px;" onclick="showMainView()">Atrás</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-modal btn-cancel" style="padding:8px 16px; min-width:80px;" onclick="showMainView()">Atrás</button>
+        <button class="btn-modal btn-confirm" style="padding:8px 16px; min-width:130px; background:var(--cyan); color:#000;" onclick="launchGame()">🎮 INICIAR JUEGO</button>
+      </div>
     </div>
     
     <div id="wifi-loading" class="view show">
