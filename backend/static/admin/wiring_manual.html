@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Cableado - Bolirana Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #00828f;
+      --primary-dark: #005662;
+      --text: #1a1a2e;
+      --text-muted: #5e6e8a;
+      --border: #d0d7de;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      
+      --color-power: #ffdddd;
+      --color-gnd: #eeeeee;
+      --color-i2c: #ffeebb;
+      --color-input: #e0f7fa;
+      --color-output: #e8f5e9;
+      
+      --label-power: #cc0000;
+      --label-gnd: #333333;
+      --label-i2c: #b25e00;
+      --label-input: #007c91;
+      --label-output: #2e7d32;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 40px 20px;
+    }
+
+    .no-print-area {
+      max-width: 800px;
+      margin: 0 auto 20px auto;
+      text-align: right;
+    }
+
+    .btn-print {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background-color: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: background-color 0.2s;
+    }
+
+    .btn-print:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .page {
+      max-width: 800px;
+      background-color: var(--card-bg);
+      margin: 0 auto;
+      padding: 50px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    header {
+      border-bottom: 3px double var(--primary);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-area h1 {
+      font-family: 'Inter', sans-serif;
+      font-weight: 900;
+      font-size: 28px;
+      color: var(--primary-dark);
+      letter-spacing: 1px;
+    }
+
+    .logo-area p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+    }
+
+    .doc-meta {
+      text-align: right;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    h2 {
+      font-size: 20px;
+      color: var(--primary-dark);
+      margin-top: 30px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    p.intro {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 25px;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f1f3f5;
+      font-weight: 700;
+      color: #333;
+    }
+
+    .tag-pin {
+      font-family: 'Share Tech Mono', monospace;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* Pin colors styles */
+    .bg-power { background-color: var(--color-power); color: var(--label-power); }
+    .bg-gnd { background-color: var(--color-gnd); color: var(--label-gnd); }
+    .bg-i2c { background-color: var(--color-i2c); color: var(--label-i2c); }
+    .bg-input { background-color: var(--color-input); color: var(--label-input); }
+    .bg-output { background-color: var(--color-output); color: var(--label-output); }
+
+    .diagram-container {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .diagram-box {
+      flex: 1;
+      border: 1.5px dashed var(--primary);
+      border-radius: 8px;
+      padding: 15px;
+      background: #fafafa;
+    }
+
+    .diagram-box h3 {
+      font-size: 13px;
+      text-align: center;
+      margin-bottom: 10px;
+      color: var(--primary-dark);
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .pin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      row-gap: 4px;
+    }
+
+    .pin-left { text-align: left; border-right: 1px solid var(--border); padding-right: 8px;}
+    .pin-right { text-align: right; padding-left: 8px;}
+
+    .list-best-practices {
+      list-style-type: none;
+      font-size: 13px;
+    }
+
+    .list-best-practices li {
+      margin-bottom: 10px;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .list-best-practices li::before {
+      content: "⚡";
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+    }
+
+    /* Print-specific layout rules */
+    @media print {
+      body {
+        background-color: #fff;
+        padding: 0;
+      }
+      .no-print-area {
+        display: none;
+      }
+      .page {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="no-print-area">
+    <button class="btn-print" onclick="window.print()">
+      🖨️ IMPRIMIR / GUARDAR PDF
+    </button>
+  </div>
+
+  <div class="page">
+    <header>
+      <div class="logo-area">
+        <h1>FUTSAPO ARCADE</h1>
+        <p>PLAN DE CONEXIONES Y CABLEADO FISICO</p>
+      </div>
+      <div class="doc-meta">
+        <div>Documento Técnico</div>
+        <div>Versión: 7.4 (Stadium Pro)</div>
+        <div>Fecha: Junio 2026</div>
+      </div>
+    </header>
+
+    <p class="intro">
+      Este manual resume la distribución de conexiones físicas para la placa controladora **ESP32** y el chip expansor **MCP23017**. Sigue este esquema para conectar sensores, botones, monedero e iluminación, garantizando la total compatibilidad con el backend del juego.
+    </p>
+
+    <h2>1. Distribución de Pines Directos a la ESP32</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 25%;">Componente</th>
+          <th style="width: 15%;">Pin ESP32</th>
+          <th style="width: 18%;">Categoría</th>
+          <th style="width: 42%;">Detalle de Conexión</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Botón START</strong></td>
+          <td><span class="tag-pin bg-input">GPIO 19</span></td>
+          <td>Entrada (Pull-up)</td>
+          <td>Pulsador NA de Cabina. Cierra directo a <strong>GND</strong>.</td>
+        </tr>
+        <tr>
+          <td><strong>Botón PAUSE</strong></td>
+          <td><span class="tag-pin bg-input">GPIO 27</span></td>
+          <td>Entrada (Pull-up)</td>
+          <td>Pulsador NA de Cabina. Cierra directo a <strong>GND</strong>.</td>
+        </tr>
+        <tr>
+          <td><strong>Monedero</strong></td>
+          <td><span class="tag-pin bg-input">GPIO 18</span></td>
+          <td>Entrada (Pull-up)</td>
+          <td>Ranura de Fichas (pulso activo bajo). Cierra a <strong>GND</strong>.</td>
+        </tr>
+        <tr>
+          <td><strong>Radar Proximidad</strong></td>
+          <td><span class="tag-pin bg-input">GPIO 16</span></td>
+          <td>Entrada (Pull-down)</td>
+          <td>Conectar a salida digital <strong>OUT</strong> del radar HLK-LD2410.</td>
+        </tr>
+        <tr>
+          <td><strong>Tira NeoPixel</strong></td>
+          <td><span class="tag-pin bg-output">GPIO 4</span></td>
+          <td>Salida Digital</td>
+          <td>Conectar al pin de datos <strong>DIN</strong> de la tira WS2812B/W.</td>
+        </tr>
+        <tr>
+          <td><strong>Motor IN1</strong></td>
+          <td><span class="tag-pin bg-output">GPIO 26</span></td>
+          <td>Salida Digital</td>
+          <td>Conectar a IN1 del driver ULN2003 (Arquero/Dispensador).</td>
+        </tr>
+        <tr>
+          <td><strong>Motor IN2</strong></td>
+          <td><span class="tag-pin bg-output">GPIO 25</span></td>
+          <td>Salida Digital</td>
+          <td>Conectar a IN2 del driver ULN2003 (Arquero/Dispensador).</td>
+        </tr>
+        <tr>
+          <td><strong>Motor IN3</strong></td>
+          <td><span class="tag-pin bg-output">GPIO 33</span></td>
+          <td>Salida Digital</td>
+          <td>Conectar a IN3 del driver ULN2003 (Arquero/Dispensador).</td>
+        </tr>
+        <tr>
+          <td><strong>Motor IN4</strong></td>
+          <td><span class="tag-pin bg-output">GPIO 32</span></td>
+          <td>Salida Digital</td>
+          <td>Conectar a IN4 del driver ULN2003 (Arquero/Dispensador).</td>
+        </tr>
+        <tr>
+          <td><strong>Bus I2C (SDA)</strong></td>
+          <td><span class="tag-pin bg-i2c">GPIO 21</span></td>
+          <td>Comunicación</td>
+          <td>Conectar al pin <strong>SDA</strong> (Pin 13) del MCP23017.</td>
+        </tr>
+        <tr>
+          <td><strong>Bus I2C (SCL)</strong></td>
+          <td><span class="tag-pin bg-i2c">GPIO 22</span></td>
+          <td>Comunicación</td>
+          <td>Conectar al pin <strong>SCL</strong> (Pin 12) del MCP23017.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h2>2. Sensores Infrarrojos en el Expansor MCP23017</h2>
+    <p class="intro">
+      Los sensores de las fosa se cablean hacia los pines del chip MCP23017, el cual traduce las lecturas y las envía a la ESP32 por los dos cables del Bus I2C.
+    </p>
+
+    <div class="diagram-container">
+      <div class="diagram-box">
+        <h3>DIAGRAMA FÍSICO MCP23017</h3>
+        <div class="pin-grid">
+          <div class="pin-left">1. GPB0 (Fosa 7)</div> <div class="pin-right">(VDD) VCC 3.3V .28</div>
+          <div class="pin-left">2. GPB1 (Fosa 8)</div> <div class="pin-right">(GPA7) Fosa 6 .27</div>
+          <div class="pin-left">3. GPB2 (Fosa 9)</div> <div class="pin-right">(GPA6) Fosa 5 .26</div>
+          <div class="pin-left">4. GPB3 (N/C)</div>   <div class="pin-right">(GPA5) Fosa 4 .25</div>
+          <div class="pin-left">5. GPB4 (N/C)</div>   <div class="pin-right">(GPA4) Fosa 3 .24</div>
+          <div class="pin-left">6. GPB5 (N/C)</div>   <div class="pin-right">(GPA3) Fosa 2 .23</div>
+          <div class="pin-left">7. GPB6 (N/C)</div>   <div class="pin-right">(GPA2) Fosa 1 .22</div>
+          <div class="pin-left">8. GPB7 (Fosa Cero)</div> <div class="pin-right">(GPA1) Sapo .21</div>
+          <div class="pin-left">9. VDD (3.3V)</div>     <div class="pin-right">(GPA0) Rana .20</div>
+          <div class="pin-left">10. VSS (GND)</div>     <div class="pin-right">(RESET) 3.3V .18</div>
+          <div class="pin-left">11. NC (N/C)</div>      <div class="pin-right">(A2) GND .17</div>
+          <div class="pin-left">12. SCL (ESP32 G22)</div> <div class="pin-right">(A1) GND .16</div>
+          <div class="pin-left">13. SDA (ESP32 G21)</div> <div class="pin-right">(A0) GND .15</div>
+        </div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 25%;">ID Sensor</th>
+          <th style="width: 25%;">Pin Físico MCP</th>
+          <th style="width: 25%;">Canal Interno</th>
+          <th style="width: 25%;">Puntos Asignados</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>rana</strong></td>
+          <td>Pin 21</td>
+          <td>GPA0</td>
+          <td>1000 pts</td>
+        </tr>
+        <tr>
+          <td><strong>sapo</strong></td>
+          <td>Pin 22</td>
+          <td>GPA1</td>
+          <td>500 pts</td>
+        </tr>
+        <tr>
+          <td><strong>fosa_1</strong></td>
+          <td>Pin 23</td>
+          <td>GPA2</td>
+          <td>100 pts</td>
+        </tr>
+        <tr>
+          <td><strong>fosa_2</strong></td>
+          <td>Pin 24</td>
+          <td>GPA3</td>
+          <td>50 pts</td>
+        </tr>
+        <tr>
+          <td><strong>fosa_3</strong></td>
+          <td>Pin 25</td>
+          <td>GPA4</td>
+          <td>20 pts</td>
+        </tr>
+        <tr>
+          <td><strong>fosa_4</strong></td>
+          <td>Pin 26</td>
+          <td>GPA5</td>
+          <td>10 pts</td>
+        </tr>
+        <tr>
+          <td><strong>fosa_5</strong></td>
+          <td>Pin 27</td>
+          <td>GPA6</td>
+          <td>10 pts</td>
+        </tr>
+        <tr>
+          <td><strong>fosa_6</strong></td>
+          <td>Pin 28</td>
+          <td>GPA7</td>
+          <td>10 pts</td>
+        </tr>
+        <tr>
+          <td><strong>fosa_7</strong></td>
+          <td>Pin 1</td>
+          <td>GPB0</td>
+          <td>10 pts</td>
+        </tr>
+        <tr>
+          <td><strong>fosa_8</strong></td>
+          <td>Pin 2</td>
+          <td>GPB1</td>
+          <td>10 pts</td>
+        </tr>
+        <tr>
+          <td><strong>fosa_9</strong></td>
+          <td>Pin 3</td>
+          <td>GPB2</td>
+          <td>10 pts</td>
+        </tr>
+        <tr>
+          <td><strong>cero</strong></td>
+          <td>Pin 8</td>
+          <td>GPB7</td>
+          <td>0 pts</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. Reglas Críticas de Instalación Eléctrica</h2>
+    <ul class="list-best-practices">
+      <li>
+        <strong>Masa Común (GND) Obligatoria:</strong> Une la masa (GND) de la ESP32, la del monedero, la del driver del motor paso a paso, la tira NeoPixel y la del chip MCP23017. Si los GND no están todos conectados eléctricamente entre sí, las señales de rebote y ruido impedirán que los sensores y monederos funcionen correctamente.
+      </li>
+      <li>
+        <strong>Dirección de I2C del MCP23017:</strong> Conecta a masa (GND) los pines físicos 15, 16 y 17 (A0, A1, A2) del expansor MCP23017. Esto define la dirección de hardware <code>0x20</code> que espera el firmware. El pin de Reset (Pin 18) debe conectarse a 3.3V para habilitar el chip.
+      </li>
+      <li>
+        <strong>Alimentación Separada para Motor y LEDs:</strong> Tanto la tira NeoPixel WS2812B/W como el motor paso a paso del arquero tienen altos consumos de corriente. No los alimentes a través de la salida de 3.3V o 5V de la ESP32. Usa una fuente externa de 5V y comparte únicamente el cable negativo (GND) con la placa ESP32.
+      </li>
+    </ul>
+  </div>
+
+</body>
+</html>
