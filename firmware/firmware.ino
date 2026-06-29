@@ -706,8 +706,8 @@ const unsigned long COIN_FLUSH_DELAY_MS = 300; // Esperar 300ms de inactividad d
 
 void IRAM_ATTR coinInterrupt() {
   unsigned long now = millis();
-  // Filtrar rebotes mecánicos rápidos (cualquier señal que ocurra a menos de 30ms del último pulso válido)
-  if (now - lastCoinPulseTime > 30) {
+  // Filtrar rebotes mecánicos rápidos (aumentado a 80ms para evitar falsos dobles al presionar/soltar despacio)
+  if (now - lastCoinPulseTime > 80) {
     coinPulses++;
   }
   lastCoinPulseTime = now;
