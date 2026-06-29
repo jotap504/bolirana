@@ -40,7 +40,8 @@ const char* password = "corsa000";
 #define I2C_SCL      22
 #define MCP_ADDRESS  0x20 // Dirección I2C por defecto (A0, A1, A2 a GND)
 
-// Botón de Pausa relocalizado (liberado del sensor fosa_1)
+// Botones físicos locales dedicados del ESP32
+#define BTN_START_PIN 19
 #define BTN_PAUSE_PIN 27
 
 // Sensor de proximidad radar HLK-LD2410 (Caso A: salida digital en GPIO 16/RX2)
@@ -558,7 +559,8 @@ void setup() {
   // Inicialización del bus I2C manual con pines custom
   Wire.begin(I2C_SDA, I2C_SCL);
   
-  // Configuración del botón de pausa relocalizado (Pullup interno)
+  // Configuración de botones físicos locales (Pullup interno)
+  pinMode(BTN_START_PIN, INPUT_PULLUP);
   pinMode(BTN_PAUSE_PIN, INPUT_PULLUP);
   
   // Configuración del pin del radar de proximidad (con Pulldown para evitar ruido si se desconecta)
@@ -655,6 +657,39 @@ void readProximity() {
 }
 
 // ==========================================
+// LECTURA DE BOTONES FISICOS LOCALES (Start / Pause)
+// ==========================================
+unsigned long lastStartBtnTime = 0;
+unsigned long lastPauseBtnTime = 0;
+bool lastStartBtnState = HIGH; // HIGH = Inactivo (Pull-up)
+bool lastPauseBtnState = HIGH;
+const unsigned long BTN_DEBOUNCE_MS = 250;
+
+void readButtons() {
+  unsigned long now = millis();
+  
+  // Leer botón Start (GPIO 19)
+  bool startVal = digitalRead(BTN_START_PIN);
+  if (startVal == LOW && lastStartBtnState == HIGH) { // Flanco de bajada (Presión)
+    if (now - lastStartBtnTime > BTN_DEBOUNCE_MS) {
+      lastStartBtnTime = now;
+      Serial.println("{\"event\":\"button\",\"name\":\"start\"}");
+    }
+  }
+  lastStartBtnState = startVal;
+  
+  // Leer botón Pause (GPIO 27)
+  bool pauseVal = digitalRead(BTN_PAUSE_PIN);
+  if (pauseVal == LOW && lastPauseBtnState == HIGH) { // Flanco de bajada (Presión)
+    if (now - lastPauseBtnTime > BTN_DEBOUNCE_MS) {
+      lastPauseBtnTime = now;
+      Serial.println("{\"event\":\"button\",\"name\":\"pause\"}");
+    }
+  }
+  lastPauseBtnState = pauseVal;
+}
+
+// ==========================================
 // LOOP PRINCIPAL (Optimizado y no-bloqueante)
 // ==========================================
 void loop() {
@@ -671,4 +706,7 @@ void loop() {
 
   // 4. Lectura periódica del radar de proximidad anti-trampa
   readProximity();
+  
+  // 5. Lectura de botones físicos locales (Start / Pause)
+  readButtons();
 }

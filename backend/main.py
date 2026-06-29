@@ -174,8 +174,21 @@ def _handle_hw_event(app):
         elif t == "coin":
             await engine.handle_coin(msg.get("count", 1))
         elif t == "btn":
-            await app.state.ws.broadcast({"type": "physical_button", "button_id": msg["id"]})
-            await engine.handle_button(msg["id"])
+            btn_id = msg["id"]
+            # Enviar el botón físico original a las pantallas web (para el menú de arranque y diagnósticos)
+            await app.state.ws.broadcast({"type": "physical_button", "button_id": btn_id})
+            
+            # Si estamos en pantallas de configuración/menú, mapear "pause" -> "next" y "start" -> "ok"
+            # de esta forma se puede manejar todo el juego con sólo 2 botones físicos en la cabina
+            from app.game.session import GameState
+            state = engine.session.state
+            if state in (GameState.ATTRACT, GameState.SELECT_PLAYERS, GameState.SELECT_MODE, GameState.SELECT_TEAM, GameState.CONNECT_PHONE):
+                if btn_id == "pause":
+                    btn_id = "next"
+                elif btn_id == "start":
+                    btn_id = "ok"
+            
+            await engine.handle_button(btn_id)
         elif t == "ball":
             await engine.handle_ball_consumed(from_hardware=True)
         elif t == "proximity":
