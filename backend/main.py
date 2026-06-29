@@ -193,6 +193,11 @@ def _handle_hw_event(app):
                     btn_id = "next"
                 elif btn_id == "start":
                     btn_id = "ok"
+            elif state == GameState.GAME_OVER:
+                if btn_id == "pause":
+                    btn_id = "back"
+                elif btn_id == "start":
+                    btn_id = "ok"
             
             await engine.handle_button(btn_id)
         elif t == "ball":
