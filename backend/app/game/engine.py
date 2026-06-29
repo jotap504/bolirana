@@ -57,8 +57,8 @@ class GameEngine:
                 min_count, max_count = 1, 6
 
                 match btn_id:
-                    case "next": count = min(max_count, count + step)
-                    case "prev": count = max(min_count, count - step)
+                    case "next": count = min_count if count >= max_count else count + step
+                    case "prev": count = max_count if count <= min_count else count - step
                     case "ok":
                         balls = cfg["game"]["balls_default"]
                         s.setup_players(count, balls)
