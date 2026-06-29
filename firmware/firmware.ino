@@ -103,6 +103,9 @@ enum LedState {
   LED_GAME_OVER
 };
 
+// Declaración anticipada de la interrupción del monedero (Requerida por el compilador C++)
+void IRAM_ATTR coinInterrupt();
+
 LedState currentLedState = LED_IDLE;
 unsigned long ledStateStartTime = 0;
 unsigned long ledStateDuration = 0;
