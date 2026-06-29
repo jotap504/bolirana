@@ -43,6 +43,7 @@ const char* password = "corsa000";
 // Botones físicos locales dedicados del ESP32
 #define BTN_START_PIN 19
 #define BTN_PAUSE_PIN 27
+#define COIN_PIN 18
 
 // Sensor de proximidad radar HLK-LD2410 (Caso A: salida digital en GPIO 16/RX2)
 #define PROXIMITY_PIN 16
@@ -563,6 +564,10 @@ void setup() {
   pinMode(BTN_START_PIN, INPUT_PULLUP);
   pinMode(BTN_PAUSE_PIN, INPUT_PULLUP);
   
+  // Configuración del monedero (Interrupción por flanco de bajada / PULLUP interno)
+  pinMode(COIN_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinInterrupt, FALLING);
+  
   // Configuración del pin del radar de proximidad (con Pulldown para evitar ruido si se desconecta)
   pinMode(PROXIMITY_PIN, INPUT_PULLDOWN);
   
@@ -690,6 +695,35 @@ void readButtons() {
 }
 
 // ==========================================
+// MANEJO DE MONEDERO POR INTERRUPCIÓN (GPIO 18)
+// ==========================================
+volatile int coinPulses = 0;
+volatile unsigned long lastCoinPulseTime = 0;
+const unsigned long COIN_FLUSH_DELAY_MS = 300; // Esperar 300ms de inactividad de pulsos antes de consolidar la moneda
+
+void IRAM_ATTR coinInterrupt() {
+  coinPulses++;
+  lastCoinPulseTime = millis();
+}
+
+void checkCoin() {
+  if (coinPulses > 0) {
+    unsigned long now = millis();
+    if (now - lastCoinPulseTime > COIN_FLUSH_DELAY_MS) {
+      noInterrupts(); // Sección crítica: proteger copia de variables volátiles
+      int pulses = coinPulses;
+      coinPulses = 0;
+      interrupts();
+      
+      // Enviar los pulsos acumulados al backend en formato JSON
+      Serial.print("{\"event\":\"coin\",\"pulses\":");
+      Serial.print(pulses);
+      Serial.println("}");
+    }
+  }
+}
+
+// ==========================================
 // LOOP PRINCIPAL (Optimizado y no-bloqueante)
 // ==========================================
 void loop() {
@@ -709,4 +743,7 @@ void loop() {
   
   // 5. Lectura de botones físicos locales (Start / Pause)
   readButtons();
+  
+  // 6. Lectura del monedero (consolidación de pulsos)
+  checkCoin();
 }
