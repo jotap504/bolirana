@@ -103,9 +103,6 @@ enum LedState {
   LED_GAME_OVER
 };
 
-// Declaración anticipada de la interrupción del monedero (Requerida por el compilador C++)
-void IRAM_ATTR coinInterrupt();
-
 LedState currentLedState = LED_IDLE;
 unsigned long ledStateStartTime = 0;
 unsigned long ledStateDuration = 0;
@@ -567,9 +564,8 @@ void setup() {
   pinMode(BTN_START_PIN, INPUT_PULLUP);
   pinMode(BTN_PAUSE_PIN, INPUT_PULLUP);
   
-  // Configuración del monedero (Interrupción por flanco de bajada / PULLUP interno)
+  // Configuración del monedero (PULLUP interno)
   pinMode(COIN_PIN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinInterrupt, FALLING);
   
   // Configuración del pin del radar de proximidad (con Pulldown para evitar ruido si se desconecta)
   pinMode(PROXIMITY_PIN, INPUT_PULLDOWN);
@@ -698,31 +694,43 @@ void readButtons() {
 }
 
 // ==========================================
-// MANEJO DE MONEDERO POR INTERRUPCIÓN (GPIO 18)
+// MANEJO DE MONEDERO POR SONDEO (POLLING) DE ESTADO (GPIO 18)
 // ==========================================
-volatile int coinPulses = 0;
-volatile unsigned long lastCoinPulseTime = 0;
+int coinPulses = 0;
+unsigned long lastCoinPulseTime = 0;
 const unsigned long COIN_FLUSH_DELAY_MS = 300; // Esperar 300ms de inactividad de pulsos antes de consolidar la moneda
 
-void IRAM_ATTR coinInterrupt() {
-  unsigned long now = millis();
-  // Filtrar rebotes mecánicos rápidos (aumentado a 80ms para evitar falsos dobles al presionar/soltar despacio)
-  if (now - lastCoinPulseTime > 80) {
-    coinPulses++;
-  }
-  lastCoinPulseTime = now;
-}
+bool lastCoinPinVal = HIGH;        // Inactivo en HIGH (Pull-up)
+unsigned long coinLowStartTime = 0; // Guardar el momento en que baja el pin
+bool coinRegistered = false;       // Bandera para evitar lecturas repetidas del mismo pulso
 
 void checkCoin() {
+  bool currentReading = digitalRead(COIN_PIN);
+  unsigned long now = millis();
+  
+  if (currentReading == LOW) {
+    if (lastCoinPinVal == HIGH) {
+      // El pin acaba de bajar a LOW, registramos el tiempo de inicio
+      coinLowStartTime = now;
+      coinRegistered = false;
+    } else if (!coinRegistered) {
+      // El pin se mantiene en LOW. Si dura al menos 20ms de forma continua, es un pulso real
+      if (now - coinLowStartTime >= 20) {
+        coinPulses++;
+        lastCoinPulseTime = now;
+        coinRegistered = true; // Evitar registrar más de una vez para el mismo pulso
+      }
+    }
+  }
+  lastCoinPinVal = currentReading;
+
+  // Consolidar e informar los pulsos acumulados al backend
   if (coinPulses > 0) {
-    unsigned long now = millis();
     if (now - lastCoinPulseTime > COIN_FLUSH_DELAY_MS) {
-      noInterrupts(); // Sección crítica: proteger copia de variables volátiles
       int pulses = coinPulses;
       coinPulses = 0;
-      interrupts();
       
-      // Enviar los pulsos acumulados al backend en formato JSON
+      // Enviar los pulsos al backend
       Serial.print("{\"event\":\"coin\",\"pulses\":");
       Serial.print(pulses);
       Serial.println("}");
