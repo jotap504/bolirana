@@ -366,6 +366,41 @@
       <button class="btn btn-save" id="save-sensors" style="margin-top:12px">GUARDAR SENSORES</button>
     </div>
 
+    <!-- BOTONES FÍSICOS Y MONEDERO -->
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">BOTONES FÍSICOS Y MONEDERO</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        Diagnóstico en tiempo real de los botones de la cabina y la ranura de fichas (Monedero). Presiona los botones físicos en la máquina para verificar su conexión.
+      </p>
+      <div class="sensor-row">
+        <span class="sensor-id">btn_start</span>
+        <span style="color:#fff; font-size:14px; font-weight:600;">Botón START (GPIO 19)</span>
+        <span></span>
+        <span></span>
+        <div style="display:flex; justify-content:center; align-items:center;">
+          <span class="indicator-led" id="test-led-btn_start"></span>
+        </div>
+      </div>
+      <div class="sensor-row">
+        <span class="sensor-id">btn_pause</span>
+        <span style="color:#fff; font-size:14px; font-weight:600;">Botón PAUSE (GPIO 27)</span>
+        <span></span>
+        <span></span>
+        <div style="display:flex; justify-content:center; align-items:center;">
+          <span class="indicator-led" id="test-led-btn_pause"></span>
+        </div>
+      </div>
+      <div class="sensor-row">
+        <span class="sensor-id">coin</span>
+        <span style="color:#fff; font-size:14px; font-weight:600;">Monedero (Fichas / GPIO 18)</span>
+        <span></span>
+        <span></span>
+        <div style="display:flex; justify-content:center; align-items:center;">
+          <span class="indicator-led" id="test-led-coin"></span>
+        </div>
+      </div>
+    </div>
+
     <div class="card" style="margin-top:20px">
       <div class="card-title" style="color:var(--red);border-left-color:var(--red)">SISTEMA ANTI-TRAMPAS (PROXIMIDAD)</div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:16px">

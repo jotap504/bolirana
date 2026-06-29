@@ -169,14 +169,20 @@ def _handle_hw_event(app):
 
         t = msg.get("t")
         if t == "sensor":
-            await app.state.ws.send_admin({"type": "sensor_test", "sensor_id": msg["id"]})
+            target = msg.get("target")
+            # Enviar evento de diagnóstico a la consola admin
+            await app.state.ws.send_admin({"type": "sensor_test", "sensor_id": target})
             await engine.handle_sensor(msg["id"])
         elif t == "coin":
+            # Enviar evento de diagnóstico a la consola admin para monedero
+            await app.state.ws.send_admin({"type": "sensor_test", "sensor_id": "coin"})
             await engine.handle_coin(msg.get("count", 1))
         elif t == "btn":
             btn_id = msg["id"]
             # Enviar el botón físico original a las pantallas web (para el menú de arranque y diagnósticos)
             await app.state.ws.broadcast({"type": "physical_button", "button_id": btn_id})
+            # Enviar evento de diagnóstico del botón a la consola admin
+            await app.state.ws.send_admin({"type": "sensor_test", "sensor_id": f"btn_{btn_id}"})
             
             # Si estamos en pantallas de configuración/menú, mapear "pause" -> "next" y "start" -> "ok"
             # de esta forma se puede manejar todo el juego con sólo 2 botones físicos en la cabina
