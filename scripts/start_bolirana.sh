@@ -25,9 +25,21 @@ cd "$PROJECT_ROOT/backend"
 BACKEND_PID=$!
 echo "Backend iniciado en segundo plano (PID: $BACKEND_PID)"
 
-# 3. Esperar a que el backend y servidor estén listos
-echo "Esperando 6 segundos para inicialización..."
-sleep 6
+# 3. Esperar a que el backend y el servidor estén listos dinámicamente
+echo "Esperando a que el backend FastAPI esté listo..."
+TIMEOUT=20
+INTERVAL=1
+ELAPSED=0
+
+while ! curl -s -I http://127.0.0.1:8000/display/ >/dev/null; do
+    sleep $INTERVAL
+    ELAPSED=$((ELAPSED + INTERVAL))
+    if [ $ELAPSED -ge $TIMEOUT ]; then
+        echo "ERROR: El backend no inició dentro de los $TIMEOUT segundos de límite."
+        exit 1
+    fi
+done
+echo "¡Backend listo en $ELAPSED segundos! Preparando navegador..."
 
 # 4. Detectar binario de Chromium disponible en Lubuntu
 if command -v google-chrome >/dev/null 2>&1; then
