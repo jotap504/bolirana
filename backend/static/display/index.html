@@ -15,9 +15,9 @@
       flex-direction: column;
       gap: 16px;
       width: 100%;
-      max-width: 1000px;
+      max-width: 860px; /* Reducido de 1000px para pantallas cuadradas antiguas */
       margin: 25px auto;
-      padding: 0 50px; /* Incrementado para evitar cortes en los bordes */
+      padding: 0 30px; /* Ajustado */
       align-items: stretch; /* Asegura el mismo ancho exacto para todas las filas */
     }
     
@@ -27,7 +27,7 @@
       background: rgba(0, 12, 32, 0.85);
       border: 3px solid rgba(0, 229, 255, 0.2);
       border-radius: 18px;
-      padding: 14px 24px;
+      padding: 14px 24px 14px 16px; /* Achicado el padding izquierdo (16px) del avatar */
       gap: 20px;
       transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       position: relative;
@@ -175,10 +175,13 @@
       box-sizing: border-box;
     }
     .scores-wrap.many-players .score-row {
-      padding: 10px 18px;
+      padding: 10px 16px 10px 10px; /* Reducido el padding izquierdo (10px) del avatar */
       gap: 14px;
       border-radius: 16px;
       border-width: 2.5px;
+      max-width: 440px; /* Limitar el ancho máximo de la tarjeta para pantallas cuadradas */
+      width: 100%;
+      margin: 0 auto; /* Centrar dentro de la columna */
     }
     .scores-wrap.many-players .turn-arrow-indicator {
       font-size: 26px;
