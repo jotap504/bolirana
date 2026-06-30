@@ -158,10 +158,16 @@ class GameEngine:
             case GameState.GAME_OVER:
                 if btn_id in ("start", "ok"):
                     if s.credits >= s.credits_required:
+                        cfg = get_config()
+                        rotation_mode = cfg["game"].get("rotation_mode", "sequential")
                         s.credits -= s.credits_required
+                        s.current_round = 1
+                        s.total_rounds  = 2
+                        # balls_per_round fue guardado en _start_game, reutilizarlo
+                        balls_to_assign = s.balls_per_round * 2 if rotation_mode == "alternate" else s.balls_per_round
                         for p in s.players:
                             p.score = 0
-                            p.balls_left = s.balls_per_player
+                            p.balls_left = balls_to_assign
                             p.balls_pocketed = 0
                             p.shots = []
                         s.current_player = 0
@@ -175,11 +181,14 @@ class GameEngine:
                             await self._transition(GameState.PLAYING)
                             p = s.current()
                             if p:
+                                effective_bpp = s.balls_per_round * 2 if rotation_mode == "alternate" else s.balls_per_round
                                 await self._broadcast({"type": "turn", "current_player": 0,
                                                        "player_name": p.name or "Jugador 1",
                                                        "balls_left":  p.balls_left,
                                                        "shots":       p.shots,
-                                                       "balls_per_player": s.balls_per_player})
+                                                       "balls_per_player": effective_bpp,
+                                                       "current_round": s.current_round,
+                                                       "total_rounds":  s.total_rounds})
                     else:
                         await self._transition(GameState.PAYMENT)
                 elif btn_id == "back":
@@ -299,12 +308,29 @@ class GameEngine:
                 await self._check_and_start_tiebreak()
             else:
                 await self._turn_change(next_p)
-        else:
+        else:  # sequential
             has_balls = s.consume_ball()
             if not has_balls:
                 next_p = s.next_player()
                 if next_p is None:
-                    await self._check_and_start_tiebreak()
+                    # Todos sin bolas — ¿queda otra ronda?
+                    if s.current_round < s.total_rounds:
+                        s.current_round += 1
+                        # Reponer bolas a todos los jugadores para la nueva ronda
+                        for rp in s.players:
+                            rp.balls_left = s.balls_per_round
+                        s.current_player = 0
+                        log.info("Iniciando ronda %s/%s", s.current_round, s.total_rounds)
+                        await self._broadcast({
+                            "type":  "round_start",
+                            "round": s.current_round,
+                            "total": s.total_rounds,
+                        })
+                        first_p = s.current()
+                        if first_p:
+                            await self._turn_change(first_p)
+                    else:
+                        await self._check_and_start_tiebreak()
                 else:
                     await self._turn_change(next_p)
             else:
@@ -548,41 +574,62 @@ class GameEngine:
             await self._transition(GameState.WAITING_START)
 
     async def _start_game(self) -> None:
-        self.session.credits -= self.session.credits_required
-        for p in self.session.players:
+        s = self.session
+        cfg = get_config()
+        rotation_mode = cfg["game"].get("rotation_mode", "sequential")
+
+        s.credits -= s.credits_required
+        s.balls_per_round = s.balls_per_player   # guardar bolas base por ronda
+        s.current_round   = 1
+        s.total_rounds    = 2
+
+        # En modo alternado cada jugador recibe el doble de bolas desde el inicio
+        # y el motor alterna 1 tiro por vez (lógica existente)
+        balls_to_assign = s.balls_per_round * 2 if rotation_mode == "alternate" else s.balls_per_round
+        effective_bpp   = balls_to_assign  # denominador que muestra el display
+
+        for p in s.players:
             p.score = 0
-            p.balls_left = self.session.balls_per_player
+            p.balls_left = balls_to_assign
             p.balls_pocketed = 0
             p.shots = []
-        self.session.current_player = 0
-        self.session.team_scores = {1: 0, 2: 0}
-        self.session.tiebreak_players = []
-        self.session.tiebreak_cursor = 0
+        s.current_player = 0
+        s.team_scores = {1: 0, 2: 0}
+        s.tiebreak_players = []
+        s.tiebreak_cursor = 0
         await self._transition(GameState.PLAYING)
-        p = self.session.current()
+        p = s.current()
         if p:
             await self._broadcast({"type": "turn", "current_player": 0,
                                    "player_name": p.name or "Jugador 1",
                                    "balls_left":  p.balls_left,
                                    "shots":       p.shots,
-                                   "balls_per_player": self.session.balls_per_player})
+                                   "balls_per_player": effective_bpp,
+                                   "current_round": s.current_round,
+                                   "total_rounds":  s.total_rounds})
 
     async def _turn_change(self, next_player: Player) -> None:
         # Cancelar timer del turno anterior
         if self._timer_task:
             self._timer_task.cancel()
             self._timer_task = None
+        s = self.session
+        cfg = get_config()
+        rotation_mode = cfg["game"].get("rotation_mode", "sequential")
+        effective_bpp = s.balls_per_round * 2 if rotation_mode == "alternate" else s.balls_per_round
         await self._transition(GameState.TURN_CHANGE)
         await self._broadcast({"type": "turn",
-                               "current_player": self.session.current_player,
+                               "current_player": s.current_player,
                                "player_name":    next_player.name or f"Jugador {next_player.index+1}",
                                "balls_left":     next_player.balls_left,
                                "shots":          next_player.shots,
-                               "balls_per_player": self.session.balls_per_player})
-        await asyncio.sleep(get_config()["game"]["turn_change_seconds"])
+                               "balls_per_player": effective_bpp,
+                               "current_round":  s.current_round,
+                               "total_rounds":   s.total_rounds})
+        await asyncio.sleep(cfg["game"]["turn_change_seconds"])
         await self._transition(GameState.PLAYING)
         # Reiniciar timer para el nuevo jugador en modo TIMED
-        if self.session.mode == GameMode.TIMED:
+        if s.mode == GameMode.TIMED:
             self._start_player_timer()
 
     async def _end_game(self) -> None:

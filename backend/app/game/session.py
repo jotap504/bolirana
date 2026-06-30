@@ -74,6 +74,11 @@ class Session:
     paused_state:     Optional[GameState] = None
     session_id:       str            = ""
 
+    # Sistema de rondas
+    balls_per_round:  int            = 5   # Bolas base por ronda (del config)
+    current_round:    int            = 1   # Ronda actual (1-based)
+    total_rounds:     int            = 2   # Total de rondas en la partida
+
     # Modo TEAM
     team_scores:         dict        = field(default_factory=lambda: {1: 0, 2: 0})
     select_team_cursor:  int         = 0   # jugador que está siendo asignado
@@ -97,6 +102,9 @@ class Session:
         self.select_team_cursor = 0
         self.tiebreak_players = []
         self.tiebreak_cursor  = 0
+        self.current_round    = 1
+        self.total_rounds     = 2
+        self.balls_per_round  = self.balls_per_player
 
     def setup_players(self, count: int, balls: int) -> None:
         self.players = [Player(index=i, balls_left=balls) for i in range(count)]
@@ -199,4 +207,7 @@ class Session:
             "tiebreak_cursor":   self.tiebreak_cursor,
             "volume":            get_config().get("game", {}).get("volume", 80),
             "attract_volume":    get_config().get("attract_players", {}).get("volume", 80),
+            "current_round":     self.current_round,
+            "total_rounds":      self.total_rounds,
+            "balls_per_round":   self.balls_per_round,
         }

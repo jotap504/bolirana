@@ -180,6 +180,21 @@ document.addEventListener("DOMContentLoaded", () => {
       Screens.renderPenaltyBalls(msg.shots || [], msg.balls_per_player || 5);
     }
 
+    // Indicador de ronda
+    const ri = document.getElementById("round-indicator");
+    const tcr = document.getElementById("tc-round");
+    if (ri) {
+      if (msg.total_rounds > 1) {
+        ri.style.display = "block";
+        ri.textContent = `RONDA ${msg.current_round} / ${msg.total_rounds}`;
+      } else {
+        ri.style.display = "none";
+      }
+    }
+    if (tcr) {
+      tcr.textContent = msg.total_rounds > 1 ? `RONDA ${msg.current_round} / ${msg.total_rounds}` : "";
+    }
+
     // Controlar el popup de Última Bola
     const lastBallPopup = document.getElementById("last-ball-popup");
     if (lastBallPopup) {
@@ -196,6 +211,45 @@ document.addEventListener("DOMContentLoaded", () => {
       c.style.transform = "";
       c.style.boxShadow = "";
     });
+  });
+
+  // ── Nueva ronda (modo Secuencial) ───────────────────────────────────────────
+  WS.on("round_start", (msg) => {
+    const roundNum = msg.round;
+    const total    = msg.total;
+    // Banner animado de "RONDA X"
+    const banner = document.createElement("div");
+    banner.style.cssText = [
+      "position:fixed","inset:0","z-index:9999",
+      "display:flex","align-items:center","justify-content:center",
+      "background:rgba(0,0,0,0.72)",
+      "font-family:'Orbitron',sans-serif",
+      "font-size:clamp(36px,7vw,90px)",
+      "font-weight:900","color:#00e5ff",
+      "letter-spacing:4px","text-align:center",
+      "flex-direction:column","gap:12px",
+      "animation:fadeInOut 2.4s ease forwards",
+    ].join(";");
+    banner.innerHTML = `
+      <div>⚽ RONDA ${roundNum}</div>
+      <div style="font-size:40%;opacity:0.6;">${total} RONDAS EN TOTAL</div>
+    `;
+    // CSS animation inline
+    if (!document.getElementById("round-banner-style")) {
+      const st = document.createElement("style");
+      st.id = "round-banner-style";
+      st.textContent = `@keyframes fadeInOut{
+        0%{opacity:0;transform:scale(0.7)}
+        20%{opacity:1;transform:scale(1.05)}
+        70%{opacity:1;transform:scale(1)}
+        100%{opacity:0;transform:scale(0.9)}
+      }`;
+      document.head.appendChild(st);
+    }
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 2400);
+    // Sonido de anuncio (re-usa el tick del juego)
+    if (typeof AudioFX !== "undefined" && AudioFX.playTick) AudioFX.playTick();
   });
 
   WS.on("game_over", (msg) => {

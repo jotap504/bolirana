@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="css/style.css?v=313">
+  <link rel="stylesheet" href="css/style.css?v=314">
   <style>
     /* Estilos para el Scoreboard Vertical Premium */
     .scores-wrap {
@@ -664,6 +664,8 @@
         <div class="balls-left" id="balls-left">
           <span class="ball-icon" id="ball-icons">⚫⚫⚫⚫⚫</span>
         </div>
+        <!-- Indicador de ronda (visible sólo si total_rounds > 1) -->
+        <div id="round-indicator" style="display:none; font-family:'Orbitron',sans-serif; font-size:clamp(11px,1.4vw,16px); font-weight:bold; color:var(--cyan); letter-spacing:1px; margin-top:4px; opacity:0.85;"></div>
       </div>
 
       <div class="score-popup" id="score-popup"></div>
@@ -677,6 +679,7 @@
       <div class="turn-change-content">
         <div class="turn-change-label">PRÓXIMO JUGADOR</div>
         <div class="turn-change-name" id="tc-name">Jugador 2</div>
+        <div id="tc-round" style="font-family:'Orbitron',sans-serif; font-size:clamp(12px,1.5vw,18px); font-weight:bold; color:var(--cyan); letter-spacing:1px; margin-top:8px; opacity:0.9;"></div>
         <div class="turn-change-scores" id="tc-scores"></div>
       </div>
     </div>
@@ -762,10 +765,10 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/pixi.min.js"></script>
-  <script src="js/ws.js?v=313"></script>
-  <script src="js/fx.js?v=313"></script>
-  <script src="js/audio.js?v=313"></script>
-  <script src="js/screens.js?v=313"></script>
-  <script src="js/app.js?v=313"></script>
+  <script src="js/ws.js?v=314"></script>
+  <script src="js/fx.js?v=314"></script>
+  <script src="js/audio.js?v=314"></script>
+  <script src="js/screens.js?v=314"></script>
+  <script src="js/app.js?v=314"></script>
 </body>
 </html>
