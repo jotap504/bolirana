@@ -327,6 +327,16 @@
 
   <!-- ── JUEGO ── -->
   <div id="panel-juego" class="panel active">
+    <!-- Card de control de volumen rápido y visual -->
+    <div class="card" style="border-color: var(--neon); background: rgba(0, 240, 255, 0.05); margin-bottom: 24px;">
+      <div class="card-title" style="color: var(--neon); border-left-color: var(--neon); margin-bottom: 15px;">CONTROL DE VOLUMEN GENERAL</div>
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <span style="font-size: 24px;">🔊</span>
+        <input type="range" id="cfg-volume-slider" min="0" max="100" value="80" style="flex: 1; height: 8px; cursor: pointer; accent-color: var(--neon);">
+        <span id="cfg-volume-text" style="font-family: 'Share Tech Mono', monospace; font-size: 20px; font-weight: bold; width: 60px; text-align: right; color: var(--neon);">80%</span>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title">CONFIGURACIÓN DE PARTIDA</div>
       <div class="form-row">
@@ -707,6 +717,27 @@ document.querySelectorAll(".tab").forEach(t => {
   });
 });
 
+// ── Control de volumen slider ──────────────────────────────────────────────────
+document.getElementById("cfg-volume-slider").addEventListener("input", (e) => {
+  const val = e.target.value;
+  document.getElementById("cfg-volume-text").textContent = val + "%";
+  document.getElementById("cfg-volume").value = val;
+});
+
+document.getElementById("cfg-volume-slider").addEventListener("change", async (e) => {
+  const val = +e.target.value;
+  await api("/api/admin/config/game", "PATCH", {
+    volume: val
+  });
+  toast("Volumen del juego actualizado a " + val + "%");
+});
+
+document.getElementById("cfg-volume").addEventListener("input", (e) => {
+  const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+  document.getElementById("cfg-volume-slider").value = val;
+  document.getElementById("cfg-volume-text").textContent = val + "%";
+});
+
 // ── Cargar config ─────────────────────────────────────────────────────────────
 let cfg = {};
 async function loadConfig() {
@@ -716,6 +747,8 @@ async function loadConfig() {
   document.getElementById("cfg-balls").value   = g.balls_default || 5;
   document.getElementById("cfg-time").value    = g.time_per_player_seconds || 60;
   document.getElementById("cfg-volume").value  = g.volume !== undefined ? g.volume : 80;
+  document.getElementById("cfg-volume-slider").value = g.volume !== undefined ? g.volume : 80;
+  document.getElementById("cfg-volume-text").textContent = (g.volume !== undefined ? g.volume : 80) + "%";
   document.getElementById("cfg-turn").value    = g.turn_change_seconds || 4;
   document.getElementById("cfg-attract").value = g.attract_timeout_seconds || 30;
   document.getElementById("cfg-goleador-points").value = g.goleador_points_per_ball || 500;
