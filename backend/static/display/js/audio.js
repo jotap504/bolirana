@@ -5,6 +5,7 @@
 const AudioFX = (() => {
   let ctx = null;
   let ranaAudio = null;
+  let dibuAudio = null;
   let _volumeMultiplier = 0.8; // Volumen por defecto (80%)
 
   function init() {
@@ -26,6 +27,10 @@ const AudioFX = (() => {
       // Pre-cargar audio personalizado de Rana (con cache-buster para evitar cachear versiones viejas)
       ranaAudio = new Audio('/audios/rana.mp3?v=' + Date.now());
       ranaAudio.load();
+
+      // Pre-cargar audio personalizado de Sapo/Dibu (con cache-buster)
+      dibuAudio = new Audio('/audios/dibu.mp3?v=' + Date.now());
+      dibuAudio.load();
     } catch (e) {
       console.warn("Web Audio API no está soportado en este navegador.", e);
     }
@@ -67,9 +72,11 @@ const AudioFX = (() => {
       }
     }
 
-    // Configuración de envolvente de volumen (ataque rápido, decaimiento suave)
+    // Configuración de envolvente de volumen optimizada (Retro arcade ADSR: más sostenido y claro)
     gain.gain.setValueAtTime(volume * _volumeMultiplier, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    // Sostener el volumen al máximo durante el 40% de la duración, luego decaer linealmente
+    gain.gain.setValueAtTime(volume * _volumeMultiplier, now + duration * 0.4);
+    gain.gain.linearRampToValueAtTime(0.0001, now + duration);
 
     osc.start(now);
     osc.stop(now + duration);
@@ -78,23 +85,23 @@ const AudioFX = (() => {
   // Sonido de ficha ingresada (Láser ascendente brillante de doble tono)
   function playCoin() {
     _resume();
-    _playTone(150, 0.15, "sawtooth", 0.12, 1200);
+    _playTone(150, 0.18, "sawtooth", 0.14, 1200);
     setTimeout(() => {
-      _playTone(300, 0.25, "square", 0.08, 1800);
+      _playTone(300, 0.28, "square", 0.10, 1800);
     }, 80);
   }
 
   // Clic de menú o navegación
   function playTick() {
-    _playTone(800, 0.05, "triangle", 0.15, 300);
+    _playTone(800, 0.05, "triangle", 0.18, 300);
   }
 
   // Inicio de partida (Fanfarria ascendente clásica 8-bits)
   function playStart() {
     const now = ctx ? ctx.currentTime : 0;
-    _playTone([261.63, 329.63, 392.00, 523.25], 0.4, "square", 0.15);
+    _playTone([261.63, 329.63, 392.00, 523.25], 0.45, "square", 0.18);
     setTimeout(() => {
-      _playTone(523.25, 0.3, "square", 0.15, 1046.50);
+      _playTone(523.25, 0.35, "square", 0.18, 1046.50);
     }, 250);
   }
 
@@ -106,15 +113,36 @@ const AudioFX = (() => {
       ranaAudio.play().catch(err => {
         console.warn("Fallo al reproducir audio personalizado de Rana:", err);
         // Fallback sintetizado
-        _playTone(100, 0.6, "sawtooth", 0.25, 1800);
+        _playTone(100, 0.8, "sawtooth", 0.30, 1800);
         setTimeout(() => {
-          _playTone(800, 0.4, "square", 0.15, 100);
+          _playTone(800, 0.6, "square", 0.20, 100);
         }, 150);
       });
     } else {
-      _playTone(100, 0.6, "sawtooth", 0.25, 1800);
+      _playTone(100, 0.8, "sawtooth", 0.30, 1800);
       setTimeout(() => {
-        _playTone(800, 0.4, "square", 0.15, 100);
+        _playTone(800, 0.6, "square", 0.20, 100);
+      }, 150);
+    }
+  }
+
+  function playSapo() {
+    _resume();
+    if (dibuAudio) {
+      dibuAudio.volume = _volumeMultiplier;
+      dibuAudio.currentTime = 0;
+      dibuAudio.play().catch(err => {
+        console.warn("Fallo al reproducir audio personalizado de Dibu (Sapo):", err);
+        // Fallback sintetizado
+        _playTone(120, 0.8, "sawtooth", 0.30, 2000);
+        setTimeout(() => {
+          _playTone(600, 0.6, "square", 0.20, 150);
+        }, 150);
+      });
+    } else {
+      _playTone(120, 0.8, "sawtooth", 0.30, 2000);
+      setTimeout(() => {
+        _playTone(600, 0.6, "square", 0.20, 150);
       }, 150);
     }
   }
@@ -126,18 +154,21 @@ const AudioFX = (() => {
     if (points <= 0) return;
 
     if (points >= 1000) {
-      // Súper puntos: Fallback sintetizado de alta puntuación
-      _playTone(100, 0.6, "sawtooth", 0.25, 1800);
+      // Súper puntos: Fallback sintetizado de alta puntuación (Largo y potente)
+      _playTone(100, 0.7, "sawtooth", 0.30, 1800);
       setTimeout(() => {
-        _playTone(800, 0.4, "square", 0.15, 100);
+        _playTone(800, 0.5, "square", 0.20, 100);
       }, 150);
     } else if (points >= 100) {
-      // Puntuación intermedia: Láser brillante
-      const baseFreq = 400 + (points / 2);
-      _playTone(baseFreq, 0.3, "sawtooth", 0.15, baseFreq * 2.5);
+      // Puntuación intermedia: Láser brillante y más largo
+      const baseFreq = 380 + (points / 2);
+      _playTone(baseFreq, 0.45, "sawtooth", 0.26, baseFreq * 2.8);
     } else {
-      // Puntuaciones chicas: Blip corto y agudo
-      _playTone(600, 0.15, "square", 0.12, 1200);
+      // Puntuaciones chicas: Sonido doble más sostenido
+      _playTone(600, 0.22, "square", 0.24, 1200);
+      setTimeout(() => {
+        _playTone(750, 0.26, "square", 0.18, 1500);
+      }, 90);
     }
   }
 
@@ -180,6 +211,9 @@ const AudioFX = (() => {
     if (ranaAudio) {
       ranaAudio.volume = _volumeMultiplier;
     }
+    if (dibuAudio) {
+      dibuAudio.volume = _volumeMultiplier;
+    }
   }
 
   function getVolumeMultiplier() {
@@ -195,6 +229,7 @@ const AudioFX = (() => {
     playGameOver, 
     playAlarm, 
     playRana, 
+    playSapo,
     playScreenTransition, 
     playSlideTransition,
     setVolume,

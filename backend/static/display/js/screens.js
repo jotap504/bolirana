@@ -799,8 +799,8 @@ const Screens = (() => {
     FX.flashScreen(colorHex, delta >= 1000 ? 0.25 : 0.12);
     FX.shakeScreen(delta >= 1000 ? 14 : 7, 220);
     
-    // Disparar Audio sintetizado (solo si no es gol en la rana, para que solo suene rana.mp3)
-    if (zoneId !== "rana") {
+    // Disparar Audio sintetizado (solo si no es gol en la rana ni en el sapo, para que suenen sus respectivos mp3)
+    if (zoneId !== "rana" && zoneId !== "sapo") {
       AudioFX.playPoint(delta);
     }
   }

@@ -100,6 +100,14 @@ document.addEventListener("DOMContentLoaded", () => {
         AudioFX.playRana();
       }
     }
+
+    // 🐸 ¡GOL AL SAPO! → Celebración de Dibu (500 pts)
+    if (msg.zone_id === "sapo") {
+      _showDibuCelebration();
+      if (typeof AudioFX !== 'undefined' && AudioFX.playSapo) {
+        AudioFX.playSapo();
+      }
+    }
   });
 
 
@@ -405,6 +413,27 @@ document.addEventListener("DOMContentLoaded", () => {
       overlay.style.transition = "bottom 0.2s ease-in";
       overlay.style.bottom = "-100%";
       setTimeout(() => { _messiAnimating = false; }, 220);
+    }, 5000);
+  }
+
+  // ── Celebración Dibu al embocar en el SAPO ──────────────────────────────
+  let _dibuAnimating = false;
+  function _showDibuCelebration() {
+    if (_dibuAnimating) return;
+    _dibuAnimating = true;
+
+    const overlay = document.getElementById("dibu-overlay");
+    if (!overlay) { _dibuAnimating = false; return; }
+
+    // Fase 1: subir (220ms)
+    overlay.style.transition = "bottom 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+    overlay.style.bottom = "0px";
+
+    // Fase 2: mantener 5s, luego bajar (200ms)
+    setTimeout(() => {
+      overlay.style.transition = "bottom 0.2s ease-in";
+      overlay.style.bottom = "-100%";
+      setTimeout(() => { _dibuAnimating = false; }, 220);
     }, 5000);
   }
 
