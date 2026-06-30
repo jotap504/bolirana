@@ -235,11 +235,11 @@ const Screens = (() => {
       d.className = "waiting-player-card";
       d.style.display = "flex";
       d.style.alignItems = "center";
-      d.style.gap = "16px";
-      d.style.padding = "12px 20px";
+      d.style.gap = "28px";
+      d.style.padding = "20px 32px";
       d.style.background = "rgba(0, 16, 44, 0.75)";
-      d.style.border = `2.5px solid ${PLAYER_COLORS[i] || "var(--cyan)"}`;
-      d.style.borderRadius = "16px";
+      d.style.border = `4px solid ${PLAYER_COLORS[i] || "var(--cyan)"}`;
+      d.style.borderRadius = "24px";
       d.style.boxShadow = `0 4px 15px rgba(0, 0, 0, 0.4), inset 0 0 10px ${PLAYER_COLORS[i]}40`;
       d.style.position = "relative";
       d.style.overflow = "hidden";
@@ -273,7 +273,7 @@ const Screens = (() => {
       }
 
       const jerseySvg = `
-        <svg width="45" height="45" viewBox="0 0 100 100" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); flex-shrink: 0;">
+        <svg width="80" height="80" viewBox="0 0 100 100" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)); flex-shrink: 0;">
           <defs>
             <clipPath id="body-clip-${i}">
               <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" />
@@ -291,18 +291,18 @@ const Screens = (() => {
       `;
 
       d.innerHTML = `
-        <div class="wp-avatar-container" style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid ${PLAYER_COLORS[i]}; overflow: hidden; background: #061026; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 10px ${PLAYER_COLORS[i]}50;">
+        <div class="wp-avatar-container" style="width: 100px; height: 100px; border-radius: 50%; border: 4px solid ${PLAYER_COLORS[i]}; overflow: hidden; background: #061026; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 15px ${PLAYER_COLORS[i]}60;">
           <img src="${avatarUrl}" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
-        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
-          <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-shadow: 0 0 8px rgba(255,255,255,0.25);">${p.name || "Jugador " + (i + 1)}</div>
-          <div class="wp-phone" style="font-size: 11px; color: ${PLAYER_COLORS[i]}; font-family: 'Orbitron', sans-serif; font-weight: bold; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+          <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-shadow: 0 0 10px rgba(255,255,255,0.3);">${p.name || "Jugador " + (i + 1)}</div>
+          <div class="wp-phone" style="font-size: 20px; color: ${PLAYER_COLORS[i]}; font-family: 'Orbitron', sans-serif; font-weight: bold; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
             ${p.connected ? "<span>📱 CONECTADO</span>" : "<span style='opacity: 0.5;'>🎮 CPU</span>"}
           </div>
         </div>
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
           ${jerseySvg}
-          <span style="font-size: 8px; color: var(--label); font-weight: bold; margin-top: 3px; font-family: 'Orbitron', sans-serif; text-transform: uppercase;">${p.club || 'Libre'}</span>
+          <span style="font-size: 15px; color: var(--label); font-weight: bold; margin-top: 6px; font-family: 'Orbitron', sans-serif; text-transform: uppercase;">${p.club || 'Libre'}</span>
         </div>
       `;
       wrap.appendChild(d);
@@ -327,28 +327,28 @@ const Screens = (() => {
       d.className = "waiting-player-card" + (isCurrent ? " current-turn" : "");
       d.style.display = "flex";
       d.style.alignItems = "center";
-      d.style.gap = "12px";
-      d.style.padding = "8px 16px";
+      d.style.gap = "20px";
+      d.style.padding = "16px 24px";
       d.style.background = "rgba(0, 16, 44, 0.75)";
-      d.style.border = isCurrent ? `2.5px solid var(--gold)` : `1.5px solid ${PLAYER_COLORS[i] || "var(--cyan)"}`;
-      d.style.borderRadius = "12px";
-      d.style.boxShadow = isCurrent ? `0 0 15px var(--gold)` : "";
+      d.style.border = isCurrent ? `4px solid var(--gold)` : `2.5px solid ${PLAYER_COLORS[i] || "var(--cyan)"}`;
+      d.style.borderRadius = "18px";
+      d.style.boxShadow = isCurrent ? `0 0 25px var(--gold)` : "";
       d.style.position = "relative";
       d.style.width = "100%";
 
       const defaultAvatar = `https://api.dicebear.com/7.x/pixel-art/svg?seed=Player${i + 1}`;
       const avatarUrl = p.avatar || defaultAvatar;
 
-      const curIndicator = isCurrent ? `<div style="color: var(--gold); font-weight: 900; font-size: 16px; margin-right: 4px; animation: pulseArrow 0.8s infinite alternate;">▶</div>` : "";
+      const curIndicator = isCurrent ? `<div style="color: var(--gold); font-weight: 900; font-size: 28px; margin-right: 8px; animation: pulseArrow 0.8s infinite alternate;">▶</div>` : "";
 
       d.innerHTML = `
         ${curIndicator}
-        <div class="wp-avatar-container" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid ${PLAYER_COLORS[i]}; overflow: hidden; background: #061026; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <div class="wp-avatar-container" style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid ${PLAYER_COLORS[i]}; overflow: hidden; background: #061026; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
           <img src="${avatarUrl}" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
-        <div style="flex: 1; min-width: 0;">
-          <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name || "Jugador " + (i + 1)}</div>
-          <div style="font-size: 10px; color: var(--label); font-family: 'Orbitron', sans-serif; text-transform: uppercase;">${p.club || 'Libre'}</div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name || "Jugador " + (i + 1)}</div>
+          <div style="font-size: 16px; color: var(--label); font-family: 'Orbitron', sans-serif; text-transform: uppercase;">${p.club || 'Libre'}</div>
         </div>
       `;
 
@@ -408,30 +408,30 @@ const Screens = (() => {
         d.style.display = "flex";
         d.style.flexDirection = "column";
         d.style.alignItems = "center";
-        d.style.gap = "8px";
-        d.style.padding = "16px 24px";
+        d.style.gap = "12px";
+        d.style.padding = "24px 36px";
         d.style.background = "rgba(0, 16, 44, 0.85)";
-        d.style.border = isCurrent ? `3px solid var(--gold)` : `2px solid ${PLAYER_COLORS[idx] || "var(--cyan)"}`;
-        d.style.borderRadius = "16px";
-        d.style.boxShadow = isCurrent ? `0 0 25px var(--gold)` : `0 4px 15px rgba(0,0,0,0.5)`;
+        d.style.border = isCurrent ? `4px solid var(--gold)` : `3.5px solid ${PLAYER_COLORS[idx] || "var(--cyan)"}`;
+        d.style.borderRadius = "20px";
+        d.style.boxShadow = isCurrent ? `0 0 35px var(--gold)` : `0 4px 15px rgba(0,0,0,0.5)`;
         d.style.position = "relative";
-        d.style.minWidth = "180px";
+        d.style.minWidth = "280px";
         d.style.transition = "transform 0.25s ease, box-shadow 0.25s ease"; // Suavizar la animación
 
         const defaultAvatar = `https://api.dicebear.com/7.x/pixel-art/svg?seed=Player${idx + 1}`;
         const avatarUrl = p.avatar || defaultAvatar;
 
         d.innerHTML = `
-          <div class="tiebreak-crown-wrap" style="position: absolute; top: -18px; font-size: 24px; display: ${isCurrent ? 'block' : 'none'}; animation: frog-bounce 1s infinite;">👑</div>
-          <div class="wp-avatar-container" style="width: 64px; height: 64px; border-radius: 50%; border: 2.5px solid ${PLAYER_COLORS[idx]}; overflow: hidden; background: #061026; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px ${PLAYER_COLORS[idx]}50;">
+          <div class="tiebreak-crown-wrap" style="position: absolute; top: -30px; font-size: 40px; display: ${isCurrent ? 'block' : 'none'}; animation: frog-bounce 1s infinite;">👑</div>
+          <div class="wp-avatar-container" style="width: 110px; height: 110px; border-radius: 50%; border: 4px solid ${PLAYER_COLORS[idx]}; overflow: hidden; background: #061026; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px ${PLAYER_COLORS[idx]}60;">
             <img src="${avatarUrl}" style="width: 100%; height: 100%; object-fit: cover;">
           </div>
-          <div style="text-align: center; margin-top: 4px;">
-            <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: bold;">${p.name || "Jugador " + (idx + 1)}</div>
-            <div id="tiebreak-score-val-${idx}" style="font-size: 18px; color: var(--gold); font-family: monospace; font-weight: 900; margin-top: 8px; transition: transform 0.15s ease;">
+          <div style="text-align: center; margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: bold;">${p.name || "Jugador " + (idx + 1)}</div>
+            <div id="tiebreak-score-val-${idx}" style="font-size: 32px; color: var(--gold); font-family: monospace; font-weight: 900; margin-top: 8px; transition: transform 0.15s ease;">
               ${data.mode === 'goleador' ? p.balls_pocketed + ' BOLAS' : p.score + ' PTS'}
             </div>
-            <div class="tiebreak-status-label" style="font-size: 11px; color: var(--label); font-family: 'Orbitron', sans-serif; margin-top: 4px; font-weight: bold;">
+            <div class="tiebreak-status-label" style="font-size: 18px; color: var(--label); font-family: 'Orbitron', sans-serif; margin-top: 4px; font-weight: bold;">
               ${isCurrent ? "🟡 TU TURNO" : "⏳ ESPERANDO"}
             </div>
           </div>
@@ -549,8 +549,9 @@ const Screens = (() => {
             </g>`;
         }
 
+        const jerseySize = players.length >= 4 ? 48 : 80;
         const jerseySvg = `
-          <svg width="32" height="32" viewBox="0 0 100 100" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); flex-shrink: 0;" id="player-jersey-svg-${i}">
+          <svg width="${jerseySize}" height="${jerseySize}" viewBox="0 0 100 100" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); flex-shrink: 0;" id="player-jersey-svg-${i}">
             <defs>
               <clipPath id="game-body-clip-${i}">
                 <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" />

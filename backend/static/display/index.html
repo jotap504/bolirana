@@ -13,9 +13,9 @@
     .scores-wrap {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 28px;
       width: 100%;
-      max-width: 900px;
+      max-width: 1200px;
       margin: 40px auto;
       padding: 0 20px;
       align-items: stretch; /* Asegura el mismo ancho exacto para todas las filas */
@@ -25,10 +25,10 @@
       display: flex;
       align-items: center;
       background: rgba(0, 12, 32, 0.85);
-      border: 2px solid rgba(0, 229, 255, 0.2);
-      border-radius: 16px;
-      padding: 16px 24px;
-      gap: 20px;
+      border: 4px solid rgba(0, 229, 255, 0.2);
+      border-radius: 24px;
+      padding: 24px 36px;
+      gap: 32px;
       transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       position: relative;
       box-shadow: 0 4px 15px rgba(0,0,0,0.5);
@@ -44,16 +44,16 @@
     .score-row.player-5 { border-color: rgba(0, 255, 238, 0.28); }
     
     /* Resaltado del Turno Actual según Color del Jugador */
-    .score-row.player-0.current-turn { border-color: var(--p0); box-shadow: 0 0 20px rgba(255, 68, 85, 0.4); background: rgba(255, 68, 85, 0.06); transform: scale(1.02); }
-    .score-row.player-1.current-turn { border-color: var(--p1); box-shadow: 0 0 20px rgba(68, 170, 255, 0.4); background: rgba(68, 170, 255, 0.06); transform: scale(1.02); }
-    .score-row.player-2.current-turn { border-color: var(--p2); box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); background: rgba(0, 255, 136, 0.06); transform: scale(1.02); }
-    .score-row.player-3.current-turn { border-color: var(--p3); box-shadow: 0 0 20px rgba(255, 170, 0, 0.4); background: rgba(255, 170, 0, 0.06); transform: scale(1.02); }
-    .score-row.player-4.current-turn { border-color: var(--p4); box-shadow: 0 0 20px rgba(221, 68, 255, 0.4); background: rgba(221, 68, 255, 0.06); transform: scale(1.02); }
-    .score-row.player-5.current-turn { border-color: var(--p5); box-shadow: 0 0 20px rgba(0, 255, 238, 0.4); background: rgba(0, 255, 238, 0.06); transform: scale(1.02); }
+    .score-row.player-0.current-turn { border-color: var(--p0); box-shadow: 0 0 30px rgba(255, 68, 85, 0.5); background: rgba(255, 68, 85, 0.08); transform: scale(1.03); }
+    .score-row.player-1.current-turn { border-color: var(--p1); box-shadow: 0 0 30px rgba(68, 170, 255, 0.5); background: rgba(68, 170, 255, 0.08); transform: scale(1.03); }
+    .score-row.player-2.current-turn { border-color: var(--p2); box-shadow: 0 0 30px rgba(0, 255, 136, 0.5); background: rgba(0, 255, 136, 0.08); transform: scale(1.03); }
+    .score-row.player-3.current-turn { border-color: var(--p3); box-shadow: 0 0 30px rgba(255, 170, 0, 0.5); background: rgba(255, 170, 0, 0.08); transform: scale(1.03); }
+    .score-row.player-4.current-turn { border-color: var(--p4); box-shadow: 0 0 30px rgba(221, 68, 255, 0.5); background: rgba(221, 68, 255, 0.08); transform: scale(1.03); }
+    .score-row.player-5.current-turn { border-color: var(--p5); box-shadow: 0 0 30px rgba(0, 255, 238, 0.5); background: rgba(0, 255, 238, 0.08); transform: scale(1.03); }
     
     .turn-arrow-indicator {
-      font-size: 24px;
-      width: 30px;
+      font-size: 40px;
+      width: 50px;
       text-align: center;
       opacity: 0;
       transform: translateX(-10px);
@@ -80,11 +80,11 @@
     }
     
     .player-avatar-container {
-      width: 70px;
-      height: 70px;
-      border-radius: 12px;
-      border: 2.5px solid var(--cyan);
-      box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+      width: 120px;
+      height: 120px;
+      border-radius: 20px;
+      border: 4px solid var(--cyan);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
       overflow: hidden;
       background: #061026;
       display: flex;
@@ -94,15 +94,15 @@
     }
     
     /* Contenedor del Avatar coloreado según jugador */
-    .score-row.player-0 .player-avatar-container { border-color: var(--p0); box-shadow: 0 0 10px rgba(255, 68, 85, 0.3); }
-    .score-row.player-1 .player-avatar-container { border-color: var(--p1); box-shadow: 0 0 10px rgba(68, 170, 255, 0.3); }
-    .score-row.player-2 .player-avatar-container { border-color: var(--p2); box-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
-    .score-row.player-3 .player-avatar-container { border-color: var(--p3); box-shadow: 0 0 10px rgba(255, 170, 0, 0.3); }
-    .score-row.player-4 .player-avatar-container { border-color: var(--p4); box-shadow: 0 0 10px rgba(221, 68, 255, 0.3); }
-    .score-row.player-5 .player-avatar-container { border-color: var(--p5); box-shadow: 0 0 10px rgba(0, 255, 238, 0.3); }
+    .score-row.player-0 .player-avatar-container { border-color: var(--p0); box-shadow: 0 0 15px rgba(255, 68, 85, 0.3); }
+    .score-row.player-1 .player-avatar-container { border-color: var(--p1); box-shadow: 0 0 15px rgba(68, 170, 255, 0.3); }
+    .score-row.player-2 .player-avatar-container { border-color: var(--p2); box-shadow: 0 0 15px rgba(0, 255, 136, 0.3); }
+    .score-row.player-3 .player-avatar-container { border-color: var(--p3); box-shadow: 0 0 15px rgba(255, 170, 0, 0.3); }
+    .score-row.player-4 .player-avatar-container { border-color: var(--p4); box-shadow: 0 0 15px rgba(221, 68, 255, 0.3); }
+    .score-row.player-5 .player-avatar-container { border-color: var(--p5); box-shadow: 0 0 15px rgba(0, 255, 238, 0.3); }
     
     .score-row.current-turn .player-avatar-container {
-      box-shadow: 0 0 15px currentColor;
+      box-shadow: 0 0 25px currentColor;
     }
     
     .player-avatar-img {
@@ -113,7 +113,7 @@
     
     .player-name-val {
       font-family: 'Orbitron', sans-serif;
-      font-size: 22px;
+      font-size: 40px;
       font-weight: 700;
       color: var(--text);
       flex: 1;
@@ -126,20 +126,20 @@
     
     .player-score-val {
       font-family: monospace;
-      font-size: 42px;
+      font-size: 72px;
       font-weight: 900;
       color: var(--neon);
-      text-shadow: 0 0 15px rgba(240, 224, 0, 0.6);
-      min-width: 180px;
+      text-shadow: 0 0 20px rgba(240, 224, 0, 0.6);
+      min-width: 260px;
       text-align: right;
       letter-spacing: 1px;
     }
     
     .player-rank-badge {
       font-family: 'Orbitron', sans-serif;
-      font-size: 32px;
+      font-size: 56px;
       font-weight: 900;
-      min-width: 80px;
+      min-width: 120px;
       text-align: right;
     }
     
@@ -151,36 +151,43 @@
     .score-row.player-4 .player-rank-badge { color: var(--p4); text-shadow: 0 0 12px rgba(221, 68, 255, 0.5); }
     .score-row.player-5 .player-rank-badge { color: var(--p5); text-shadow: 0 0 12px rgba(0, 255, 238, 0.5); }
 
-    /* ⚡ RECOMPOSICIÓN DE 2 COLUMNAS PARA 4 O MÁS JUGADORES (RESPONSIVE SEGURO) */
+    /* ── RECOMPOSICIÓN DE 2 COLUMNAS PARA 4 O MÁS JUGADORES ── */
     .scores-wrap.many-players {
       display: grid;
       grid-template-columns: 1fr 1fr; /* Dividir en 2 columnas perfectas side-by-side */
-      gap: 10px 24px;
-      padding: 0 35px;
+      gap: 20px 32px;
+      padding: 0 45px;
       margin: 15px auto;
       max-width: 100%;
       box-sizing: border-box;
     }
     .scores-wrap.many-players .score-row {
-      padding: 10px 18px;
-      gap: 12px;
+      padding: 18px 28px;
+      gap: 24px;
+      border-radius: 20px;
+      border-width: 3px;
+    }
+    .scores-wrap.many-players .turn-arrow-indicator {
+      font-size: 32px;
+      width: 40px;
     }
     .scores-wrap.many-players .player-avatar-container {
-      width: 48px;
-      height: 48px;
-      border-width: 2px;
+      width: 90px;
+      height: 90px;
+      border-radius: 16px;
+      border-width: 3px;
     }
     .scores-wrap.many-players .player-name-val {
-      font-size: 16px;
+      font-size: 28px;
       letter-spacing: 1px;
     }
     .scores-wrap.many-players .player-score-val {
-      font-size: 28px;
-      min-width: 110px;
+      font-size: 52px;
+      min-width: 180px;
     }
     .scores-wrap.many-players .player-rank-badge {
-      font-size: 22px;
-      min-width: 50px;
+      font-size: 40px;
+      min-width: 80px;
     }
   </style>
 </head>
@@ -527,15 +534,15 @@
       </div>
       <div class="lobby-container" style="width: 100%; max-width: 1100px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 20px; min-height: 0;">
         <!-- Grill of connected players -->
-        <div class="waiting-players-grid" id="waiting-players" style="width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; overflow-y: auto; padding: 10px; box-sizing: border-box;"></div>
+        <div class="waiting-players-grid" id="waiting-players" style="width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 30px; overflow-y: auto; padding: 15px; box-sizing: border-box;"></div>
         
         <!-- Bottom QR scanner box -->
-        <div class="lobby-qr-footer" style="display: flex; align-items: center; justify-content: center; gap: 24px; background: rgba(0, 12, 32, 0.75); border: 2px dashed rgba(0, 229, 255, 0.3); padding: 15px 30px; border-radius: 16px; backdrop-filter: blur(8px); margin-bottom: 10px; width: 100%; max-width: 800px;">
-          <img id="waiting-start-qr" src="" width="90" height="90" style="border: 2px solid var(--cyan); border-radius: 8px; box-shadow: 0 0 10px var(--cyan);" alt="Código QR de Conexión">
-          <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
-            <div style="font-size: 13px; color: #fff; font-weight: bold; letter-spacing: 1px; font-family: 'Orbitron', sans-serif;">¿Querés sumarte al juego? 📱</div>
-            <div style="font-size: 11px; color: var(--label); font-family: 'Orbitron', sans-serif;">Escaneá el código QR o ingresá a:</div>
-            <div class="connect-url-text" id="waiting-url-val" style="font-size: 10px; color: var(--gold); font-family: monospace; word-break: break-all; max-width: 480px; text-align: left; border: 1px dashed rgba(245, 192, 0, 0.4); padding: 4px 8px; border-radius: 4px; user-select: all; background: rgba(245, 192, 0, 0.05); font-weight: bold;">Cargando enlace...</div>
+        <div class="lobby-qr-footer" style="display: flex; align-items: center; justify-content: center; gap: 36px; background: rgba(0, 12, 32, 0.85); border: 3px dashed rgba(0, 229, 255, 0.45); padding: 24px 45px; border-radius: 20px; backdrop-filter: blur(8px); margin-bottom: 10px; width: 100%; max-width: 1000px;">
+          <img id="waiting-start-qr" src="" width="140" height="140" style="border: 3px solid var(--cyan); border-radius: 12px; box-shadow: 0 0 15px var(--cyan);" alt="Código QR de Conexión">
+          <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+            <div style="font-size: 22px; color: #fff; font-weight: bold; letter-spacing: 1px; font-family: 'Orbitron', sans-serif;">¿Querés sumarte al juego? 📱</div>
+            <div style="font-size: 18px; color: var(--label); font-family: 'Orbitron', sans-serif;">Escaneá el código QR o ingresá a:</div>
+            <div class="connect-url-text" id="waiting-url-val" style="font-size: 15px; color: var(--gold); font-family: monospace; word-break: break-all; max-width: 680px; text-align: left; border: 1.5px dashed rgba(245, 192, 0, 0.4); padding: 6px 12px; border-radius: 6px; user-select: all; background: rgba(245, 192, 0, 0.05); font-weight: bold;">Cargando enlace...</div>
           </div>
         </div>
       </div>
