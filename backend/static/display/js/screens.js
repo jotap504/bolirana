@@ -549,7 +549,7 @@ const Screens = (() => {
             </g>`;
         }
 
-        const jerseySize = players.length >= 4 ? 32 : 54;
+        const jerseySize = players.length >= 4 ? 42 : 70;
         const jerseySvg = `
           <svg width="${jerseySize}" height="${jerseySize}" viewBox="0 0 100 100" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); flex-shrink: 0;" id="player-jersey-svg-${i}">
             <defs>
@@ -569,13 +569,15 @@ const Screens = (() => {
         `;
 
         card.innerHTML = `
-          <div class="turn-arrow-indicator" id="turn-arrow-${i}">▶</div>
-          <div class="player-avatar-container">
-            <img class="player-avatar-img" id="player-avatar-${i}" src="${avatarUrl}">
+          <div class="player-avatar-wrapper">
+            <div class="turn-arrow-indicator" id="turn-arrow-${i}">▼</div>
+            <div class="player-avatar-container">
+              <img class="player-avatar-img" id="player-avatar-${i}" src="${avatarUrl}">
+            </div>
           </div>
-          <div class="player-info-container" style="display: flex; flex-direction: column; flex: 1; min-width: 0; align-items: flex-start; gap: 4px;">
-            <div class="player-name-val" id="player-name-${i}" style="margin: 0; text-align: left; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; width: 100%;">${p.name || "JUGADOR " + (i + 1)}</div>
-            <div class="player-balls-row" id="player-balls-${i}" style="display: flex; gap: 4px;"></div>
+          <div class="player-info-container" style="display: flex; flex-direction: column; flex: 1; min-width: 0; align-items: flex-start; gap: 8px;">
+            <div class="player-name-val" id="player-name-${i}" style="margin: 0; text-align: left; width: 100%;">${p.name || "JUGADOR " + (i + 1)}</div>
+            <div class="player-balls-row" id="player-balls-${i}" style="display: flex; gap: 6px;"></div>
           </div>
           <div class="player-score-val" id="score-val-${i}">${data.mode === "goleador" ? p.balls_pocketed + " BOLAS" : p.score}</div>
           <div class="player-rank-col">

@@ -15,9 +15,9 @@
       flex-direction: column;
       gap: 16px;
       width: 100%;
-      max-width: 860px; /* Reducido de 1000px para pantallas cuadradas antiguas */
+      max-width: 900px; /* Aumentado ligeramente para mayor amplitud en 1 columna */
       margin: 25px auto;
-      padding: 0 30px; /* Ajustado */
+      padding: 0 45px; /* Ajustado para dejar márgenes laterales seguros en monitores 4:3 */
       align-items: stretch; /* Asegura el mismo ancho exacto para todas las filas */
     }
     
@@ -27,7 +27,7 @@
       background: rgba(0, 12, 32, 0.85);
       border: 3px solid rgba(0, 229, 255, 0.2);
       border-radius: 18px;
-      padding: 14px 24px 14px 16px; /* Achicado el padding izquierdo (16px) del avatar */
+      padding: 14px 24px 14px 3px; /* Avatar a exactamente 3px del borde izquierdo */
       gap: 20px;
       transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       position: relative;
@@ -51,22 +51,34 @@
     .score-row.player-4.current-turn { border-color: var(--p4); box-shadow: 0 0 25px rgba(221, 68, 255, 0.4); background: rgba(221, 68, 255, 0.08); transform: scale(1.02); }
     .score-row.player-5.current-turn { border-color: var(--p5); box-shadow: 0 0 25px rgba(0, 255, 238, 0.4); background: rgba(0, 255, 238, 0.08); transform: scale(1.02); }
     
+    .player-avatar-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-left: 2px;
+    }
+
     .turn-arrow-indicator {
-      font-size: 32px;
-      width: 0px; /* Ancho 0 por defecto para achicar el padding izquierdo */
+      font-size: 24px;
+      height: 0px; /* Altura 0 por defecto para no ocupar espacio */
       overflow: hidden; /* Ocultar para que no ocupe espacio cuando no es su turno */
       text-align: center;
       opacity: 0;
-      transform: translateX(-15px);
+      transform: translateY(-5px);
       transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      line-height: 1;
+      width: 100%;
     }
     
     .score-row.current-turn .turn-arrow-indicator {
-      width: 40px; /* Ancho de visualización solo en el turno actual */
+      height: 24px; /* Altura visible arriba del avatar */
       overflow: visible;
       opacity: 1;
-      transform: translateX(0);
-      animation: pulseArrow 1s infinite alternate;
+      transform: translateY(0);
+      animation: pulseArrowDown 0.8s infinite alternate;
     }
     
     /* Color de flecha de turno por jugador */
@@ -77,9 +89,9 @@
     .score-row.player-4.current-turn .turn-arrow-indicator { color: var(--p4); text-shadow: 0 0 10px var(--p4); }
     .score-row.player-5.current-turn .turn-arrow-indicator { color: var(--p5); text-shadow: 0 0 10px var(--p5); }
     
-    @keyframes pulseArrow {
-      from { transform: translateX(-3px); }
-      to { transform: translateX(3px); }
+    @keyframes pulseArrowDown {
+      from { transform: translateY(-2px); }
+      to { transform: translateY(2px); }
     }
     
     .player-avatar-container {
@@ -122,9 +134,9 @@
       flex: 1;
       text-align: left;
       letter-spacing: 2px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      overflow: hidden;
+      white-space: normal; /* Permitir envolver en 2 líneas */
+      word-break: break-word; /* Romper palabras si son muy largas */
+      line-height: 1.1;
     }
     
     .player-score-val {
@@ -175,21 +187,20 @@
       box-sizing: border-box;
     }
     .scores-wrap.many-players .score-row {
-      padding: 10px 16px 10px 10px; /* Reducido el padding izquierdo (10px) del avatar */
+      padding: 10px 16px 10px 3px; /* Avatar a exactamente 3px del borde izquierdo */
       gap: 14px;
       border-radius: 16px;
       border-width: 2.5px;
-      max-width: 440px; /* Limitar el ancho máximo de la tarjeta para pantallas cuadradas */
       width: 100%;
-      margin: 0 auto; /* Centrar dentro de la columna */
     }
     .scores-wrap.many-players .turn-arrow-indicator {
-      font-size: 26px;
-      width: 0px; /* Ancho 0 por defecto */
+      font-size: 20px;
+      height: 0px; /* Altura 0 por defecto */
       overflow: hidden;
+      width: 100%;
     }
     .scores-wrap.many-players .score-row.current-turn .turn-arrow-indicator {
-      width: 30px; /* Ancho visible en su turno */
+      height: 20px; /* Altura visible en su turno */
       overflow: visible;
       opacity: 1;
     }
@@ -202,6 +213,9 @@
     .scores-wrap.many-players .player-name-val {
       font-size: 24px;
       letter-spacing: 1px;
+      white-space: normal; /* Permitir envolver en 2 líneas */
+      word-break: break-word;
+      line-height: 1.1;
     }
     .scores-wrap.many-players .player-score-val {
       font-size: 40px;
