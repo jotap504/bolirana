@@ -235,8 +235,8 @@ const Screens = (() => {
     const cardPadding = isMany ? "6px 16px" : "12px 20px";
     const avatarSize = isMany ? "54px" : "72px";
     const jerseySize = isMany ? "36px" : "48px";
-    const nameFontSize = isMany ? "16px" : "20px";
-    const phoneFontSize = isMany ? "11px" : "13px";
+    const nameFontSize = isMany ? "20px" : "26px";
+    const connectedFontSize = isMany ? "11px" : "13px";
     const gapSize = isMany ? "12px" : "16px";
 
     playersList.forEach((p, i) => {
@@ -304,11 +304,9 @@ const Screens = (() => {
         <div class="wp-avatar-container" style="width: ${avatarSize}; height: ${avatarSize}; border-radius: 50%; border: 2px solid ${PLAYER_COLORS[i]}; overflow: hidden; background: #061026; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 10px ${PLAYER_COLORS[i]}50;">
           <img src="${avatarUrl}" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
-        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
-          <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: ${nameFontSize}; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-shadow: 0 0 6px rgba(255,255,255,0.25);">${p.name || "Jugador " + (i + 1)}</div>
-          <div class="wp-phone" style="font-size: ${phoneFontSize}; color: ${PLAYER_COLORS[i]}; font-family: 'Orbitron', sans-serif; font-weight: bold; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">
-            ${p.connected ? "<span>📱 CONECTADO</span>" : "<span style='opacity: 0.5;'>🎮 CPU</span>"}
-          </div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+          <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: ${nameFontSize}; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-shadow: 0 0 8px rgba(255,255,255,0.3);">${p.name || "Jugador " + (i + 1)}</div>
+          ${p.connected ? `<div style="font-size: ${connectedFontSize}; color: ${PLAYER_COLORS[i]}; font-family: 'Orbitron', sans-serif; font-weight: bold; letter-spacing: 0.5px;">📱 CONECTADO</div>` : ""}
         </div>
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
           ${jerseySvg}
