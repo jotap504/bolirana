@@ -555,6 +555,18 @@
 
   <!-- ── LLAMAR JUGADORES ── -->
   <div id="panel-attract-players" class="panel">
+
+    <!-- Card de volumen de llamados, separado del volumen de juego -->
+    <div class="card" style="border-color: var(--gold); background: rgba(240, 224, 0, 0.04); margin-bottom: 24px;">
+      <div class="card-title" style="color: var(--gold); border-left-color: var(--gold); margin-bottom: 15px;">VOLUMEN DE LLAMADOS (independiente del juego)</div>
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <span style="font-size: 24px;">📢</span>
+        <input type="range" id="cfg-attract-volume-slider" min="0" max="100" value="80" style="flex: 1; height: 8px; cursor: pointer; accent-color: var(--gold);">
+        <span id="cfg-attract-volume-text" style="font-family: 'Share Tech Mono', monospace; font-size: 20px; font-weight: bold; width: 60px; text-align: right; color: var(--gold);">80%</span>
+      </div>
+      <input type="number" id="cfg-attract-volume" min="0" max="100" value="80" style="display: none;">
+    </div>
+
     <div class="card">
       <div class="card-title">MODO LLAMAR JUGADORES (CAPTACIÓN DE PÚBLICO)</div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
@@ -785,6 +797,10 @@ async function loadConfig() {
   document.getElementById("cfg-attract-players-enabled").textContent = ap.enabled ? "ON" : "OFF";
   document.getElementById("cfg-attract-players-timeout").value = ap.idle_timeout_seconds || 60;
   document.getElementById("cfg-attract-players-cooldown").value = ap.cooldown_seconds || 30;
+  const attractVol = ap.volume !== undefined ? ap.volume : 80;
+  document.getElementById("cfg-attract-volume").value = attractVol;
+  document.getElementById("cfg-attract-volume-slider").value = attractVol;
+  document.getElementById("cfg-attract-volume-text").textContent = attractVol + "%";
   loadAttractAudios();
 }
 
@@ -897,10 +913,23 @@ document.getElementById("save-attract-players").addEventListener("click", async 
       enabled: document.getElementById("cfg-attract-players-enabled").classList.contains("on"),
       idle_timeout_seconds: +document.getElementById("cfg-attract-players-timeout").value,
       cooldown_seconds: +document.getElementById("cfg-attract-players-cooldown").value,
+      volume: +document.getElementById("cfg-attract-volume").value,
     }
   };
   await api("/api/admin/config", "PATCH", patch);
   toast("Configuración de captación guardada");
+});
+
+// ── Slider de volumen de llamados ──────────────────────────────────────────────
+document.getElementById("cfg-attract-volume-slider").addEventListener("input", (e) => {
+  document.getElementById("cfg-attract-volume-text").textContent = e.target.value + "%";
+  document.getElementById("cfg-attract-volume").value = e.target.value;
+});
+
+document.getElementById("cfg-attract-volume-slider").addEventListener("change", async (e) => {
+  const val = +e.target.value;
+  await api("/api/admin/config", "PATCH", { attract_players: { volume: val } });
+  toast("Volumen de llamados actualizado a " + val + "%");
 });
 
 async function loadAttractAudios() {

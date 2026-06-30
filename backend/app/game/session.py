@@ -198,4 +198,5 @@ class Session:
             "tiebreak_players":  self.tiebreak_players,
             "tiebreak_cursor":   self.tiebreak_cursor,
             "volume":            get_config().get("game", {}).get("volume", 80),
+            "attract_volume":    get_config().get("attract_players", {}).get("volume", 80),
         }

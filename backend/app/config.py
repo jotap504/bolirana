@@ -65,6 +65,7 @@ DEFAULT_CONFIG = {
         "enabled": False,
         "idle_timeout_seconds": 60,
         "cooldown_seconds": 30,
+        "volume": 80,
     },
     "anti_cheat": {
         "front_enabled": True,

@@ -3,6 +3,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   let prevCredits = 0;
   let currentState = "";
+  let _attractVolume = 0.8; // Volumen separado para los llamados de juego (80% por defecto)
 
   WS.connect();
 
@@ -13,6 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (typeof AudioFX !== 'undefined' && AudioFX.setVolume) {
         AudioFX.setVolume(msg.volume);
       }
+    }
+    if (msg.attract_volume !== undefined) {
+      _attractVolume = Math.max(0, Math.min(100, msg.attract_volume)) / 100;
     }
 
     // Detener fuegos artificiales si salimos de game_over
@@ -162,9 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (msg.audio_url) {
       console.log("Reproduciendo sonido de atracción:", msg.audio_url);
       const audio = new Audio(msg.audio_url + "?v=" + Date.now());
-      if (typeof AudioFX !== 'undefined' && AudioFX.getVolumeMultiplier) {
-        audio.volume = AudioFX.getVolumeMultiplier();
-      }
+      audio.volume = _attractVolume; // Volumen INDEPENDIENTE del volumen de juego
       audio.play().catch(err => console.warn("Error al reproducir audio de atracción:", err));
     }
   });
