@@ -573,13 +573,15 @@ const Screens = (() => {
           <div class="player-avatar-container">
             <img class="player-avatar-img" id="player-avatar-${i}" src="${avatarUrl}">
           </div>
-          ${jerseySvg}
           <div class="player-info-container" style="display: flex; flex-direction: column; flex: 1; min-width: 0; align-items: flex-start; gap: 4px;">
             <div class="player-name-val" id="player-name-${i}" style="margin: 0; text-align: left; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; width: 100%;">${p.name || "JUGADOR " + (i + 1)}</div>
             <div class="player-balls-row" id="player-balls-${i}" style="display: flex; gap: 4px;"></div>
           </div>
           <div class="player-score-val" id="score-val-${i}">${data.mode === "goleador" ? p.balls_pocketed + " BOLAS" : p.score}</div>
-          <div class="player-rank-badge" id="rank-badge-${i}">#${rank}</div>`;
+          <div class="player-rank-col">
+            <div class="player-rank-badge" id="rank-badge-${i}">#${rank}</div>
+            ${jerseySvg}
+          </div>`;
         wrap.appendChild(card);
       });
     }
