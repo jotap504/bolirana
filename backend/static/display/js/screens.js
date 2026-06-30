@@ -439,7 +439,7 @@ const Screens = (() => {
           <div style="text-align: center; margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
             <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: bold;">${p.name || "Jugador " + (idx + 1)}</div>
             <div id="tiebreak-score-val-${idx}" style="font-size: 32px; color: var(--gold); font-family: monospace; font-weight: 900; margin-top: 8px; transition: transform 0.15s ease;">
-              ${data.mode === 'goleador' ? p.balls_pocketed + ' BOLAS' : p.score + ' PTS'}
+              ${data.mode === 'goleador' ? p.balls_pocketed : p.score + ' PTS'}
             </div>
             <div class="tiebreak-status-label" style="font-size: 18px; color: var(--label); font-family: 'Orbitron', sans-serif; margin-top: 4px; font-weight: bold;">
               ${isCurrent ? "🟡 TU TURNO" : "⏳ ESPERANDO"}
@@ -467,7 +467,7 @@ const Screens = (() => {
           
           const val = document.getElementById("tiebreak-score-val-" + idx);
           if (val) {
-            const expectedText = data.mode === 'goleador' ? p.balls_pocketed + ' BOLAS' : p.score + ' PTS';
+            const expectedText = data.mode === 'goleador' ? String(p.balls_pocketed) : p.score + ' PTS';
             if (val.textContent.trim() !== expectedText) {
               val.textContent = expectedText;
             }
@@ -589,7 +589,7 @@ const Screens = (() => {
             <div class="player-name-val" id="player-name-${i}" style="margin: 0; text-align: left; width: 100%;">${p.name || "JUGADOR " + (i + 1)}</div>
             <div class="player-balls-row" id="player-balls-${i}" style="display: flex; gap: 6px;"></div>
           </div>
-          <div class="player-score-val" id="score-val-${i}">${data.mode === "goleador" ? p.balls_pocketed + " BOLAS" : p.score}</div>
+          <div class="player-score-val" id="score-val-${i}">${data.mode === "goleador" ? p.balls_pocketed : p.score}</div>
           <div class="player-rank-col">
             <div class="player-rank-badge" id="rank-badge-${i}">#${rank}</div>
             ${jerseySvg}
@@ -610,7 +610,7 @@ const Screens = (() => {
         if (nameEl) nameEl.textContent = p.name || "JUGADOR " + (i + 1);
 
         const val = document.getElementById("score-val-" + i);
-        if (val) val.textContent = data.mode === "goleador" ? p.balls_pocketed + " BOLAS" : p.score;
+        if (val) val.textContent = data.mode === "goleador" ? p.balls_pocketed : p.score;
 
         const rankEl = document.getElementById("rank-badge-" + i);
         if (rankEl) rankEl.textContent = "#" + (playerRanks[i] || 1);
@@ -899,7 +899,7 @@ const Screens = (() => {
       scores.forEach((s, rank) => {
         const d = document.createElement("div");
         d.className = "final-score-card" + (rank === 0 ? " winner" : "");
-        const finalPts = data.mode === "goleador" ? s.balls_pocketed + " BOLAS" : s.score + " PTS";
+        const finalPts = data.mode === "goleador" ? s.balls_pocketed : s.score + " PTS";
         d.innerHTML = `<div class="final-rank">${medals[rank] || ""}</div>
           <div class="final-name">${s.name}</div>
           <div class="final-pts">${finalPts}</div>`;

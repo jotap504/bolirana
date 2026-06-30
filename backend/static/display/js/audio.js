@@ -5,6 +5,7 @@
 const AudioFX = (() => {
   let ctx = null;
   let ranaAudio = null;
+  let _volumeMultiplier = 0.8; // Volumen por defecto (80%)
 
   function init() {
     if (ctx) {
@@ -67,7 +68,7 @@ const AudioFX = (() => {
     }
 
     // Configuración de envolvente de volumen (ataque rápido, decaimiento suave)
-    gain.gain.setValueAtTime(volume, now);
+    gain.gain.setValueAtTime(volume * _volumeMultiplier, now);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
     osc.start(now);
@@ -100,6 +101,7 @@ const AudioFX = (() => {
   function playRana() {
     _resume();
     if (ranaAudio) {
+      ranaAudio.volume = _volumeMultiplier;
       ranaAudio.currentTime = 0;
       ranaAudio.play().catch(err => {
         console.warn("Fallo al reproducir audio personalizado de Rana:", err);
@@ -172,7 +174,32 @@ const AudioFX = (() => {
     _playTone(120, 0.08, "triangle", 0.04, 240);
   }
 
-  return { init, playCoin, playTick, playStart, playPoint, playGameOver, playAlarm, playRana, playScreenTransition, playSlideTransition };
+  function setVolume(pct) {
+    _volumeMultiplier = Math.max(0, Math.min(100, parseInt(pct) ?? 80)) / 100;
+    console.log("Volumen del juego ajustado a: " + (_volumeMultiplier * 100) + "%");
+    if (ranaAudio) {
+      ranaAudio.volume = _volumeMultiplier;
+    }
+  }
+
+  function getVolumeMultiplier() {
+    return _volumeMultiplier;
+  }
+
+  return { 
+    init, 
+    playCoin, 
+    playTick, 
+    playStart, 
+    playPoint, 
+    playGameOver, 
+    playAlarm, 
+    playRana, 
+    playScreenTransition, 
+    playSlideTransition,
+    setVolume,
+    getVolumeMultiplier
+  };
 })();
 
 // Auto-inicializar cuando el usuario interactúa para saltar la política de reproducción

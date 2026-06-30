@@ -9,6 +9,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── Estado del servidor → pantallas ──────────────────────────────────────
   WS.on("state", (msg) => {
     const nextState = msg.state;
+    if (msg.volume !== undefined) {
+      if (typeof AudioFX !== 'undefined' && AudioFX.setVolume) {
+        AudioFX.setVolume(msg.volume);
+      }
+    }
 
     // Detener fuegos artificiales si salimos de game_over
     if (currentState === "game_over" && nextState !== "game_over") {
@@ -157,6 +162,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (msg.audio_url) {
       console.log("Reproduciendo sonido de atracción:", msg.audio_url);
       const audio = new Audio(msg.audio_url + "?v=" + Date.now());
+      if (typeof AudioFX !== 'undefined' && AudioFX.getVolumeMultiplier) {
+        audio.volume = AudioFX.getVolumeMultiplier();
+      }
       audio.play().catch(err => console.warn("Error al reproducir audio de atracción:", err));
     }
   });

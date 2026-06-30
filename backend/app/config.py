@@ -19,13 +19,14 @@ DEFAULT_CONFIG = {
         "attract_timeout_seconds": 30,
         "turn_change_seconds": 2,
         "rotation_mode": "sequential",  # "sequential" o "alternate"
+        "volume": 80,
     },
     "pricing": {
         "base_credits_per_player": 1,
         "mode_extra": {"classic": 0, "timed": 0, "team": 0, "goleador": 0},
         "coin_to_credits": 1,
         "pesos_per_credit": 200,
-        "group_discount": {"5": 1, "6": 2},
+        "group_discount": {},
     },
     "sensors": [
         {"id": "rana", "name": "Rana", "points": 1000, "enabled": True},

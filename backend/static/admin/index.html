@@ -336,6 +336,8 @@
           <input type="number" id="cfg-balls" min="1" max="20" value="5"></div>
         <div><label>Tiempo por turno (segundos, modo TIMED)</label>
           <input type="number" id="cfg-time" min="10" max="300" value="60"></div>
+        <div><label>Volumen del Juego (0-100 %)</label>
+          <input type="number" id="cfg-volume" min="0" max="100" value="80"></div>
         <div><label>Segundos entre turnos</label>
           <input type="number" id="cfg-turn" min="2" max="10" value="4"></div>
         <div><label>Segundos attract timeout</label>
@@ -713,6 +715,7 @@ async function loadConfig() {
   const g = cfg.game || {};
   document.getElementById("cfg-balls").value   = g.balls_default || 5;
   document.getElementById("cfg-time").value    = g.time_per_player_seconds || 60;
+  document.getElementById("cfg-volume").value  = g.volume !== undefined ? g.volume : 80;
   document.getElementById("cfg-turn").value    = g.turn_change_seconds || 4;
   document.getElementById("cfg-attract").value = g.attract_timeout_seconds || 30;
   document.getElementById("cfg-goleador-points").value = g.goleador_points_per_ball || 500;
@@ -804,6 +807,7 @@ document.getElementById("save-game").addEventListener("click", async () => {
   await api("/api/admin/config/game", "PATCH", {
     balls_default:          +document.getElementById("cfg-balls").value,
     time_per_player_seconds: +document.getElementById("cfg-time").value,
+    volume:                 +document.getElementById("cfg-volume").value,
     turn_change_seconds:    +document.getElementById("cfg-turn").value,
     attract_timeout_seconds:+document.getElementById("cfg-attract").value,
     goleador_points_per_ball: +document.getElementById("cfg-goleador-points").value,

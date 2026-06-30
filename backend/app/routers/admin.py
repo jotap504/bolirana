@@ -170,6 +170,9 @@ async def patch_game_cfg(request: Request, db: AsyncSession = Depends(get_db)):
     body = await request.json()
     update_config({"game": body})
     await save_config_to_db(db)
+    # Transmitir el nuevo estado / volumen de forma inmediata a las pantallas conectadas
+    engine = request.app.state.engine
+    await engine._broadcast({"type": "state", **engine.session.to_dict()})
     return get_config()["game"]
 
 
