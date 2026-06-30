@@ -11,15 +11,72 @@ router = APIRouter(prefix="/api/admin")
 
 @router.get("/config")
 async def read_config():
-    return get_config()
+    import copy
+    cfg = copy.deepcopy(get_config())
+    # Enmascarar el access_token de mercadopago si existe en base de datos
+    if "mercadopago" in cfg and cfg["mercadopago"].get("access_token"):
+        from ..payments.crypto import decrypt_data
+        decrypted = decrypt_data(cfg["mercadopago"]["access_token"])
+        if decrypted:
+            if len(decrypted) > 15:
+                cfg["mercadopago"]["access_token"] = f"{decrypted[:10]}...****************"
+            else:
+                cfg["mercadopago"]["access_token"] = "****************"
+        else:
+            cfg["mercadopago"]["access_token"] = ""
+    return cfg
 
 
 @router.patch("/config")
 async def patch_config(request: Request, db: AsyncSession = Depends(get_db)):
     body = await request.json()
+    
+    # Procesamiento seguro de access_token de MercadoPago
+    if "mercadopago" in body and "access_token" in body["mercadopago"]:
+        token = body["mercadopago"]["access_token"]
+        
+        # Si el token enviado contiene asteriscos, significa que el usuario no lo modificó.
+        # No sobreescribimos el valor que ya está guardado de forma segura en la base de datos.
+        if "******" in token or token.endswith("****************") or "Placeholder" in token:
+            del body["mercadopago"]["access_token"]
+        else:
+            # Token nuevo: viene encriptado en RSA desde la interfaz (tránsito seguro).
+            # Lo desencriptamos con la clave privada RSA y lo guardamos encriptado con Fernet (seguro en reposo).
+            if token.strip():
+                try:
+                    from ..payments.crypto import decrypt_rsa_payload, encrypt_data
+                    decrypted_token = decrypt_rsa_payload(token)
+                    encrypted_token = encrypt_data(decrypted_token)
+                    body["mercadopago"]["access_token"] = encrypted_token
+                except Exception as e:
+                    raise HTTPException(status_code=400, detail=f"Fallo al desencriptar el token de MercadoPago: {str(e)}")
+            else:
+                body["mercadopago"]["access_token"] = ""
+
     update_config(body)
     await save_config_to_db(db)
-    return get_config()
+    
+    # Devolver respuesta con el token enmascarado
+    import copy
+    cfg = copy.deepcopy(get_config())
+    if "mercadopago" in cfg and cfg["mercadopago"].get("access_token"):
+        from ..payments.crypto import decrypt_data
+        decrypted = decrypt_data(cfg["mercadopago"]["access_token"])
+        if decrypted:
+            if len(decrypted) > 15:
+                cfg["mercadopago"]["access_token"] = f"{decrypted[:10]}...****************"
+            else:
+                cfg["mercadopago"]["access_token"] = "****************"
+        else:
+            cfg["mercadopago"]["access_token"] = ""
+    return cfg
+
+
+@router.get("/crypto-key")
+async def get_crypto_key():
+    """Sirve la clave pública RSA (SPKI) para la encriptación asimétrica en el frontend."""
+    from ..payments.crypto import get_rsa_public_pem
+    return {"public_key": get_rsa_public_pem()}
 
 
 @router.post("/config/rename-machine")

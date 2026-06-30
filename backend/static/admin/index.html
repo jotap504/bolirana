@@ -470,6 +470,25 @@
       </div>
       <button class="btn btn-save" id="save-pricing">GUARDAR PRECIOS</button>
     </div>
+
+    <!-- CONFIGURACIÓN DE MERCADOPAGO (PAGO CON QR) -->
+    <div class="card" style="margin-top: 24px; border-color: #00e5ff; background: rgba(0, 229, 255, 0.02);">
+      <div class="card-title" style="color: #00e5ff; border-left-color: #00e5ff;">MERCADOPAGO (PAGO CON QR)</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        Habilita los cobros con QR. El Access Token se cifra y almacena de forma segura en tránsito y en reposo.
+      </p>
+      <div class="form-row">
+        <div>
+          <label>MercadoPago Habilitado</label>
+          <button class="toggle" id="cfg-mp-enabled" onclick="this.classList.toggle('on'); this.textContent = this.classList.contains('on') ? 'ON' : 'OFF';">OFF</button>
+        </div>
+        <div style="flex: 2;">
+          <label>MercadoPago Access Token (Credencial de Producción)</label>
+          <input type="text" id="cfg-mp-token" placeholder="APP_USR-..." style="font-family: monospace; font-size: 13px;">
+        </div>
+      </div>
+      <button class="btn btn-save" id="save-mercadopago" style="background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);">GUARDAR MERCADOPAGO</button>
+    </div>
   </div>
 
   <!-- ── PROMOCIONES ── -->
@@ -707,6 +726,51 @@ async function api(path, method="GET", body=null) {
   const r = await fetch(path, opts);
   return r.json();
 }
+
+// Helpers de encriptación RSA nativa (Web Crypto API) para tránsito seguro del token
+async function importPublicKey(pemString) {
+  const b64 = pemString
+    .replace("-----BEGIN PUBLIC KEY-----", "")
+    .replace("-----END PUBLIC KEY-----", "")
+    .replace(/\s+/g, "");
+  
+  const binaryDerString = window.atob(b64);
+  const len = binaryDerString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryDerString.charCodeAt(i);
+  }
+
+  return await window.crypto.subtle.importKey(
+    "spki",
+    bytes.buffer,
+    {
+      name: "RSA-OAEP",
+      hash: "SHA-256"
+    },
+    false,
+    ["encrypt"]
+  );
+}
+
+async function encryptToken(plainText, publicKey) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plainText);
+  const encryptedBuffer = await window.crypto.subtle.encrypt(
+    {
+      name: "RSA-OAEP"
+    },
+    publicKey,
+    data
+  );
+  
+  const bytes = new Uint8Array(encryptedBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
 async function simAction(path) {
   await api(path, "POST");
   toast("Evento enviado");
@@ -774,6 +838,12 @@ async function loadConfig() {
   document.getElementById("pr-timed").value   = p.mode_extra?.timed || 0;
   document.getElementById("pr-goleador").value = p.mode_extra?.goleador || 0;
   document.getElementById("pr-team").value    = p.mode_extra?.team || 0;
+
+  // Cargar configuración de MercadoPago
+  const mp = cfg.mercadopago || {};
+  document.getElementById("cfg-mp-enabled").classList.toggle("on", !!mp.enabled);
+  document.getElementById("cfg-mp-enabled").textContent = mp.enabled ? "ON" : "OFF";
+  document.getElementById("cfg-mp-token").value = mp.access_token || "";
 
   renderSensors(cfg.sensors || []);
   renderSimSensors(cfg.sensors || []);
@@ -918,6 +988,46 @@ document.getElementById("save-attract-players").addEventListener("click", async 
   };
   await api("/api/admin/config", "PATCH", patch);
   toast("Configuración de captación guardada");
+});
+
+// Guardar configuración de MercadoPago con encriptación RSA asimétrica en tránsito
+document.getElementById("save-mercadopago").addEventListener("click", async () => {
+  const tokenInput = document.getElementById("cfg-mp-token").value.trim();
+  const enabled = document.getElementById("cfg-mp-enabled").classList.contains("on");
+  
+  let patchValue = tokenInput;
+
+  // Si el usuario ingresó un token nuevo (no la máscara de asteriscos), lo encriptamos antes de enviarlo
+  if (tokenInput && !tokenInput.includes("******") && !tokenInput.endsWith("****************")) {
+    try {
+      // 1. Obtener la clave pública del servidor
+      const keyData = await api("/api/admin/crypto-key");
+      // 2. Importar la clave pública
+      const pubKey = await importPublicKey(keyData.public_key);
+      // 3. Encriptar
+      patchValue = await encryptToken(tokenInput, pubKey);
+    } catch (e) {
+      console.error("Error al encriptar el token en tránsito:", e);
+      alert("Error de seguridad: No se pudo encriptar el token en tránsito. Reintentá por favor.");
+      return;
+    }
+  }
+
+  const patch = {
+    mercadopago: {
+      enabled: enabled,
+      access_token: patchValue
+    }
+  };
+
+  try {
+    await api("/api/admin/config", "PATCH", patch);
+    toast("Configuración de MercadoPago guardada (Cifrado seguro)");
+    loadConfig(); // Recargar para obtener el token enmascarado
+  } catch (e) {
+    console.error(e);
+    alert("Error al guardar la configuración de MercadoPago.");
+  }
 });
 
 // ── Slider de volumen de llamados ──────────────────────────────────────────────

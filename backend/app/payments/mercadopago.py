@@ -31,8 +31,15 @@ async def create_qr_payment(credits: int) -> dict:
         return {"mock": True, "qr_data": f"MOCK-QR-{credits}cr-{uuid.uuid4().hex[:8]}",
                 "credits": credits, "amount": amount}
 
+    from .crypto import decrypt_data
+    decrypted_token = decrypt_data(mp_cfg["access_token"])
+    if not decrypted_token:
+        log.warning("No se pudo desencriptar el token de MercadoPago. Iniciando en modo MOCK.")
+        return {"mock": True, "qr_data": f"MOCK-QR-{credits}cr-{uuid.uuid4().hex[:8]}",
+                "credits": credits, "amount": amount}
+
     import mercadopago
-    sdk = mercadopago.SDK(mp_cfg["access_token"])
+    sdk = mercadopago.SDK(decrypted_token)
     preference = {
         "items": [{"title": f"Bolirana - {credits} créditos",
                    "quantity": 1, "unit_price": float(amount)}],
