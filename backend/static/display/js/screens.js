@@ -549,7 +549,7 @@ const Screens = (() => {
             </g>`;
         }
 
-        const jerseySize = players.length >= 4 ? 48 : 80;
+        const jerseySize = players.length >= 4 ? 32 : 54;
         const jerseySvg = `
           <svg width="${jerseySize}" height="${jerseySize}" viewBox="0 0 100 100" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); flex-shrink: 0;" id="player-jersey-svg-${i}">
             <defs>

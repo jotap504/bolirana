@@ -13,10 +13,10 @@
     .scores-wrap {
       display: flex;
       flex-direction: column;
-      gap: 28px;
+      gap: 16px;
       width: 100%;
-      max-width: 1200px;
-      margin: 40px auto;
+      max-width: 1000px;
+      margin: 25px auto;
       padding: 0 20px;
       align-items: stretch; /* Asegura el mismo ancho exacto para todas las filas */
     }
@@ -25,10 +25,10 @@
       display: flex;
       align-items: center;
       background: rgba(0, 12, 32, 0.85);
-      border: 4px solid rgba(0, 229, 255, 0.2);
-      border-radius: 24px;
-      padding: 24px 36px;
-      gap: 32px;
+      border: 3px solid rgba(0, 229, 255, 0.2);
+      border-radius: 18px;
+      padding: 14px 24px;
+      gap: 20px;
       transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       position: relative;
       box-shadow: 0 4px 15px rgba(0,0,0,0.5);
@@ -44,16 +44,16 @@
     .score-row.player-5 { border-color: rgba(0, 255, 238, 0.28); }
     
     /* Resaltado del Turno Actual según Color del Jugador */
-    .score-row.player-0.current-turn { border-color: var(--p0); box-shadow: 0 0 30px rgba(255, 68, 85, 0.5); background: rgba(255, 68, 85, 0.08); transform: scale(1.03); }
-    .score-row.player-1.current-turn { border-color: var(--p1); box-shadow: 0 0 30px rgba(68, 170, 255, 0.5); background: rgba(68, 170, 255, 0.08); transform: scale(1.03); }
-    .score-row.player-2.current-turn { border-color: var(--p2); box-shadow: 0 0 30px rgba(0, 255, 136, 0.5); background: rgba(0, 255, 136, 0.08); transform: scale(1.03); }
-    .score-row.player-3.current-turn { border-color: var(--p3); box-shadow: 0 0 30px rgba(255, 170, 0, 0.5); background: rgba(255, 170, 0, 0.08); transform: scale(1.03); }
-    .score-row.player-4.current-turn { border-color: var(--p4); box-shadow: 0 0 30px rgba(221, 68, 255, 0.5); background: rgba(221, 68, 255, 0.08); transform: scale(1.03); }
-    .score-row.player-5.current-turn { border-color: var(--p5); box-shadow: 0 0 30px rgba(0, 255, 238, 0.5); background: rgba(0, 255, 238, 0.08); transform: scale(1.03); }
+    .score-row.player-0.current-turn { border-color: var(--p0); box-shadow: 0 0 25px rgba(255, 68, 85, 0.4); background: rgba(255, 68, 85, 0.08); transform: scale(1.02); }
+    .score-row.player-1.current-turn { border-color: var(--p1); box-shadow: 0 0 25px rgba(68, 170, 255, 0.4); background: rgba(68, 170, 255, 0.08); transform: scale(1.02); }
+    .score-row.player-2.current-turn { border-color: var(--p2); box-shadow: 0 0 25px rgba(0, 255, 136, 0.4); background: rgba(0, 255, 136, 0.08); transform: scale(1.02); }
+    .score-row.player-3.current-turn { border-color: var(--p3); box-shadow: 0 0 25px rgba(255, 170, 0, 0.4); background: rgba(255, 170, 0, 0.08); transform: scale(1.02); }
+    .score-row.player-4.current-turn { border-color: var(--p4); box-shadow: 0 0 25px rgba(221, 68, 255, 0.4); background: rgba(221, 68, 255, 0.08); transform: scale(1.02); }
+    .score-row.player-5.current-turn { border-color: var(--p5); box-shadow: 0 0 25px rgba(0, 255, 238, 0.4); background: rgba(0, 255, 238, 0.08); transform: scale(1.02); }
     
     .turn-arrow-indicator {
-      font-size: 40px;
-      width: 50px;
+      font-size: 32px;
+      width: 36px;
       text-align: center;
       opacity: 0;
       transform: translateX(-10px);
@@ -80,11 +80,11 @@
     }
     
     .player-avatar-container {
-      width: 120px;
-      height: 120px;
-      border-radius: 20px;
-      border: 4px solid var(--cyan);
-      box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+      width: 76px;
+      height: 76px;
+      border-radius: 14px;
+      border: 3px solid var(--cyan);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
       overflow: hidden;
       background: #061026;
       display: flex;
@@ -94,15 +94,15 @@
     }
     
     /* Contenedor del Avatar coloreado según jugador */
-    .score-row.player-0 .player-avatar-container { border-color: var(--p0); box-shadow: 0 0 15px rgba(255, 68, 85, 0.3); }
-    .score-row.player-1 .player-avatar-container { border-color: var(--p1); box-shadow: 0 0 15px rgba(68, 170, 255, 0.3); }
-    .score-row.player-2 .player-avatar-container { border-color: var(--p2); box-shadow: 0 0 15px rgba(0, 255, 136, 0.3); }
-    .score-row.player-3 .player-avatar-container { border-color: var(--p3); box-shadow: 0 0 15px rgba(255, 170, 0, 0.3); }
-    .score-row.player-4 .player-avatar-container { border-color: var(--p4); box-shadow: 0 0 15px rgba(221, 68, 255, 0.3); }
-    .score-row.player-5 .player-avatar-container { border-color: var(--p5); box-shadow: 0 0 15px rgba(0, 255, 238, 0.3); }
+    .score-row.player-0 .player-avatar-container { border-color: var(--p0); box-shadow: 0 0 10px rgba(255, 68, 85, 0.3); }
+    .score-row.player-1 .player-avatar-container { border-color: var(--p1); box-shadow: 0 0 10px rgba(68, 170, 255, 0.3); }
+    .score-row.player-2 .player-avatar-container { border-color: var(--p2); box-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
+    .score-row.player-3 .player-avatar-container { border-color: var(--p3); box-shadow: 0 0 10px rgba(255, 170, 0, 0.3); }
+    .score-row.player-4 .player-avatar-container { border-color: var(--p4); box-shadow: 0 0 10px rgba(221, 68, 255, 0.3); }
+    .score-row.player-5 .player-avatar-container { border-color: var(--p5); box-shadow: 0 0 10px rgba(0, 255, 238, 0.3); }
     
     .score-row.current-turn .player-avatar-container {
-      box-shadow: 0 0 25px currentColor;
+      box-shadow: 0 0 15px currentColor;
     }
     
     .player-avatar-img {
@@ -113,7 +113,7 @@
     
     .player-name-val {
       font-family: 'Orbitron', sans-serif;
-      font-size: 40px;
+      font-size: 32px;
       font-weight: 700;
       color: var(--text);
       flex: 1;
@@ -126,20 +126,20 @@
     
     .player-score-val {
       font-family: monospace;
-      font-size: 72px;
+      font-size: 56px;
       font-weight: 900;
       color: var(--neon);
-      text-shadow: 0 0 20px rgba(240, 224, 0, 0.6);
-      min-width: 260px;
+      text-shadow: 0 0 15px rgba(240, 224, 0, 0.6);
+      min-width: 160px;
       text-align: right;
       letter-spacing: 1px;
     }
     
     .player-rank-badge {
       font-family: 'Orbitron', sans-serif;
-      font-size: 56px;
+      font-size: 42px;
       font-weight: 900;
-      min-width: 120px;
+      min-width: 90px;
       text-align: right;
     }
     
@@ -155,39 +155,39 @@
     .scores-wrap.many-players {
       display: grid;
       grid-template-columns: 1fr 1fr; /* Dividir en 2 columnas perfectas side-by-side */
-      gap: 20px 32px;
-      padding: 0 45px;
-      margin: 15px auto;
+      gap: 12px 20px;
+      padding: 0 20px;
+      margin: 10px auto;
       max-width: 100%;
       box-sizing: border-box;
     }
     .scores-wrap.many-players .score-row {
-      padding: 18px 28px;
-      gap: 24px;
-      border-radius: 20px;
-      border-width: 3px;
+      padding: 10px 18px;
+      gap: 14px;
+      border-radius: 16px;
+      border-width: 2.5px;
     }
     .scores-wrap.many-players .turn-arrow-indicator {
-      font-size: 32px;
-      width: 40px;
+      font-size: 26px;
+      width: 30px;
     }
     .scores-wrap.many-players .player-avatar-container {
-      width: 90px;
-      height: 90px;
-      border-radius: 16px;
-      border-width: 3px;
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      border-width: 2px;
     }
     .scores-wrap.many-players .player-name-val {
-      font-size: 28px;
+      font-size: 24px;
       letter-spacing: 1px;
     }
     .scores-wrap.many-players .player-score-val {
-      font-size: 52px;
-      min-width: 180px;
+      font-size: 40px;
+      min-width: 100px;
     }
     .scores-wrap.many-players .player-rank-badge {
-      font-size: 40px;
-      min-width: 80px;
+      font-size: 32px;
+      min-width: 60px;
     }
   </style>
 </head>
