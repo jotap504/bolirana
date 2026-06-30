@@ -17,7 +17,7 @@
       width: 100%;
       max-width: 1000px;
       margin: 25px auto;
-      padding: 0 20px;
+      padding: 0 50px; /* Incrementado para evitar cortes en los bordes */
       align-items: stretch; /* Asegura el mismo ancho exacto para todas las filas */
     }
     
@@ -53,14 +53,17 @@
     
     .turn-arrow-indicator {
       font-size: 32px;
-      width: 36px;
+      width: 0px; /* Ancho 0 por defecto para achicar el padding izquierdo */
+      overflow: hidden; /* Ocultar para que no ocupe espacio cuando no es su turno */
       text-align: center;
       opacity: 0;
-      transform: translateX(-10px);
-      transition: all 0.3s ease;
+      transform: translateX(-15px);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     
     .score-row.current-turn .turn-arrow-indicator {
+      width: 40px; /* Ancho de visualización solo en el turno actual */
+      overflow: visible;
       opacity: 1;
       transform: translateX(0);
       animation: pulseArrow 1s infinite alternate;
@@ -80,10 +83,10 @@
     }
     
     .player-avatar-container {
-      width: 76px;
-      height: 76px;
-      border-radius: 14px;
-      border: 3px solid var(--cyan);
+      width: 110px; /* Aumentado 50% de 76px */
+      height: 110px; /* Aumentado 50% de 76px */
+      border-radius: 18px;
+      border: 3.5px solid var(--cyan);
       box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
       overflow: hidden;
       background: #061026;
@@ -156,7 +159,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr; /* Dividir en 2 columnas perfectas side-by-side */
       gap: 12px 20px;
-      padding: 0 20px;
+      padding: 0 50px; /* Aumentado para evitar cortes en bordes */
       margin: 10px auto;
       max-width: 100%;
       box-sizing: border-box;
@@ -169,11 +172,17 @@
     }
     .scores-wrap.many-players .turn-arrow-indicator {
       font-size: 26px;
-      width: 30px;
+      width: 0px; /* Ancho 0 por defecto */
+      overflow: hidden;
+    }
+    .scores-wrap.many-players .score-row.current-turn .turn-arrow-indicator {
+      width: 30px; /* Ancho visible en su turno */
+      overflow: visible;
+      opacity: 1;
     }
     .scores-wrap.many-players .player-avatar-container {
-      width: 56px;
-      height: 56px;
+      width: 80px; /* Aumentado 50% de 56px */
+      height: 80px; /* Aumentado 50% de 56px */
       border-radius: 12px;
       border-width: 2px;
     }
