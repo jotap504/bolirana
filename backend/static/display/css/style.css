@@ -304,14 +304,15 @@ body::before {
    CHAMFERED CYBERPUNK PANELS — Forma biselada de la imagen
    ══════════════════════════════════════════════════════════════ */
 .sel-columns {
-  display:grid;
-  grid-template-columns:5fr 7fr;
+  display:flex;
   gap:clamp(12px,1.8vw,20px);
   width:100%; flex:1; min-height:0;
   max-width:960px;
+  margin: 0 auto;
 }
 
 .sel-panel {
+  flex: 1;
   border: 2px solid var(--cyan);
   background: var(--panel);
   backdrop-filter: blur(12px);
@@ -330,7 +331,7 @@ body::before {
   );
   
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 0 25px rgba(0, 229, 255, 0.08);
-  transition: all 0.25s ease-out;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   padding: 24px 18px 18px;
 }
 .sel-panel-active {
@@ -338,7 +339,7 @@ body::before {
   background: var(--panel-active);
   box-shadow: 0 0 35px rgba(0,229,255,.28), inset 0 0 30px rgba(0,229,255,.12);
 }
-.sel-panel-dim { opacity:.38; pointer-events:none; }
+.sel-panel-dim { opacity:.22; pointer-events:none; }
 
 .sel-panel-title {
   font-size:clamp(10px,1.3vw,14px); font-weight:900; letter-spacing:4px;
@@ -1220,5 +1221,90 @@ html.low-spec .pause-overlay {
 @keyframes pulse-gold-banner {
   from { box-shadow: 0 0 10px rgba(245, 192, 0, 0.15); border-color: rgba(245, 192, 0, 0.6); }
   to { box-shadow: 0 0 24px rgba(245, 192, 0, 0.45); border-color: var(--gold); }
+}
+
+/* ── DINÁMICA DE PLEGADO Y EXPANSIÓN (SELECT SCREEN SHIFTS) ── */
+
+/* 1. Selección de Jugadores: El panel izquierdo ocupa el 100% de la pantalla */
+#screen-select_players .sel-panel:first-child {
+  flex: 1;
+  width: 100%;
+}
+#screen-select_players .sel-panel:last-child {
+  display: none !important;
+}
+
+/* 2. Selección de Modo: El panel izquierdo de jugadores se pliega a la izquierda, el derecho se expande */
+#screen-select_mode .sel-panel:first-child {
+  flex: 3.5;
+  max-width: 250px; /* Estrecho, plegado a la izquierda */
+  opacity: 0.22;
+}
+#screen-select_mode .sel-panel:last-child {
+  flex: 8.5; /* Expandido, toma casi toda la pantalla */
+}
+
+/* Reducir octágonos cuando el panel está bloqueado/plegado a la izquierda */
+.sel-panel-dim .player-hex-cell {
+  font-size: clamp(16px, 2.5vw, 24px) !important;
+  border-width: 1px;
+}
+
+/* 3. Agrandar elementos del Modo cuando está Expandido */
+#screen-select_mode .mode-list {
+  gap: clamp(14px, 2vh, 22px);
+}
+#screen-select_mode .mode-item {
+  padding: clamp(16px, 2.2vh, 26px) clamp(24px, 2.5vw, 36px);
+  border-radius: 20px;
+  border-width: 3px;
+  gap: 20px;
+}
+#screen-select_mode .mode-icon {
+  font-size: clamp(32px, 4vw, 44px);
+}
+#screen-select_mode .mode-icon svg {
+  width: 46px;
+  height: 46px;
+}
+#screen-select_mode .mode-name {
+  font-size: clamp(20px, 2.5vw, 28px);
+}
+#screen-select_mode .mode-desc {
+  font-size: clamp(12px, 1.4vw, 16px);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+/* 4. Nueva barra de acciones inferior (Footer Row) */
+.sel-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 960px;
+  margin: 20px auto 0;
+  gap: 20px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.sel-footer-row .sel-cost {
+  text-align: left !important;
+  margin: 0;
+  flex: 1;
+}
+
+.sel-footer-row .nav-hint {
+  text-align: center;
+  margin: 0;
+  flex: 1.2;
+}
+
+.sel-footer-row .btn-start-big {
+  margin: 0; /* Quitar margen centrado por defecto */
+  flex-shrink: 0;
+  padding: 14px 60px;
+  font-size: clamp(18px, 2.5vw, 28px);
 }
 

@@ -236,6 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "players-prev": () => WS.btn("prev"),
     "players-next": () => WS.btn("next"),
     "players-ok": () => WS.btn("ok"),
+    "modes-ok": () => WS.btn("ok"),
     "payment-back": () => WS.btn("back"),
     "connect-skip": () => WS.btn("start"),
     "waiting-start": () => WS.btn("start"),
