@@ -229,14 +229,24 @@ const Screens = (() => {
     const wrap = document.getElementById("waiting-players");
     if (!wrap) return;
     wrap.innerHTML = "";
-    (data.players || []).forEach((p, i) => {
+
+    const playersList = data.players || [];
+    const isMany = playersList.length >= 4;
+    const cardPadding = isMany ? "6px 16px" : "12px 20px";
+    const avatarSize = isMany ? "54px" : "72px";
+    const jerseySize = isMany ? "36px" : "48px";
+    const nameFontSize = isMany ? "16px" : "20px";
+    const phoneFontSize = isMany ? "11px" : "13px";
+    const gapSize = isMany ? "12px" : "16px";
+
+    playersList.forEach((p, i) => {
       const d = document.createElement("div");
       // Añadir clases para animación y borde cian/oro futurista
       d.className = "waiting-player-card";
       d.style.display = "flex";
       d.style.alignItems = "center";
-      d.style.gap = "16px";
-      d.style.padding = "12px 20px";
+      d.style.gap = gapSize;
+      d.style.padding = cardPadding;
       d.style.background = "rgba(0, 16, 44, 0.75)";
       d.style.border = `2.5px solid ${PLAYER_COLORS[i] || "var(--cyan)"}`;
       d.style.borderRadius = "16px";
@@ -273,7 +283,7 @@ const Screens = (() => {
       }
 
       const jerseySvg = `
-        <svg width="48" height="48" viewBox="0 0 100 100" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); flex-shrink: 0;">
+        <svg width="${jerseySize}" height="${jerseySize}" viewBox="0 0 100 100" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); flex-shrink: 0;">
           <defs>
             <clipPath id="body-clip-${i}">
               <path d="M 27 18 L 73 18 L 73 80 L 27 80 Z" />
@@ -291,18 +301,18 @@ const Screens = (() => {
       `;
 
       d.innerHTML = `
-        <div class="wp-avatar-container" style="width: 72px; height: 72px; border-radius: 50%; border: 2px solid ${PLAYER_COLORS[i]}; overflow: hidden; background: #061026; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 10px ${PLAYER_COLORS[i]}50;">
+        <div class="wp-avatar-container" style="width: ${avatarSize}; height: ${avatarSize}; border-radius: 50%; border: 2px solid ${PLAYER_COLORS[i]}; overflow: hidden; background: #061026; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 10px ${PLAYER_COLORS[i]}50;">
           <img src="${avatarUrl}" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
-          <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-shadow: 0 0 6px rgba(255,255,255,0.25);">${p.name || "Jugador " + (i + 1)}</div>
-          <div class="wp-phone" style="font-size: 13px; color: ${PLAYER_COLORS[i]}; font-family: 'Orbitron', sans-serif; font-weight: bold; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">
+          <div class="wp-name" style="color: #ffffff; font-family: 'Orbitron', sans-serif; font-size: ${nameFontSize}; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-shadow: 0 0 6px rgba(255,255,255,0.25);">${p.name || "Jugador " + (i + 1)}</div>
+          <div class="wp-phone" style="font-size: ${phoneFontSize}; color: ${PLAYER_COLORS[i]}; font-family: 'Orbitron', sans-serif; font-weight: bold; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">
             ${p.connected ? "<span>📱 CONECTADO</span>" : "<span style='opacity: 0.5;'>🎮 CPU</span>"}
           </div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
           ${jerseySvg}
-          <span style="font-size: 10px; color: var(--label); font-weight: bold; margin-top: 3px; font-family: 'Orbitron', sans-serif; text-transform: uppercase;">${p.club || 'Libre'}</span>
+          <span style="font-size: 9px; color: var(--label); font-weight: bold; margin-top: 2px; font-family: 'Orbitron', sans-serif; text-transform: uppercase;">${p.club || 'Libre'}</span>
         </div>
       `;
       wrap.appendChild(d);
