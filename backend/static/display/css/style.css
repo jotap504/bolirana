@@ -1314,3 +1314,11 @@ html.low-spec .pause-overlay {
   font-size: clamp(16px, 2vw, 24px);
 }
 
+/* Ocultar el widget de créditos persistente en las pantallas de juego activas */
+#screen-playing.active ~ #persistent-credits-widget,
+#screen-turn_change.active ~ #persistent-credits-widget,
+#screen-tiebreak.active ~ #persistent-credits-widget,
+#screen-game_over.active ~ #persistent-credits-widget {
+  display: none !important;
+}
+
