@@ -1237,7 +1237,7 @@ html.low-spec .pause-overlay {
 }
 #screen-select_mode .sel-panel:last-child {
   flex: 1;
-  padding: clamp(24px, 3vh, 32px) clamp(30px, 3.5vw, 45px);
+  padding: clamp(14px, 1.8vh, 22px) clamp(24px, 2.8vw, 36px);
 }
 
 /* Reducir octágonos cuando el panel está bloqueado/plegado a la izquierda */
@@ -1248,33 +1248,33 @@ html.low-spec .pause-overlay {
 
 /* 3. Agrandar elementos del Modo cuando está Expandido a Pantalla Completa */
 #screen-select_mode .mode-list {
-  gap: clamp(12px, 2vh, 20px);
+  gap: clamp(8px, 1.2vh, 12px);
 }
 #screen-select_mode .mode-item {
-  padding: clamp(24px, 3vh, 32px) clamp(24px, 2.5vw, 36px);
-  border-radius: 18px;
-  border-width: 3px;
-  gap: 22px;
+  padding: clamp(14px, 1.8vh, 20px) clamp(20px, 2.2vw, 28px);
+  border-radius: 14px;
+  border-width: 2px;
+  gap: 16px;
 }
 #screen-select_mode .mode-icon {
-  font-size: clamp(36px, 4.2vw, 48px);
+  font-size: clamp(28px, 3.2vw, 38px);
 }
 #screen-select_mode .mode-icon svg {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
 }
 #screen-select_mode .mode-name {
-  font-size: clamp(24px, 2.8vw, 32px);
+  font-size: clamp(20px, 2.3vw, 26px);
 }
 #screen-select_mode .mode-desc {
-  font-size: clamp(18px, 2vw, 24px);
-  margin-top: 6px;
+  font-size: clamp(14px, 1.6vw, 19px);
+  margin-top: 4px;
   line-height: 1.4;
 }
 #screen-select_mode .mode-extra {
-  font-size: clamp(14px, 1.5vw, 18px);
-  padding: 6px 14px;
-  border-radius: 8px;
+  font-size: clamp(11px, 1.2vw, 14px);
+  padding: 4px 10px;
+  border-radius: 6px;
 }
 
 /* 4. Nueva barra de acciones inferior (Footer Row) */
