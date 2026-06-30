@@ -235,7 +235,7 @@ const Screens = (() => {
     const cardPadding = isMany ? "6px 16px" : "12px 20px";
     const avatarSize = isMany ? "54px" : "72px";
     const jerseySize = isMany ? "36px" : "48px";
-    const nameFontSize = isMany ? "20px" : "26px";
+    const nameFontSize = isMany ? "30px" : "38px";
     const connectedFontSize = isMany ? "11px" : "13px";
     const gapSize = isMany ? "12px" : "16px";
 
