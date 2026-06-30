@@ -1228,14 +1228,16 @@ html.low-spec .pause-overlay {
   pointer-events: none;
 }
 
-/* 2. Selección de Modo: El panel izquierdo de jugadores se pliega a la izquierda (flex 4), el derecho de modo se expande (flex 8) */
+/* 2. Selección de Modo: Ocupa toda la pantalla, se suprime el panel izquierdo de jugadores */
+#screen-select_mode .sel-columns {
+  max-width: 1100px;
+}
 #screen-select_mode .sel-panel:first-child {
-  flex: 4;
-  max-width: 300px; /* Estrecho, plegado a la izquierda */
-  opacity: 0.22;
+  display: none !important;
 }
 #screen-select_mode .sel-panel:last-child {
-  flex: 8; /* Expandido para dar amplitud a los modos de juego */
+  flex: 1;
+  padding: clamp(24px, 3vh, 32px) clamp(30px, 3.5vw, 45px);
 }
 
 /* Reducir octágonos cuando el panel está bloqueado/plegado a la izquierda */
@@ -1244,30 +1246,35 @@ html.low-spec .pause-overlay {
   border-width: 1px;
 }
 
-/* 3. Agrandar elementos del Modo cuando está Expandido */
+/* 3. Agrandar elementos del Modo cuando está Expandido a Pantalla Completa */
 #screen-select_mode .mode-list {
-  gap: clamp(10px, 1.8vh, 16px);
+  gap: clamp(12px, 2vh, 20px);
 }
 #screen-select_mode .mode-item {
-  padding: clamp(12px, 1.8vh, 18px) clamp(16px, 2vw, 24px);
-  border-radius: 16px;
-  border-width: 2.5px;
-  gap: 15px;
+  padding: clamp(24px, 3vh, 32px) clamp(24px, 2.5vw, 36px);
+  border-radius: 18px;
+  border-width: 3px;
+  gap: 22px;
 }
 #screen-select_mode .mode-icon {
-  font-size: clamp(24px, 3vw, 36px);
+  font-size: clamp(36px, 4.2vw, 48px);
 }
 #screen-select_mode .mode-icon svg {
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
 }
 #screen-select_mode .mode-name {
-  font-size: clamp(16px, 2vw, 22px);
+  font-size: clamp(24px, 2.8vw, 32px);
 }
 #screen-select_mode .mode-desc {
-  font-size: clamp(10px, 1.2vw, 14px);
-  margin-top: 4px;
-  line-height: 1.3;
+  font-size: clamp(18px, 2vw, 24px);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+#screen-select_mode .mode-extra {
+  font-size: clamp(14px, 1.5vw, 18px);
+  padding: 6px 14px;
+  border-radius: 8px;
 }
 
 /* 4. Nueva barra de acciones inferior (Footer Row) */
