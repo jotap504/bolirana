@@ -1295,8 +1295,9 @@ html.low-spec .pause-overlay {
   text-align: left !important;
   margin: 0;
   flex: 1;
-  font-size: clamp(16px, 2vw, 24px); /* Evita que haga salto de línea */
+  font-size: clamp(32px, 4vw, 48px); /* Agrandado al doble */
   white-space: nowrap;
+  text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
 }
 
 .sel-footer-row .nav-hint {
