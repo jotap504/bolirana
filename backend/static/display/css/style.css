@@ -198,8 +198,8 @@ body::before {
 .nav-btn {
   background:rgba(0,8,24,0.9);
   border:2.5px solid var(--cyan); border-radius:50%;
-  width:clamp(45px,5vw,55px); height:clamp(45px,5vw,55px);
-  font-size:clamp(16px,2vw,22px); color:var(--cyan); cursor:pointer;
+  width:clamp(65px,8vw,80px); height:clamp(65px,8vw,80px);
+  font-size:clamp(24px,3vw,32px); color:var(--cyan); cursor:pointer;
   display:flex; align-items:center; justify-content:center;
   box-shadow:0 0 15px rgba(0,229,255,.3), inset 0 0 8px rgba(0,229,255,.05);
   transition:all 0.15s; flex-shrink:0;
@@ -365,7 +365,7 @@ body::before {
   
   display:flex; align-items:center; justify-content:center;
   font-family:'Orbitron', sans-serif;
-  font-size:clamp(14px,2.2vw,26px); font-weight:900;
+  font-size:clamp(36px,5.8vw,78px); font-weight:900;
   color:rgba(0, 229, 255, 0.25);
   background:rgba(0,229,255,.03);
   border: 1.5px solid rgba(0,229,255,0.15);
@@ -390,16 +390,16 @@ body::before {
 .sel-count-big {
   font-family:'Orbitron', sans-serif;
   font-weight: 900;
-  font-size:clamp(36px,6vw,66px); color:var(--cyan); line-height:1;
+  font-size:clamp(54px,9vw,90px); color:var(--cyan); line-height:1;
   text-shadow:0 0 25px rgba(0,229,255,.8), 3px 3px 0 #002235;
-  min-width:60px; text-align:center;
+  min-width:90px; text-align:center;
 }
 .sel-count-locked {
-  font-size:clamp(11px,1.5vw,14px); color:var(--cyan2);
+  font-size:clamp(18px,2.5vw,26px); color:var(--cyan2);
   text-align:center; letter-spacing:3px; flex-shrink:0;
 }
 .sel-cost {
-  font-size:clamp(10px,1.4vw,14px); color:var(--cyan);
+  font-size:clamp(24px,3.8vw,42px); color:var(--cyan);
   font-weight:700; text-align:center; letter-spacing:2px; flex-shrink:0;
 }
 
@@ -731,8 +731,8 @@ html.low-spec .pause-overlay {
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .penalty-ball.mini {
-  font-size: 15px;
-  margin: 0 2px;
+  font-size: 26px;
+  margin: 0 4px;
 }
 .penalty-ball.unused {
   opacity: 0.22;
@@ -758,10 +758,10 @@ html.low-spec .pause-overlay {
   background: transparent;
 }
 .penalty-ball.mini.pending {
-  width: 13px;
-  height: 13px;
-  border-width: 1.5px;
-  margin: 0 2px;
+  width: 22px;
+  height: 22px;
+  border-width: 2px;
+  margin: 0 4px;
 }
 .penalty-ball.hit {
   opacity: 1;

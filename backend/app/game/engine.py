@@ -232,14 +232,16 @@ class GameEngine:
             player.shots.append(points)
 
         if self.session.mode == GameMode.GOLEADOR:
-            # En modo GOLEADOR: incrementar bolas embocadas y mostrar ese valor en display
-            player.balls_pocketed += 1
+            # En modo GOLEADOR: incrementar bolas embocadas solo si obtuvo puntos (> 0)
+            is_hit = points > 0
+            if is_hit:
+                player.balls_pocketed += 1
             await self._broadcast({
                 "type":          "score",
                 "player_index":  self.session.current_player,
                 "player_name":   player.name or f"Jugador {player.index + 1}",
-                "delta":         1,                     # 1 bola embocada
-                "total":         player.balls_pocketed,  # Display: número de bolas
+                "delta":         1 if is_hit else 0,     # 1 bola embocada si sumó puntos, 0 si fue cero
+                "total":         player.balls_pocketed,  # Display: número de bolas embocadas válidas
                 "total_pts":     new_score,              # Score real en puntos (sin mostrar)
                 "zone_id":       zone_id,
                 "zone_name":     zone.get("name", zone_id),
