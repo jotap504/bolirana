@@ -232,12 +232,12 @@ const Screens = (() => {
 
     const playersList = data.players || [];
     const isMany = playersList.length >= 4;
-    const cardPadding = isMany ? "6px 16px" : "12px 20px";
-    const avatarSize = isMany ? "54px" : "72px";
-    const jerseySize = isMany ? "36px" : "48px";
+    const cardPadding = isMany ? "20px 16px" : "36px 20px";
+    const avatarSize = isMany ? "72px" : "96px";
+    const jerseySize = isMany ? "46px" : "60px";
     const nameFontSize = isMany ? "30px" : "38px";
-    const connectedFontSize = isMany ? "11px" : "13px";
-    const gapSize = isMany ? "12px" : "16px";
+    const connectedFontSize = isMany ? "13px" : "15px";
+    const gapSize = isMany ? "14px" : "20px";
 
     playersList.forEach((p, i) => {
       const d = document.createElement("div");
