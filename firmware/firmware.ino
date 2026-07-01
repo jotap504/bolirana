@@ -117,10 +117,8 @@ WebServer server(80);
 // CONFIGURACIÓN DE DISPENSADOR DE BOLAS (STEPS)
 // ==========================================
 // Cantidad de pasos por bola. Con hélice de 4 aspas (90° por bola):
-// - Motor de 200 pasos/rev (1.8° por paso) -> 50 pasos sin microstepping.
-// - Con driver A4988 a 1/16 microstepping -> 3200 pasos/rev, por ende 800 pasos por bola.
-// Cambiar según la configuración física de tu driver (M0, M1, M2).
-#define STEPS_PER_BALL 800
+// Configurado a 17 pasos por bola según las pruebas físicas.
+#define STEPS_PER_BALL 17
 
 void releaseBalls(int count) {
   long totalSteps = (long)count * STEPS_PER_BALL;
@@ -636,9 +634,9 @@ void setup() {
   pinMode(MOTOR_EN_PIN, OUTPUT);
   digitalWrite(MOTOR_EN_PIN, HIGH); // Apagado por defecto para evitar sobrecalentamiento
 
-  // Configuración de velocidad y aceleración del motor paso a paso
-  stepper.setMaxSpeed(1200.0);
-  stepper.setAcceleration(600.0);
+  // Configuración de velocidad y aceleración del motor paso a paso (Calibrados para motor con reductora)
+  stepper.setMaxSpeed(300.0);
+  stepper.setAcceleration(150.0);
 
   // Conexión WiFi
   WiFi.begin(ssid, password);
