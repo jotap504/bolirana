@@ -25,11 +25,10 @@ const char* password = "corsa000";
 // ==========================================
 // CONFIGURACIÓN DE HARDWARE Y PINES (ESP32)
 // ==========================================
-// Pines del Driver ULN2003 para el motor paso a paso
-#define MOTOR_IN1 26
-#define MOTOR_IN2 25
-#define MOTOR_IN3 33
-#define MOTOR_IN4 32
+// Pines del Driver A4988 para el motor paso a paso NEMA 17 (Dispensador)
+#define MOTOR_STEP_PIN 26
+#define MOTOR_DIR_PIN  25
+#define MOTOR_EN_PIN   33 // Activo en LOW. Deshabilita bobinas al estar en HIGH para evitar sobrecalentamiento.
 
 // Pin físico dedicado a la Tira NeoPixel (WS2812B/W) en el ESP32
 #define NEOPIXEL_PIN 4
@@ -111,8 +110,42 @@ String currentScoringZone = "";
 // Inicialización de componentes principales
 Adafruit_MCP23X17 mcp;
 Adafruit_NeoPixel strip(NUM_LEDS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-AccelStepper stepper(AccelStepper::HALF4WIRE, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
+AccelStepper stepper(AccelStepper::DRIVER, MOTOR_STEP_PIN, MOTOR_DIR_PIN);
 WebServer server(80);
+
+// ==========================================
+// CONFIGURACIÓN DE DISPENSADOR DE BOLAS (STEPS)
+// ==========================================
+// Cantidad de pasos por bola. Con hélice de 4 aspas (90° por bola):
+// - Motor de 200 pasos/rev (1.8° por paso) -> 50 pasos sin microstepping.
+// - Con driver A4988 a 1/16 microstepping -> 3200 pasos/rev, por ende 800 pasos por bola.
+// Cambiar según la configuración física de tu driver (M0, M1, M2).
+#define STEPS_PER_BALL 800
+
+void releaseBalls(int count) {
+  long totalSteps = (long)count * STEPS_PER_BALL;
+  digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor (bobinas activas)
+  stepper.move(totalSteps);
+  Serial.print("{\"event\":\"motor_start\",\"balls\":");
+  Serial.print(count);
+  Serial.println("}");
+}
+
+bool motorWasMoving = false;
+void checkMotorStatus() {
+  if (stepper.distanceToGo() != 0) {
+    if (!motorWasMoving) {
+      motorWasMoving = true;
+      digitalWrite(MOTOR_EN_PIN, LOW); // Asegurar que el motor esté habilitado
+    }
+  } else {
+    if (motorWasMoving) {
+      motorWasMoving = false;
+      digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas cuando llegó a su destino para enfriar
+      Serial.println("{\"event\":\"motor_done\"}");
+    }
+  }
+}
 
 // Control de debounce/estado de sensores
 unsigned long lastTriggerTime[NUM_SENSORS] = {0};
@@ -508,6 +541,11 @@ void readIncomingSerial() {
           } else if (strcmp(type, "coin") == 0) {
             // Si el backend envía confirmación de ficha
             triggerEffect("goal", "fosa_2"); // Flash de rebote
+          } else if (strcmp(type, "release_balls") == 0) {
+            int count = doc["count"];
+            if (count > 0) {
+              releaseBalls(count);
+            }
           }
         }
       }
@@ -540,10 +578,6 @@ void readSensors() {
         
         // 2. Disparar efecto visual local inmediato (sin latencia de red)
         triggerScoringEffect(SENSOR_IDS[i]);
-        
-        // 3. Activar el motor físico 500 pasos para girar
-        // Se activa para todos los sensores de bola (incluyendo bola cero) para que siga el ciclo del gabinete
-        stepper.move(500);
       }
     }
     
@@ -598,9 +632,13 @@ void setup() {
     }
   }
 
+  // Configurar pin de ENABLE del driver A4988 como salida y apagarlo
+  pinMode(MOTOR_EN_PIN, OUTPUT);
+  digitalWrite(MOTOR_EN_PIN, HIGH); // Apagado por defecto para evitar sobrecalentamiento
+
   // Configuración de velocidad y aceleración del motor paso a paso
-  stepper.setMaxSpeed(800.0);
-  stepper.setAcceleration(400.0);
+  stepper.setMaxSpeed(1200.0);
+  stepper.setAcceleration(600.0);
 
   // Conexión WiFi
   WiFi.begin(ssid, password);
@@ -745,6 +783,7 @@ void loop() {
   // 1. Manejo de WebServer, Motor paso a paso y LEDs
   server.handleClient();
   stepper.run();
+  checkMotorStatus();
   updateLeds();
 
   // 2. Lectura y procesamiento de comandos seriales JSON entrantes desde el backend

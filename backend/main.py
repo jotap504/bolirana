@@ -115,7 +115,10 @@ async def lifespan(app: FastAPI):
 
     is_cloud = get_config().get("cloud_mode")
     app.state.ws     = WSManager()
-    app.state.engine = GameEngine(broadcast=app.state.ws.broadcast)
+    app.state.engine = GameEngine(
+        broadcast=app.state.ws.broadcast,
+        send_hardware=lambda cmd: app.state.bridge.send(cmd)
+    )
     app.state.bridge = SerialBridge(
         on_event=_handle_hw_event(app),
         on_status_change=_handle_hw_status

@@ -19,8 +19,9 @@ Broadcaster = Callable[[dict], Awaitable[None]]
 
 
 class GameEngine:
-    def __init__(self, broadcast: Broadcaster) -> None:
+    def __init__(self, broadcast: Broadcaster, send_hardware: Callable[[dict], Awaitable[None]] = None) -> None:
         self._broadcast = broadcast
+        self.send_hardware = send_hardware
         self.session    = Session()
         self.session.reset()
         self._attract_task: asyncio.Task | None = None
@@ -31,6 +32,15 @@ class GameEngine:
         self.last_sensor_time = 0.0
         self.attract_entered_at = time.time()
         self.last_attract_sound_time = 0.0
+
+    async def _release_balls_for_turn(self, balls_count: int) -> None:
+        """Envía el comando de liberación de bolas físicas a la controladora ESP32."""
+        if self.send_hardware:
+            try:
+                await self.send_hardware({"type": "release_balls", "count": balls_count})
+                log.info("Comando de dispensación de bolas enviado al ESP32: %d bolas", balls_count)
+            except Exception as e:
+                log.error("Fallo al enviar comando de dispensación al hardware: %s", e)
 
     # ── API pública ──────────────────────────────────────────────────────────
 
@@ -181,6 +191,10 @@ class GameEngine:
                             await self._transition(GameState.PLAYING)
                             p = s.current()
                             if p:
+                                # Dispensar bolas para la primera mano del replay
+                                balls_to_release = 1 if rotation_mode == "alternate" else s.balls_per_round
+                                await self._release_balls_for_turn(balls_to_release)
+
                                 effective_bpp = s.balls_per_round * 2 if rotation_mode == "alternate" else s.balls_per_round
                                 await self._broadcast({"type": "turn", "current_player": 0,
                                                        "player_name": p.name or "Jugador 1",
@@ -600,6 +614,10 @@ class GameEngine:
         await self._transition(GameState.PLAYING)
         p = s.current()
         if p:
+            # Dispensar bolas físicas para la primera mano del juego
+            balls_to_release = 1 if rotation_mode == "alternate" else s.balls_per_round
+            await self._release_balls_for_turn(balls_to_release)
+
             await self._broadcast({"type": "turn", "current_player": 0,
                                    "player_name": p.name or "Jugador 1",
                                    "balls_left":  p.balls_left,
@@ -618,6 +636,11 @@ class GameEngine:
         rotation_mode = cfg["game"].get("rotation_mode", "sequential")
         effective_bpp = s.balls_per_round * 2 if rotation_mode == "alternate" else s.balls_per_round
         await self._transition(GameState.TURN_CHANGE)
+        
+        # Dispensar bolas físicas para la mano del siguiente jugador
+        balls_to_release = 1 if rotation_mode == "alternate" else s.balls_per_round
+        await self._release_balls_for_turn(balls_to_release)
+
         await self._broadcast({"type": "turn",
                                "current_player": s.current_player,
                                "player_name":    next_player.name or f"Jugador {next_player.index+1}",
