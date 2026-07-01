@@ -136,27 +136,33 @@ void homeStepper() {
   // 3. Retroceder despacio buscando el microswitch
   digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar driver (bobinas activas)
   delay(100);
-  digitalWrite(MOTOR_DIR_PIN, HIGH); // Dirección de reversa (hacia atrás)
   
-  int maxSteps = 1000; // Límite de seguridad
+  stepper.setMaxSpeed(150.0);
+  stepper.setAcceleration(80.0);
+  stepper.move(-2000); // Reversa
+  
   int stepsTaken = 0;
+  int safetyLimit = 2000;
   
-  while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsTaken < maxSteps) {
-    digitalWrite(MOTOR_STEP_PIN, HIGH);
-    delayMicroseconds(800);
-    digitalWrite(MOTOR_STEP_PIN, LOW);
-    delay(25); // Velocidad lenta y estable
+  while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsTaken < safetyLimit && stepper.distanceToGo() != 0) {
+    stepper.run();
     stepsTaken++;
   }
   
+  stepper.stop();
+  while (stepper.distanceToGo() != 0) {
+    stepper.run();
+  }
+  
+  long actualSteps = abs(stepper.currentPosition());
   stepper.setCurrentPosition(0);
   digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas para enfriar
   
-  if (stepsTaken >= maxSteps) {
+  if (stepsTaken >= safetyLimit) {
     Serial.println("{\"event\":\"homing_failed\",\"reason\":\"timeout\"}");
   } else {
     Serial.print("{\"event\":\"homing_done\",\"steps_taken\":");
-    Serial.print(stepsTaken);
+    Serial.print(actualSteps);
     Serial.println("}");
   }
 }
@@ -167,8 +173,12 @@ void releaseBalls(int count) {
   Serial.println("}");
   
   digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor (bobinas activas)
-  delay(100);
-  digitalWrite(MOTOR_DIR_PIN, LOW); // Dirección hacia adelante
+  delay(50);
+  
+  // En producción, usamos velocidades moderadas calibradas por defecto
+  stepper.setMaxSpeed(300.0);
+  stepper.setAcceleration(150.0);
+  stepper.move(2000 * count); // Dirección adelante (positivo)
   
   int clicks = 0;
   bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
@@ -176,12 +186,8 @@ void releaseBalls(int count) {
   int stepsSinceLastClick = 20; // Inicializar alto para permitir detectar el primer click de inmediato
   int safetyLimit = count * 300; // Límite de seguridad
   
-  while (clicks < count && stepsTaken < safetyLimit) {
-    // Dar un paso hacia adelante
-    digitalWrite(MOTOR_STEP_PIN, HIGH);
-    delayMicroseconds(800);
-    digitalWrite(MOTOR_STEP_PIN, LOW);
-    delay(10); // Velocidad normal
+  while (clicks < count && stepsTaken < safetyLimit && stepper.distanceToGo() != 0) {
+    stepper.run();
     stepsTaken++;
     stepsSinceLastClick++;
     
@@ -200,8 +206,12 @@ void releaseBalls(int count) {
     lastState = currentState;
   }
   
-  // Pequeña pausa de frenado en el centro del click
-  delay(50);
+  // Detener suavemente
+  stepper.stop();
+  while (stepper.distanceToGo() != 0) {
+    stepper.run();
+  }
+  
   digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas para enfriar
   
   if (stepsTaken >= safetyLimit) {
