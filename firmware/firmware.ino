@@ -29,6 +29,7 @@ const char* password = "corsa000";
 #define MOTOR_STEP_PIN 26
 #define MOTOR_DIR_PIN  25
 #define MOTOR_EN_PIN   33 // Activo en LOW. Deshabilita bobinas al estar en HIGH para evitar sobrecalentamiento.
+#define MOTOR_LIMIT_SWITCH_PIN 32 // Pin del microswitch de tope/calibración de la hélice (INPUT_PULLUP)
 
 // Pin físico dedicado a la Tira NeoPixel (WS2812B/W) en el ESP32
 #define NEOPIXEL_PIN 4
@@ -142,6 +143,40 @@ void checkMotorStatus() {
       digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas cuando llegó a su destino para enfriar
       Serial.println("{\"event\":\"motor_done\"}");
     }
+  }
+}
+
+void homeStepper() {
+  Serial.println("{\"event\":\"homing_start\"}");
+  digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor (bobinas activas)
+  delay(50); // Pequeña espera para de-bounce y estabilizar corriente
+  
+  // Rotamos hacia atrás buscando que haga clic el microswitch.
+  // El switch conecta el pin 32 a GND (INPUT_PULLUP -> lee LOW al hacer clic).
+  // Si ya está presionado, no se mueve. Si no, gira lentamente en reversa.
+  int maxSteps = 400; // Límite de seguridad para evitar bucle infinito si se rompe el switch o cable
+  int stepsTaken = 0;
+  
+  digitalWrite(MOTOR_DIR_PIN, HIGH); // Sentido de reversa/atrás
+  
+  while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsTaken < maxSteps) {
+    digitalWrite(MOTOR_STEP_PIN, HIGH);
+    delayMicroseconds(800);
+    digitalWrite(MOTOR_STEP_PIN, LOW);
+    delay(25); // Velocidad de homing lenta y controlada (25ms entre pasos)
+    stepsTaken++;
+  }
+  
+  // Establecer la posición actual como el Cero absoluto (Home)
+  stepper.setCurrentPosition(0);
+  digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas para enfriar
+  
+  if (stepsTaken >= maxSteps) {
+    Serial.println("{\"event\":\"homing_failed\",\"reason\":\"timeout\"}");
+  } else {
+    Serial.print("{\"event\":\"homing_done\",\"steps_taken\":");
+    Serial.print(stepsTaken);
+    Serial.println("}");
   }
 }
 
@@ -550,6 +585,8 @@ void readIncomingSerial() {
               digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor
               stepper.move(steps);
             }
+          } else if (strcmp(type, "home") == 0 || strcmp(type, "home_stepper") == 0) {
+            homeStepper();
           }
         }
       }
@@ -640,6 +677,9 @@ void setup() {
   pinMode(MOTOR_EN_PIN, OUTPUT);
   digitalWrite(MOTOR_EN_PIN, HIGH); // Apagado por defecto para evitar sobrecalentamiento
 
+  // Configurar pin del microswitch de tope de la hélice con PULL-UP interno
+  pinMode(MOTOR_LIMIT_SWITCH_PIN, INPUT_PULLUP);
+
   // Configuración de velocidad y aceleración del motor paso a paso (Calibrados para motor con reductora)
   stepper.setMaxSpeed(300.0);
   stepper.setAcceleration(150.0);
@@ -671,6 +711,9 @@ void setup() {
   server.on("/status", HTTP_GET, handleStatus);
 
   server.begin();
+
+  // Auto-alinear (home) el dispensador al arrancar la máquina
+  homeStepper();
 }
 
 // ==========================================

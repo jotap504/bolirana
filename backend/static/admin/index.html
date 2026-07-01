@@ -674,6 +674,9 @@
         <button class="btn btn-sim" style="flex: 1;" onclick="sendHwCmd({'type':'step','steps':1})">▶ +1 Paso</button>
         <button class="btn btn-sim" style="flex: 1;" onclick="sendHwCmd({'type':'step','steps':5})">⏩ +5 Pasos</button>
       </div>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <button class="btn btn-danger" style="background: linear-gradient(135deg, #ff4b4b 0%, #c62828 100%); width:100%" onclick="sendHwCmd({'type':'home'})">🏠 AUTO-ALINEAR DISPENSADOR (HOME)</button>
+      </div>
       <div style="display:flex;gap:10px">
         <button class="btn btn-save" style="background: linear-gradient(135deg, #e5a93b 0%, #bd7c1f 100%); width:100%" onclick="sendHwCmd({'type':'release_balls','count':1})">🎯 DISPENSAR 1 BOLA (TEST)</button>
       </div>
