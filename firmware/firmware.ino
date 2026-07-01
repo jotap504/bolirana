@@ -167,41 +167,48 @@ void releaseBalls(int count) {
   Serial.println("}");
   
   digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor (bobinas activas)
-  delay(50);
+  delay(100);
   digitalWrite(MOTOR_DIR_PIN, LOW); // Dirección hacia adelante
   
-  int safetyLimit = 1000; // Límite de pasos por aspa para evitar bucles infinitos en fallas
+  int clicks = 0;
+  bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
+  int stepsTaken = 0;
+  int stepsSinceLastClick = 20; // Inicializar alto para permitir detectar el primer click de inmediato
+  int safetyLimit = count * 300; // Límite de seguridad
   
-  for (int i = 0; i < count; i++) {
-    // Paso A: Si ya está en el switch (LOW), girar hacia adelante hasta liberarlo (HIGH)
-    int stepsA = 0;
-    while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW && stepsA < safetyLimit) {
-      digitalWrite(MOTOR_STEP_PIN, HIGH);
-      delayMicroseconds(800);
-      digitalWrite(MOTOR_STEP_PIN, LOW);
-      delay(10); // Velocidad normal
-      stepsA++;
+  while (clicks < count && stepsTaken < safetyLimit) {
+    // Dar un paso hacia adelante
+    digitalWrite(MOTOR_STEP_PIN, HIGH);
+    delayMicroseconds(800);
+    digitalWrite(MOTOR_STEP_PIN, LOW);
+    delay(10); // Velocidad normal
+    stepsTaken++;
+    stepsSinceLastClick++;
+    
+    bool currentState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
+    
+    // Detectar flanco de bajada (de HIGH a LOW -> microswitch presionado)
+    if (lastState == HIGH && currentState == LOW) {
+      if (stepsSinceLastClick > 8) { // Filtro de rebotes (debounce)
+        clicks++;
+        stepsSinceLastClick = 0;
+        Serial.print("[DEBUG] Clic de aspa detectado: ");
+        Serial.println(clicks);
+      }
     }
     
-    // Paso B: Seguir girando hacia adelante hasta volver a presionar el microswitch (LOW)
-    int stepsB = 0;
-    while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsB < safetyLimit) {
-      digitalWrite(MOTOR_STEP_PIN, HIGH);
-      delayMicroseconds(800);
-      digitalWrite(MOTOR_STEP_PIN, LOW);
-      delay(10); // Velocidad normal
-      stepsB++;
-    }
-    
-    if (stepsA >= safetyLimit || stepsB >= safetyLimit) {
-      Serial.println("{\"event\":\"motor_error\",\"reason\":\"switch_timeout\"}");
-      digitalWrite(MOTOR_EN_PIN, HIGH);
-      return;
-    }
+    lastState = currentState;
   }
   
+  // Pequeña pausa de frenado en el centro del click
+  delay(50);
   digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas para enfriar
-  Serial.println("{\"event\":\"motor_done\"}");
+  
+  if (stepsTaken >= safetyLimit) {
+    Serial.println("{\"event\":\"motor_error\",\"reason\":\"switch_timeout\"}");
+  } else {
+    Serial.println("{\"event\":\"motor_done\"}");
+  }
 }
 
 bool motorWasMoving = false;
