@@ -662,6 +662,23 @@
       </p>
     </div>
     
+    <!-- CALIBRACIÓN DEL DISPENSADOR (NEMA 17) -->
+    <div class="card" style="margin-top: 16px; border-color: #e5a93b; background: rgba(229, 169, 59, 0.02);">
+      <div class="card-title" style="color: #e5a93b; border-left-color: #e5a93b;">CALIBRACIÓN DEL DISPENSADOR (NEMA 17)</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        Si se corta la luz o la hélice queda desalineada, usá estos controles para alinear las aspas manualmente paso a paso.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn btn-sim" style="flex: 1;" onclick="sendHwCmd({'type':'step','steps':-5})">⏪ -5 Pasos</button>
+        <button class="btn btn-sim" style="flex: 1;" onclick="sendHwCmd({'type':'step','steps':-1})">◀ -1 Paso</button>
+        <button class="btn btn-sim" style="flex: 1;" onclick="sendHwCmd({'type':'step','steps':1})">▶ +1 Paso</button>
+        <button class="btn btn-sim" style="flex: 1;" onclick="sendHwCmd({'type':'step','steps':5})">⏩ +5 Pasos</button>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-save" style="background: linear-gradient(135deg, #e5a93b 0%, #bd7c1f 100%); width:100%" onclick="sendHwCmd({'type':'release_balls','count':1})">🎯 DISPENSAR 1 BOLA (TEST)</button>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title">DIAGNÓSTICO DE ACCIONADORES</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">

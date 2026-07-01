@@ -544,6 +544,12 @@ void readIncomingSerial() {
             if (count > 0) {
               releaseBalls(count);
             }
+          } else if (strcmp(type, "step") == 0) {
+            int steps = doc["steps"];
+            if (steps != 0) {
+              digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor
+              stepper.move(steps);
+            }
           }
         }
       }
