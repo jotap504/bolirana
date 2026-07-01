@@ -115,19 +115,93 @@ AccelStepper stepper(AccelStepper::DRIVER, MOTOR_STEP_PIN, MOTOR_DIR_PIN);
 WebServer server(80);
 
 // ==========================================
-// CONFIGURACIÓN DE DISPENSADOR DE BOLAS (STEPS)
+// CONFIGURACIÓN DE DISPENSADOR DE BOLAS POR MICROSWITCH
 // ==========================================
-// Cantidad de pasos por bola. Con hélice de 4 aspas (90° por bola):
-// Configurado a 17 pasos por bola según las pruebas físicas.
-#define STEPS_PER_BALL 17
+
+void homeStepper() {
+  Serial.println("{\"event\":\"homing_start\"}");
+  
+  // 1. Si ya está activo el microswitch (LOW), no hace nada y permanece en cero
+  if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
+    Serial.println("{\"event\":\"homing_done\",\"steps_taken\":0}");
+    stepper.setCurrentPosition(0);
+    digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas
+    return;
+  }
+
+  // 2. Si no está activo, esperar 3 segundos antes de iniciar el movimiento
+  Serial.println("[HOMING] Sensor inactivo. Esperando 3 segundos de estabilizacion...");
+  delay(3000);
+  
+  // 3. Retroceder despacio buscando el microswitch
+  digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar driver (bobinas activas)
+  delay(100);
+  digitalWrite(MOTOR_DIR_PIN, HIGH); // Dirección de reversa (hacia atrás)
+  
+  int maxSteps = 1000; // Límite de seguridad
+  int stepsTaken = 0;
+  
+  while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsTaken < maxSteps) {
+    digitalWrite(MOTOR_STEP_PIN, HIGH);
+    delayMicroseconds(800);
+    digitalWrite(MOTOR_STEP_PIN, LOW);
+    delay(25); // Velocidad lenta y estable
+    stepsTaken++;
+  }
+  
+  stepper.setCurrentPosition(0);
+  digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas para enfriar
+  
+  if (stepsTaken >= maxSteps) {
+    Serial.println("{\"event\":\"homing_failed\",\"reason\":\"timeout\"}");
+  } else {
+    Serial.print("{\"event\":\"homing_done\",\"steps_taken\":");
+    Serial.print(stepsTaken);
+    Serial.println("}");
+  }
+}
 
 void releaseBalls(int count) {
-  long totalSteps = (long)count * STEPS_PER_BALL;
-  digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor (bobinas activas)
-  stepper.move(totalSteps);
   Serial.print("{\"event\":\"motor_start\",\"balls\":");
   Serial.print(count);
   Serial.println("}");
+  
+  digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor (bobinas activas)
+  delay(50);
+  digitalWrite(MOTOR_DIR_PIN, LOW); // Dirección hacia adelante
+  
+  int safetyLimit = 1000; // Límite de pasos por aspa para evitar bucles infinitos en fallas
+  
+  for (int i = 0; i < count; i++) {
+    // Paso A: Si ya está en el switch (LOW), girar hacia adelante hasta liberarlo (HIGH)
+    int stepsA = 0;
+    while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW && stepsA < safetyLimit) {
+      digitalWrite(MOTOR_STEP_PIN, HIGH);
+      delayMicroseconds(800);
+      digitalWrite(MOTOR_STEP_PIN, LOW);
+      delay(10); // Velocidad normal
+      stepsA++;
+    }
+    
+    // Paso B: Seguir girando hacia adelante hasta volver a presionar el microswitch (LOW)
+    int stepsB = 0;
+    while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsB < safetyLimit) {
+      digitalWrite(MOTOR_STEP_PIN, HIGH);
+      delayMicroseconds(800);
+      digitalWrite(MOTOR_STEP_PIN, LOW);
+      delay(10); // Velocidad normal
+      stepsB++;
+    }
+    
+    if (stepsA >= safetyLimit || stepsB >= safetyLimit) {
+      Serial.println("{\"event\":\"motor_error\",\"reason\":\"switch_timeout\"}");
+      digitalWrite(MOTOR_EN_PIN, HIGH);
+      return;
+    }
+  }
+  
+  digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas para enfriar
+  Serial.println("{\"event\":\"motor_done\"}");
 }
 
 bool motorWasMoving = false;
@@ -143,40 +217,6 @@ void checkMotorStatus() {
       digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas cuando llegó a su destino para enfriar
       Serial.println("{\"event\":\"motor_done\"}");
     }
-  }
-}
-
-void homeStepper() {
-  Serial.println("{\"event\":\"homing_start\"}");
-  digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor (bobinas activas)
-  delay(50); // Pequeña espera para de-bounce y estabilizar corriente
-  
-  // Rotamos hacia atrás buscando que haga clic el microswitch.
-  // El switch conecta el pin 32 a GND (INPUT_PULLUP -> lee LOW al hacer clic).
-  // Si ya está presionado, no se mueve. Si no, gira lentamente en reversa.
-  int maxSteps = 400; // Límite de seguridad para evitar bucle infinito si se rompe el switch o cable
-  int stepsTaken = 0;
-  
-  digitalWrite(MOTOR_DIR_PIN, HIGH); // Sentido de reversa/atrás
-  
-  while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsTaken < maxSteps) {
-    digitalWrite(MOTOR_STEP_PIN, HIGH);
-    delayMicroseconds(800);
-    digitalWrite(MOTOR_STEP_PIN, LOW);
-    delay(25); // Velocidad de homing lenta y controlada (25ms entre pasos)
-    stepsTaken++;
-  }
-  
-  // Establecer la posición actual como el Cero absoluto (Home)
-  stepper.setCurrentPosition(0);
-  digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas para enfriar
-  
-  if (stepsTaken >= maxSteps) {
-    Serial.println("{\"event\":\"homing_failed\",\"reason\":\"timeout\"}");
-  } else {
-    Serial.print("{\"event\":\"homing_done\",\"steps_taken\":");
-    Serial.print(stepsTaken);
-    Serial.println("}");
   }
 }
 
