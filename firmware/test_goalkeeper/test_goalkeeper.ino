@@ -29,6 +29,21 @@ unsigned long travelTimeMs = 0; // Tiempo total de desplazamiento de lado a lado
 float currentPositionPercent = 0.0; // Posición estimada (0% a 100%)
 bool isCalibrated = false;
 
+// Variables para Bucle Automático No-Bloqueante
+bool loopActive = false;
+float loopMinPercent = 20.0;
+float loopMaxPercent = 80.0;
+
+enum GoalieState {
+  GOALIE_IDLE,
+  GOALIE_MOVING_LEFT,
+  GOALIE_MOVING_RIGHT
+};
+GoalieState motorState = GOALIE_IDLE;
+float targetPositionPercent = 0.0;
+unsigned long movementStartTime = 0;
+unsigned long movementDuration = 0;
+
 WebServer server(80);
 
 // =========================================================================
@@ -120,8 +135,8 @@ void calibrateGoalie() {
   Serial.println(" ms.");
 }
 
-// Mover el arquero a una posición porcentual (0% = Izquierda, 100% = Derecha)
-void moveToPosition(float targetPercent) {
+// Mover el arquero a una posición de forma NO-BLOQUEANTE (State Machine)
+void startMoveToPosition(float targetPercent) {
   if (!isCalibrated) {
     Serial.println("[ERROR] No se puede posicionar. El sistema no esta calibrado.");
     return;
@@ -131,48 +146,83 @@ void moveToPosition(float targetPercent) {
   if (targetPercent > 100) targetPercent = 100;
   
   float diff = targetPercent - currentPositionPercent;
-  if (abs(diff) < 2.0) return; // Ya está cerca
+  if (abs(diff) < 2.0) {
+    // Si ya llegamos a la posición objetivo y el bucle está activo, alternar de inmediato
+    if (loopActive) {
+      if (abs(targetPercent - loopMinPercent) < 5.0) {
+        startMoveToPosition(loopMaxPercent);
+      } else {
+        startMoveToPosition(loopMinPercent);
+      }
+    }
+    return;
+  }
   
-  unsigned long runTime = (unsigned long)((abs(diff) / 100.0) * travelTimeMs);
+  targetPositionPercent = targetPercent;
+  movementDuration = (unsigned long)((abs(diff) / 100.0) * travelTimeMs);
+  movementStartTime = millis();
   
-  Serial.print("[MOVIMIENTO] Desplazando de ");
-  Serial.print(currentPositionPercent);
-  Serial.print("% a ");
+  if (diff < 0) {
+    motorState = GOALIE_MOVING_LEFT;
+    moveLeft(motorSpeed);
+  } else {
+    motorState = GOALIE_MOVING_RIGHT;
+    moveRight(motorSpeed);
+  }
+  
+  Serial.print("[MOVIMIENTO] Desplazando no-bloqueante a ");
   Serial.print(targetPercent);
-  Serial.print("% durante ");
-  Serial.print(runTime);
-  Serial.println(" ms...");
+  Serial.print("% (duracion estimada: ");
+  Serial.print(movementDuration);
+  Serial.println(" ms)");
+}
 
-  unsigned long startTime = millis();
-  if (diff < 0) {
-    // Mover a la izquierda
-    moveLeft(motorSpeed); // Encender motor una sola vez
-    while (millis() - startTime < runTime && digitalRead(GOALIE_LIMIT_L_PIN) == HIGH) {
-      delay(10);
+// Actualizador no-bloqueante del arquero en loop()
+void updateGoalieStateMachine() {
+  if (motorState == GOALIE_MOVING_LEFT) {
+    // Caso 1: Toca el fin de carrera izquierdo
+    if (digitalRead(GOALIE_LIMIT_L_PIN) == LOW) {
+      stopGoalie();
+      currentPositionPercent = 0.0;
+      motorState = GOALIE_IDLE;
+      Serial.println("[MOTOR] Límite Izquierdo alcanzado físicamente.");
+      if (loopActive) {
+        startMoveToPosition(loopMaxPercent);
+      }
     }
-  } else {
-    // Mover a la derecha
-    moveRight(motorSpeed); // Encender motor una sola vez
-    while (millis() - startTime < runTime && digitalRead(GOALIE_LIMIT_R_PIN) == HIGH) {
-      delay(10);
+    // Caso 2: Se completa el tiempo calculado
+    else if (millis() - movementStartTime >= movementDuration) {
+      stopGoalie();
+      currentPositionPercent = targetPositionPercent;
+      motorState = GOALIE_IDLE;
+      Serial.println("[MOTOR] Movimiento Izquierda completado por tiempo.");
+      if (loopActive) {
+        startMoveToPosition(loopMaxPercent);
+      }
     }
   }
-  stopGoalie(); // Detener motor
-  
-  // Actualizar posición estimada basada en el tiempo real que funcionó el motor
-  unsigned long elapsed = millis() - startTime;
-  float positionChange = (float)elapsed / travelTimeMs * 100.0;
-  if (diff < 0) {
-    currentPositionPercent -= positionChange;
-  } else {
-    currentPositionPercent += positionChange;
+  else if (motorState == GOALIE_MOVING_RIGHT) {
+    // Caso 1: Toca el fin de carrera derecho
+    if (digitalRead(GOALIE_LIMIT_R_PIN) == LOW) {
+      stopGoalie();
+      currentPositionPercent = 100.0;
+      motorState = GOALIE_IDLE;
+      Serial.println("[MOTOR] Límite Derecho alcanzado físicamente.");
+      if (loopActive) {
+        startMoveToPosition(loopMinPercent);
+      }
+    }
+    // Caso 2: Se completa el tiempo calculado
+    else if (millis() - movementStartTime >= movementDuration) {
+      stopGoalie();
+      currentPositionPercent = targetPositionPercent;
+      motorState = GOALIE_IDLE;
+      Serial.println("[MOTOR] Movimiento Derecha completado por tiempo.");
+      if (loopActive) {
+        startMoveToPosition(loopMinPercent);
+      }
+    }
   }
-  
-  if (digitalRead(GOALIE_LIMIT_L_PIN) == LOW) currentPositionPercent = 0.0;
-  if (digitalRead(GOALIE_LIMIT_R_PIN) == LOW) currentPositionPercent = 100.0;
-  Serial.print("[MOVIMIENTO] Nueva posicion estimada: ");
-  Serial.print(currentPositionPercent);
-  Serial.println("%");
 }
 
 // =========================================================================
@@ -350,6 +400,26 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <input type="range" id="input-pos" min="0" max="100" value="0" disabled onchange="goToPos(this.value)">
             </div>
         </div>
+
+        <!-- BUCLE AUTOMÁTICO -->
+        <div class="section">
+            <div class="section-title">Bucle Automático (Simulación Juego)</div>
+            <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center">
+                <span>Activar Bucle de Movimiento:</span>
+                <label class="switch">
+                    <input type="checkbox" id="input-loop" disabled onchange="toggleLoop(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="form-row">
+                <label>Límite Mínimo (Izquierda)<span id="val-loop-min" class="val-display">20%</span></label>
+                <input type="range" id="input-loop-min" min="5" max="45" value="20" oninput="updateVal('loop-min', this.value + '%')">
+            </div>
+            <div class="form-row">
+                <label>Límite Máximo (Derecha)<span id="val-loop-max" class="val-display">80%</span></label>
+                <input type="range" id="input-loop-max" min="55" max="95" value="80" oninput="updateVal('loop-max', this.value + '%')">
+            </div>
+        </div>
     </div>
 
     <script>
@@ -384,14 +454,17 @@ const char index_html[] PROGMEM = R"rawliteral(
                 // Calibración
                 const calStatus = document.getElementById('cal-status');
                 const inputPos = document.getElementById('input-pos');
+                const inputLoop = document.getElementById('input-loop');
                 if (data.calibrated) {
                     calStatus.className = 'badge badge-free';
                     calStatus.textContent = 'CALIBRADO';
                     inputPos.removeAttribute('disabled');
+                    inputLoop.removeAttribute('disabled');
                 } else {
                     calStatus.className = 'badge badge-pressed';
                     calStatus.textContent = 'SIN CALIBRAR';
                     inputPos.setAttribute('disabled', 'true');
+                    inputLoop.setAttribute('disabled', 'true');
                 }
 
                 document.getElementById('cal-time').textContent = data.travelTime + ' ms';
@@ -400,6 +473,11 @@ const char index_html[] PROGMEM = R"rawliteral(
                 if (document.activeElement !== inputPos) {
                     inputPos.value = Math.round(data.currentPos);
                     updateVal('pos', Math.round(data.currentPos) + '%');
+                }
+
+                // Actualizar interruptor de bucle
+                if (document.activeElement !== inputLoop) {
+                    inputLoop.checked = data.loopActive === 1;
                 }
 
             } catch(e) {
@@ -437,6 +515,13 @@ const char index_html[] PROGMEM = R"rawliteral(
             await fetch('/action?cmd=calibrate');
         }
 
+        async function toggleLoop(checked) {
+            const min = document.getElementById('input-loop-min').value;
+            const max = document.getElementById('input-loop-max').value;
+            const active = checked ? 1 : 0;
+            await fetch(`/action?cmd=loop&active=${active}&min=${min}&max=${max}`);
+        }
+
         // Leer estado
         setInterval(loadStatus, 500);
     </script>
@@ -459,6 +544,9 @@ void handleStatus() {
   json += ",\"calibrated\":" + String(isCalibrated ? 1 : 0);
   json += ",\"travelTime\":" + String(travelTimeMs);
   json += ",\"currentPos\":" + String(currentPositionPercent);
+  json += ",\"loopActive\":" + String(loopActive ? 1 : 0);
+  json += ",\"loopMin\":" + String(loopMinPercent);
+  json += ",\"loopMax\":" + String(loopMaxPercent);
   json += "}";
   server.send(200, "application/json", json);
 }
@@ -471,9 +559,13 @@ void handleAction() {
     Serial.println("\"");
     
     if (cmd == "stop") {
+      loopActive = false;
       stopGoalie();
+      motorState = GOALIE_IDLE;
     }
     else if (cmd == "move" && server.hasArg("dir")) {
+      loopActive = false;
+      motorState = GOALIE_IDLE;
       String dir = server.arg("dir");
       Serial.print("[WEB] -> Dirección de movimiento: ");
       Serial.println(dir);
@@ -486,14 +578,41 @@ void handleAction() {
       Serial.println(motorSpeed);
     }
     else if (cmd == "pos" && server.hasArg("val")) {
+      loopActive = false;
+      motorState = GOALIE_IDLE;
       float val = server.arg("val").toFloat();
       Serial.print("[WEB] -> Solicitando ir a posición: ");
       Serial.print(val);
       Serial.println("%");
-      moveToPosition(val);
+      startMoveToPosition(val);
     }
     else if (cmd == "calibrate") {
       calibrateGoalie();
+    }
+    else if (cmd == "loop") {
+      if (server.hasArg("active")) {
+        loopActive = (server.arg("active").toInt() == 1);
+      }
+      if (server.hasArg("min")) {
+        loopMinPercent = server.arg("min").toFloat();
+      }
+      if (server.hasArg("max")) {
+        loopMaxPercent = server.arg("max").toFloat();
+      }
+      
+      Serial.print("[WEB] -> Configurando bucle. Activo: ");
+      Serial.print(loopActive);
+      Serial.print(" | Min: ");
+      Serial.print(loopMinPercent);
+      Serial.print(" | Max: ");
+      Serial.println(loopMaxPercent);
+      
+      if (loopActive) {
+        startMoveToPosition(loopMinPercent); // Iniciar bucle
+      } else {
+        stopGoalie();
+        motorState = GOALIE_IDLE;
+      }
     }
   }
   server.send(200, "text/plain", "OK");
@@ -561,13 +680,14 @@ void loop() {
     Serial.println(currentR == LOW ? "DETECTADO (LOW)" : "LIBRE (HIGH)");
   }
 
-  // Control de seguridad por hardware: si se está moviendo y toca un switch, frenar al instante
-  if (currentL == LOW) {
-    // Si toca izquierda, asegurar que se anule el giro a la izquierda
+  // Actualizar la máquina de estados del movimiento del arquero (No-bloqueante)
+  updateGoalieStateMachine();
+
+  // Control de seguridad por hardware adicional en caso de fallo
+  if (currentL == LOW && motorState == GOALIE_IDLE) {
     analogWrite(GOALIE_LPWM_PIN, 0);
   }
-  if (currentR == LOW) {
-    // Si toca derecha, asegurar que se anule el giro a la derecha
+  if (currentR == LOW && motorState == GOALIE_IDLE) {
     analogWrite(GOALIE_RPWM_PIN, 0);
   }
   
