@@ -10,9 +10,9 @@
 #define GOALIE_LPWM_PIN 19 // Giro izquierda
 
 // Finales de Carrera (Limit Switches)
-// NOTA: Usamos GPIO 12 y 13 porque tienen PULL-UP interno (los pines 34 a 39 no tienen)
-#define GOALIE_LIMIT_L_PIN 12 // Final de carrera izquierdo (GND al hacer clic)
-#define GOALIE_LIMIT_R_PIN 13 // Final de carrera derecho (GND al hacer clic)
+// NOTA: Usamos GPIO 14 y 27 que son pines seguros (evitan conflictos de arranque de la memoria flash)
+#define GOALIE_LIMIT_L_PIN 14 // Final de carrera izquierdo (GND al hacer clic)
+#define GOALIE_LIMIT_R_PIN 27 // Final de carrera derecho (GND al hacer clic)
 
 // =========================================================================
 // PARÁMETROS WIFI
