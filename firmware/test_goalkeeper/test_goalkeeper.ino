@@ -78,34 +78,38 @@ void calibrateGoalie() {
   // 1. Mover hacia la izquierda hasta presionar LIMIT_L
   Serial.println("[CALIBRACIÓN] Buscando limite izquierdo...");
   unsigned long startWait = millis();
+  
+  moveLeft(calibrationSpeed); // Encender motor una sola vez en lugar de hacerlo dentro del bucle
+  
   while (digitalRead(GOALIE_LIMIT_L_PIN) == HIGH) {
-    moveLeft(calibrationSpeed); // Velocidad lenta de calibración
-    if (millis() - startWait > 12000) { // Timeout extendido a 12s por ir más lento
+    if (millis() - startWait > 12000) { // Timeout de 12 segundos
       stopGoalie();
       Serial.println("[CALIBRACIÓN] ERROR: Timeout buscando limite izquierdo.");
       return;
     }
-    delay(5);
+    delay(10); // Bucle silencioso que no satura el puerto serie ni reinicia el PWM constantemente
   }
-  stopGoalie();
-  delay(500); // Pausa para detener inercia
+  stopGoalie(); // Detener motor inmediatamente al detectar el sensor
+  delay(500); // Pausa para disipar inercia mecánica
   Serial.println("[CALIBRACIÓN] Limite izquierdo alcanzado.");
 
   // 2. Mover hacia la derecha hasta presionar LIMIT_R y medir tiempo
   Serial.println("[CALIBRACIÓN] Buscando limite derecho y midiendo tiempo...");
   unsigned long startTime = millis();
   startWait = millis();
+  
+  moveRight(calibrationSpeed); // Encender motor una sola vez
+  
   while (digitalRead(GOALIE_LIMIT_R_PIN) == HIGH) {
-    moveRight(calibrationSpeed); // Velocidad lenta de calibración
     if (millis() - startWait > 12000) {
       stopGoalie();
       Serial.println("[CALIBRACIÓN] ERROR: Timeout buscando limite derecho.");
       return;
     }
-    delay(5);
+    delay(10);
   }
   unsigned long endTime = millis();
-  stopGoalie();
+  stopGoalie(); // Detener motor
   
   travelTimeMs = endTime - startTime;
   isCalibrated = true;
@@ -142,18 +146,18 @@ void moveToPosition(float targetPercent) {
   unsigned long startTime = millis();
   if (diff < 0) {
     // Mover a la izquierda
+    moveLeft(motorSpeed); // Encender motor una sola vez
     while (millis() - startTime < runTime && digitalRead(GOALIE_LIMIT_L_PIN) == HIGH) {
-      moveLeft(motorSpeed);
-      delay(5);
+      delay(10);
     }
   } else {
     // Mover a la derecha
+    moveRight(motorSpeed); // Encender motor una sola vez
     while (millis() - startTime < runTime && digitalRead(GOALIE_LIMIT_R_PIN) == HIGH) {
-      moveRight(motorSpeed);
-      delay(5);
+      delay(10);
     }
   }
-  stopGoalie();
+  stopGoalie(); // Detener motor
   
   // Actualizar posición estimada basada en el tiempo real que funcionó el motor
   unsigned long elapsed = millis() - startTime;
@@ -166,7 +170,6 @@ void moveToPosition(float targetPercent) {
   
   if (digitalRead(GOALIE_LIMIT_L_PIN) == LOW) currentPositionPercent = 0.0;
   if (digitalRead(GOALIE_LIMIT_R_PIN) == LOW) currentPositionPercent = 100.0;
-  
   Serial.print("[MOVIMIENTO] Nueva posicion estimada: ");
   Serial.print(currentPositionPercent);
   Serial.println("%");
