@@ -404,33 +404,33 @@ const char index_html[] PROGMEM = R"rawliteral(
         }
 
         async function action(act) {
-            await fetch(`/action?cmd=${act}`, {method: 'POST'});
+            await fetch(`/action?cmd=${act}`);
         }
 
         let isMoving = false;
         async function startMove(dir) {
             isMoving = true;
-            await fetch(`/action?cmd=move&dir=${dir}`, {method: 'POST'});
+            await fetch(`/action?cmd=move&dir=${dir}`);
         }
         async function stopMove() {
             if (isMoving) {
                 isMoving = false;
-                await fetch(`/action?cmd=stop`, {method: 'POST'});
+                await fetch(`/action?cmd=stop`);
             }
         }
 
         async function updateSpeed(val) {
             updateVal('speed', val);
-            await fetch(`/action?cmd=speed&val=${val}`, {method: 'POST'});
+            await fetch(`/action?cmd=speed&val=${val}`);
         }
 
         async function goToPos(val) {
             updateVal('pos', val + '%');
-            await fetch(`/action?cmd=pos&val=${val}`, {method: 'POST'});
+            await fetch(`/action?cmd=pos&val=${val}`);
         }
 
         async function calibrate() {
-            await fetch('/action?cmd=calibrate', {method: 'POST'});
+            await fetch('/action?cmd=calibrate');
         }
 
         // Leer estado
@@ -462,7 +462,7 @@ void handleStatus() {
 void handleAction() {
   if (server.hasArg("cmd")) {
     String cmd = server.arg("cmd");
-    Serial.print("\n[WEB] HTTP POST /action recibido. cmd = \"");
+    Serial.print("\n[WEB] HTTP /action recibido. cmd = \"");
     Serial.print(cmd);
     Serial.println("\"");
     
@@ -532,7 +532,7 @@ void setup() {
   // Rutas Web
   server.on("/", HTTP_GET, handleRoot);
   server.on("/status", HTTP_GET, handleStatus);
-  server.on("/action", HTTP_POST, handleAction);
+  server.on("/action", handleAction); // Acepta GET y POST, evitando bloqueos OPTIONS
 
   server.begin();
 }
