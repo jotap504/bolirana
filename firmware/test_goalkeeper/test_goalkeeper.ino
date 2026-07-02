@@ -35,26 +35,35 @@ WebServer server(80);
 // =========================================================================
 
 void stopGoalie() {
+  Serial.println("[MOTOR] stopGoalie() - Frenando motor (RPWM=0, LPWM=0)");
   analogWrite(GOALIE_RPWM_PIN, 0);
   analogWrite(GOALIE_LPWM_PIN, 0);
 }
 
 void moveLeft(int speed) {
+  Serial.print("[MOTOR] moveLeft() - Intentando girar a la Izquierda. Velocidad: ");
+  Serial.println(speed);
   // Solo se mueve si el final de carrera izquierdo NO está presionado
   if (digitalRead(GOALIE_LIMIT_L_PIN) == HIGH) {
+    Serial.println("[MOTOR] -> Límite Izquierdo Libre. Activando LPWM.");
     analogWrite(GOALIE_RPWM_PIN, 0);
     analogWrite(GOALIE_LPWM_PIN, speed);
   } else {
+    Serial.println("[MOTOR] -> Límite Izquierdo PRESIONADO. Abortando movimiento.");
     stopGoalie();
   }
 }
 
 void moveRight(int speed) {
+  Serial.print("[MOTOR] moveRight() - Intentando girar a la Derecha. Velocidad: ");
+  Serial.println(speed);
   // Solo se mueve si el final de carrera derecho NO está presionado
   if (digitalRead(GOALIE_LIMIT_R_PIN) == HIGH) {
+    Serial.println("[MOTOR] -> Límite Derecho Libre. Activando RPWM.");
     analogWrite(GOALIE_RPWM_PIN, speed);
     analogWrite(GOALIE_LPWM_PIN, 0);
   } else {
+    Serial.println("[MOTOR] -> Límite Derecho PRESIONADO. Abortando movimiento.");
     stopGoalie();
   }
 }
@@ -453,20 +462,30 @@ void handleStatus() {
 void handleAction() {
   if (server.hasArg("cmd")) {
     String cmd = server.arg("cmd");
+    Serial.print("\n[WEB] HTTP POST /action recibido. cmd = \"");
+    Serial.print(cmd);
+    Serial.println("\"");
     
     if (cmd == "stop") {
       stopGoalie();
     }
     else if (cmd == "move" && server.hasArg("dir")) {
       String dir = server.arg("dir");
+      Serial.print("[WEB] -> Dirección de movimiento: ");
+      Serial.println(dir);
       if (dir == "left") moveLeft(motorSpeed);
       else if (dir == "right") moveRight(motorSpeed);
     }
     else if (cmd == "speed" && server.hasArg("val")) {
       motorSpeed = server.arg("val").toInt();
+      Serial.print("[WEB] -> Cambiando velocidad PWM a: ");
+      Serial.println(motorSpeed);
     }
     else if (cmd == "pos" && server.hasArg("val")) {
       float val = server.arg("val").toFloat();
+      Serial.print("[WEB] -> Solicitando ir a posición: ");
+      Serial.print(val);
+      Serial.println("%");
       moveToPosition(val);
     }
     else if (cmd == "calibrate") {
