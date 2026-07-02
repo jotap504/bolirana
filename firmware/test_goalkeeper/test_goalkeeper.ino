@@ -24,7 +24,7 @@ const char* password = "corsa000";
 // ESTADO Y VARIABLES DE CALIBRACIÓN
 // =========================================================================
 int motorSpeed = 150;           // Velocidad PWM para control manual/desplazamiento (0-255)
-int calibrationSpeed = 50;      // Velocidad PWM para la autocalibración (lenta para no pasarse del sensor)
+int calibrationSpeed = 60;      // Velocidad PWM para la autocalibración (lenta para no pasarse del sensor)
 unsigned long travelTimeMs = 0; // Tiempo total de desplazamiento de lado a lado (ms)
 float currentPositionPercent = 0.0; // Posición estimada (0% a 100%)
 bool isCalibrated = false;
@@ -159,7 +159,9 @@ void startMoveToPosition(float targetPercent) {
   }
   
   targetPositionPercent = targetPercent;
-  movementDuration = (unsigned long)((abs(diff) / 100.0) * travelTimeMs);
+  // Escalar el tiempo de viaje según la relación de velocidad: a mayor velocidad, menor duración de encendido
+  float speedRatio = (float)calibrationSpeed / motorSpeed;
+  movementDuration = (unsigned long)((abs(diff) / 100.0) * travelTimeMs * speedRatio);
   movementStartTime = millis();
   
   if (diff < 0) {
