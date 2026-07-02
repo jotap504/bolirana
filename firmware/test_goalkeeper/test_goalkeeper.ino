@@ -24,7 +24,7 @@ const char* password = "corsa000";
 // ESTADO Y VARIABLES DE CALIBRACIÓN
 // =========================================================================
 int motorSpeed = 150;           // Velocidad PWM para control manual/desplazamiento (0-255)
-int calibrationSpeed = 30;      // Velocidad PWM para la autocalibración (lenta para no pasarse del sensor)
+int calibrationSpeed = 50;      // Velocidad PWM para la autocalibración (lenta para no pasarse del sensor)
 unsigned long travelTimeMs = 0; // Tiempo total de desplazamiento de lado a lado (ms)
 float currentPositionPercent = 0.0; // Posición estimada (0% a 100%)
 bool isCalibrated = false;
