@@ -285,10 +285,10 @@ void updateTestSequence() {
   
   switch(seqState) {
     case SEQ_P1_INIT:
-      motorSpeed = 40;
-      calibrationSpeed = 40;
+      motorSpeed = 50;
+      calibrationSpeed = 50;
       isCalibrated = false;
-      Serial.println("\n[SECUENCIA] === INICIANDO PARTE 1 (Velocidad 40) ===");
+      Serial.println("\n[SECUENCIA] === INICIANDO PARTE 1 (Velocidad 50) ===");
       seqState = SEQ_P1_CAL_L1;
       moveLeft(calibrationSpeed);
       sequenceTimer = millis();
@@ -869,7 +869,7 @@ const char index_html[] PROGMEM = R"rawliteral(
         }
 
         async function startSequence() {
-            if (confirm("¿Deseas iniciar la secuencia de prueba completa? (Velocidad 40 y 70 con paradas dinámicas)")) {
+            if (confirm("¿Deseas iniciar la secuencia de prueba completa? (Velocidad 50 y 70 con paradas dinámicas)")) {
                 await fetch('/action?cmd=sequence');
             }
         }
