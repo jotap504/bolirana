@@ -25,7 +25,8 @@ const char* password = "corsa000";
 // =========================================================================
 int motorSpeed = 150;           // Velocidad PWM para control manual/desplazamiento (0-255)
 int calibrationSpeed = 60;      // Velocidad PWM para la autocalibración (lenta para no pasarse del sensor)
-unsigned long travelTimeMs = 0; // Tiempo total de desplazamiento de lado a lado (ms)
+unsigned long travelTimeRightMs = 0; // Tiempo de Izquierda a Derecha (ms)
+unsigned long travelTimeLeftMs = 0;  // Tiempo de Derecha a Izquierda (ms)
 float currentPositionPercent = 0.0; // Posición estimada (0% a 100%)
 bool isCalibrated = false;
 
@@ -84,17 +85,16 @@ void moveRight(int speed) {
   }
 }
 
-// Rutina de calibración para medir el recorrido total de lado a lado
+// Rutina de calibración para medir el recorrido total de lado a lado en AMBOS sentidos
 void calibrateGoalie() {
-  Serial.println("\n[CALIBRACIÓN] Iniciando calibracion del arquero...");
+  Serial.println("\n[CALIBRACIÓN] Iniciando calibracion bidireccional del arquero...");
   stopGoalie();
   delay(200);
 
   // 1. Mover hacia la izquierda hasta presionar LIMIT_L
-  Serial.println("[CALIBRACIÓN] Buscando limite izquierdo...");
+  Serial.println("[CALIBRACIÓN] 1/3: Buscando limite izquierdo...");
   unsigned long startWait = millis();
-  
-  moveLeft(calibrationSpeed); // Encender motor una sola vez en lugar de hacerlo dentro del bucle
+  moveLeft(calibrationSpeed); // Encender motor una sola vez
   
   while (digitalRead(GOALIE_LIMIT_L_PIN) == HIGH) {
     if (millis() - startWait > 12000) { // Timeout de 12 segundos
@@ -102,17 +102,16 @@ void calibrateGoalie() {
       Serial.println("[CALIBRACIÓN] ERROR: Timeout buscando limite izquierdo.");
       return;
     }
-    delay(10); // Bucle silencioso que no satura el puerto serie ni reinicia el PWM constantemente
+    delay(10);
   }
-  stopGoalie(); // Detener motor inmediatamente al detectar el sensor
-  delay(500); // Pausa para disipar inercia mecánica
+  stopGoalie();
+  delay(600); // Pausa para detener inercia mecánica por completo
   Serial.println("[CALIBRACIÓN] Limite izquierdo alcanzado.");
 
   // 2. Mover hacia la derecha hasta presionar LIMIT_R y medir tiempo
-  Serial.println("[CALIBRACIÓN] Buscando limite derecho y midiendo tiempo...");
+  Serial.println("[CALIBRACIÓN] 2/3: Buscando limite derecho y midiendo tiempo...");
   unsigned long startTime = millis();
   startWait = millis();
-  
   moveRight(calibrationSpeed); // Encender motor una sola vez
   
   while (digitalRead(GOALIE_LIMIT_R_PIN) == HIGH) {
@@ -124,15 +123,39 @@ void calibrateGoalie() {
     delay(10);
   }
   unsigned long endTime = millis();
-  stopGoalie(); // Detener motor
-  
-  travelTimeMs = endTime - startTime;
-  isCalibrated = true;
-  currentPositionPercent = 100.0;
-  
-  Serial.print("[CALIBRACIÓN] Completada con exito. Tiempo total de recorrido: ");
-  Serial.print(travelTimeMs);
+  stopGoalie();
+  travelTimeRightMs = endTime - startTime;
+  delay(600); // Pausa para inercia
+  Serial.print("[CALIBRACIÓN] Tiempo Izquierda -> Derecha: ");
+  Serial.print(travelTimeRightMs);
   Serial.println(" ms.");
+
+  // 3. Mover de regreso a la izquierda hasta presionar LIMIT_L y medir tiempo
+  Serial.println("[CALIBRACIÓN] 3/3: Buscando limite izquierdo y midiendo tiempo de retorno...");
+  startTime = millis();
+  startWait = millis();
+  moveLeft(calibrationSpeed); // Encender motor
+  
+  while (digitalRead(GOALIE_LIMIT_L_PIN) == HIGH) {
+    if (millis() - startWait > 12000) {
+      stopGoalie();
+      Serial.println("[CALIBRACIÓN] ERROR: Timeout buscando limite izquierdo de retorno.");
+      return;
+    }
+    delay(10);
+  }
+  endTime = millis();
+  stopGoalie();
+  travelTimeLeftMs = endTime - startTime;
+  delay(200);
+
+  isCalibrated = true;
+  currentPositionPercent = 0.0; // Quedamos posicionados en el extremo izquierdo
+  
+  Serial.print("[CALIBRACIÓN] Tiempo Derecha -> Izquierda: ");
+  Serial.print(travelTimeLeftMs);
+  Serial.println(" ms.");
+  Serial.println("[CALIBRACIÓN] Calibración bidireccional completada con éxito.");
 }
 
 // Mover el arquero a una posición de forma NO-BLOQUEANTE (State Machine)
@@ -161,17 +184,17 @@ void startMoveToPosition(float targetPercent) {
   targetPositionPercent = targetPercent;
   // Escalar el tiempo de viaje según la relación de velocidad: a mayor velocidad, menor duración de encendido
   float speedRatio = (float)calibrationSpeed / motorSpeed;
-  movementDuration = (unsigned long)((abs(diff) / 100.0) * travelTimeMs * speedRatio);
-  movementStartTime = millis();
   
   if (diff < 0) {
+    movementDuration = (unsigned long)((abs(diff) / 100.0) * travelTimeLeftMs * speedRatio);
     motorState = GOALIE_MOVING_LEFT;
     moveLeft(motorSpeed);
   } else {
+    movementDuration = (unsigned long)((abs(diff) / 100.0) * travelTimeRightMs * speedRatio);
     motorState = GOALIE_MOVING_RIGHT;
     moveRight(motorSpeed);
   }
-  
+  movementStartTime = millis();
   Serial.print("[MOVIMIENTO] Desplazando no-bloqueante a ");
   Serial.print(targetPercent);
   Serial.print("% (duracion estimada: ");
@@ -544,7 +567,7 @@ void handleStatus() {
   json += "\"limitL\":" + String(digitalRead(GOALIE_LIMIT_L_PIN));
   json += ",\"limitR\":" + String(digitalRead(GOALIE_LIMIT_R_PIN));
   json += ",\"calibrated\":" + String(isCalibrated ? 1 : 0);
-  json += ",\"travelTime\":" + String(travelTimeMs);
+  json += ",\"travelTime\":" + String((travelTimeLeftMs + travelTimeRightMs) / 2);
   json += ",\"currentPos\":" + String(currentPositionPercent);
   json += ",\"loopActive\":" + String(loopActive ? 1 : 0);
   json += ",\"loopMin\":" + String(loopMinPercent);
