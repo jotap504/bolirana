@@ -23,7 +23,8 @@ const char* password = "corsa000";
 // =========================================================================
 // ESTADO Y VARIABLES DE CALIBRACIÓN
 // =========================================================================
-int motorSpeed = 150;           // Velocidad PWM por defecto (0-255)
+int motorSpeed = 150;           // Velocidad PWM para control manual/desplazamiento (0-255)
+int calibrationSpeed = 70;      // Velocidad PWM para la autocalibración (lenta para no pasarse del sensor)
 unsigned long travelTimeMs = 0; // Tiempo total de desplazamiento de lado a lado (ms)
 float currentPositionPercent = 0.0; // Posición estimada (0% a 100%)
 bool isCalibrated = false;
@@ -78,8 +79,8 @@ void calibrateGoalie() {
   Serial.println("[CALIBRACIÓN] Buscando limite izquierdo...");
   unsigned long startWait = millis();
   while (digitalRead(GOALIE_LIMIT_L_PIN) == HIGH) {
-    moveLeft(120); // Velocidad moderada de calibración
-    if (millis() - startWait > 6000) { // Timeout de 6 segundos
+    moveLeft(calibrationSpeed); // Velocidad lenta de calibración
+    if (millis() - startWait > 12000) { // Timeout extendido a 12s por ir más lento
       stopGoalie();
       Serial.println("[CALIBRACIÓN] ERROR: Timeout buscando limite izquierdo.");
       return;
@@ -87,7 +88,7 @@ void calibrateGoalie() {
     delay(5);
   }
   stopGoalie();
-  delay(300);
+  delay(500); // Pausa para detener inercia
   Serial.println("[CALIBRACIÓN] Limite izquierdo alcanzado.");
 
   // 2. Mover hacia la derecha hasta presionar LIMIT_R y medir tiempo
@@ -95,8 +96,8 @@ void calibrateGoalie() {
   unsigned long startTime = millis();
   startWait = millis();
   while (digitalRead(GOALIE_LIMIT_R_PIN) == HIGH) {
-    moveRight(120);
-    if (millis() - startWait > 6000) {
+    moveRight(calibrationSpeed); // Velocidad lenta de calibración
+    if (millis() - startWait > 12000) {
       stopGoalie();
       Serial.println("[CALIBRACIÓN] ERROR: Timeout buscando limite derecho.");
       return;
