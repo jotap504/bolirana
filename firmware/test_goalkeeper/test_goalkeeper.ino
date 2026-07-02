@@ -35,6 +35,35 @@ bool loopActive = false;
 float loopMinPercent = 20.0;
 float loopMaxPercent = 80.0;
 
+// Variables de Secuencia de Prueba Automatizada
+enum SeqState {
+  SEQ_IDLE,
+  SEQ_P1_INIT,
+  SEQ_P1_CAL_L1,
+  SEQ_P1_CAL_R,
+  SEQ_P1_CAL_L2,
+  SEQ_P1_LOOP_START,
+  SEQ_P1_LOOP_MOVE,
+  SEQ_P1_LOOP_WAIT_MID,
+  SEQ_P1_LOOP_RESUME,
+  SEQ_P2_INIT,
+  SEQ_P2_CAL_L1,
+  SEQ_P2_CAL_R,
+  SEQ_P2_CAL_L2,
+  SEQ_P2_LOOP_START,
+  SEQ_P2_LOOP_MOVE,
+  SEQ_P2_STOP_40,
+  SEQ_P2_WAIT_40,
+  SEQ_P2_STOP_60,
+  SEQ_P2_WAIT_60,
+  SEQ_P2_FINAL_START,
+  SEQ_P2_FINAL_MOVE,
+  SEQ_DONE
+};
+SeqState seqState = SEQ_IDLE;
+int sequenceLoopCount = 0;
+unsigned long sequenceTimer = 0;
+
 enum GoalieState {
   GOALIE_IDLE,
   GOALIE_MOVING_LEFT,
@@ -250,6 +279,278 @@ void updateGoalieStateMachine() {
   }
 }
 
+// Máquina de estados no-bloqueante para la secuencia de pruebas especial
+void updateTestSequence() {
+  if (seqState == SEQ_IDLE) return;
+  
+  switch(seqState) {
+    case SEQ_P1_INIT:
+      motorSpeed = 40;
+      calibrationSpeed = 40;
+      isCalibrated = false;
+      Serial.println("\n[SECUENCIA] === INICIANDO PARTE 1 (Velocidad 40) ===");
+      seqState = SEQ_P1_CAL_L1;
+      moveLeft(calibrationSpeed);
+      sequenceTimer = millis();
+      break;
+      
+    case SEQ_P1_CAL_L1:
+      if (digitalRead(GOALIE_LIMIT_L_PIN) == LOW) {
+        stopGoalie();
+        delay(300);
+        Serial.println("[SECUENCIA] P1 Cal: Límite izquierdo alcanzado.");
+        seqState = SEQ_P1_CAL_R;
+        moveRight(calibrationSpeed);
+        sequenceTimer = millis();
+      } else if (millis() - sequenceTimer > 15000) {
+        stopGoalie();
+        Serial.println("[SECUENCIA] ERROR: Timeout buscando límite izquierdo en P1.");
+        seqState = SEQ_IDLE;
+      }
+      break;
+      
+    case SEQ_P1_CAL_R:
+      if (digitalRead(GOALIE_LIMIT_R_PIN) == LOW) {
+        travelTimeRightMs = millis() - sequenceTimer;
+        stopGoalie();
+        delay(300);
+        Serial.print("[SECUENCIA] P1 Cal: Límite derecho alcanzado. Tiempo de ida: ");
+        Serial.print(travelTimeRightMs);
+        Serial.println(" ms.");
+        seqState = SEQ_P1_CAL_L2;
+        moveLeft(calibrationSpeed);
+        sequenceTimer = millis();
+      } else if (millis() - sequenceTimer > 15000) {
+        stopGoalie();
+        Serial.println("[SECUENCIA] ERROR: Timeout buscando límite derecho en P1.");
+        seqState = SEQ_IDLE;
+      }
+      break;
+      
+    case SEQ_P1_CAL_L2:
+      if (digitalRead(GOALIE_LIMIT_L_PIN) == LOW) {
+        travelTimeLeftMs = millis() - sequenceTimer;
+        stopGoalie();
+        isCalibrated = true;
+        currentPositionPercent = 0.0;
+        Serial.print("[SECUENCIA] P1 Cal: Retorno izquierdo alcanzado. Tiempo de vuelta: ");
+        Serial.print(travelTimeLeftMs);
+        Serial.println(" ms.");
+        seqState = SEQ_P1_LOOP_START;
+      } else if (millis() - sequenceTimer > 15000) {
+        stopGoalie();
+        Serial.println("[SECUENCIA] ERROR: Timeout buscando retorno izquierdo en P1.");
+        seqState = SEQ_IDLE;
+      }
+      break;
+      
+    case SEQ_P1_LOOP_START:
+      Serial.println("[SECUENCIA] P1 Loop: Iniciando 10 viajes entre 30% y 70%.");
+      sequenceLoopCount = 0;
+      startMoveToPosition(30.0); // Posicionamiento inicial al 30%
+      seqState = SEQ_P1_LOOP_MOVE;
+      break;
+      
+    case SEQ_P1_LOOP_MOVE:
+      if (motorState == GOALIE_IDLE) {
+        if (sequenceLoopCount >= 10) {
+          Serial.println("[SECUENCIA] P1 Loop: 10 viajes completados.");
+          seqState = SEQ_P2_INIT;
+          break;
+        }
+        
+        float target = (sequenceLoopCount % 2 == 0) ? 70.0 : 30.0;
+        
+        // En los viajes 3 (index 2) y 7 (index 6), parar en el medio (50%) por 1 segundo
+        if ((sequenceLoopCount == 2 || sequenceLoopCount == 6) && currentPositionPercent < 50.0) {
+          Serial.print("[SECUENCIA] Viaje ");
+          Serial.print(sequenceLoopCount + 1);
+          Serial.println(": Parando en el medio (50%) por 1 segundo...");
+          startMoveToPosition(50.0);
+          seqState = SEQ_P1_LOOP_WAIT_MID;
+        } else {
+          Serial.print("[SECUENCIA] Viaje ");
+          Serial.print(sequenceLoopCount + 1);
+          Serial.print(" hacia ");
+          Serial.print(target);
+          Serial.println("%...");
+          startMoveToPosition(target);
+          sequenceLoopCount++;
+        }
+      }
+      break;
+      
+    case SEQ_P1_LOOP_WAIT_MID:
+      if (motorState == GOALIE_IDLE) {
+        stopGoalie();
+        sequenceTimer = millis();
+        seqState = SEQ_P1_LOOP_RESUME;
+      }
+      break;
+      
+    case SEQ_P1_LOOP_RESUME:
+      if (millis() - sequenceTimer >= 1000) {
+        Serial.println("[SECUENCIA] Resumiendo viaje hacia 70%...");
+        startMoveToPosition(70.0);
+        sequenceLoopCount++;
+        seqState = SEQ_P1_LOOP_MOVE;
+      }
+      break;
+      
+    case SEQ_P2_INIT:
+      motorSpeed = 70;
+      calibrationSpeed = 70;
+      isCalibrated = false;
+      Serial.println("\n[SECUENCIA] === INICIANDO PARTE 2 (Velocidad 70) ===");
+      seqState = SEQ_P2_CAL_L1;
+      moveLeft(calibrationSpeed);
+      sequenceTimer = millis();
+      break;
+      
+    case SEQ_P2_CAL_L1:
+      if (digitalRead(GOALIE_LIMIT_L_PIN) == LOW) {
+        stopGoalie();
+        delay(300);
+        Serial.println("[SECUENCIA] P2 Cal: Límite izquierdo alcanzado.");
+        seqState = SEQ_P2_CAL_R;
+        moveRight(calibrationSpeed);
+        sequenceTimer = millis();
+      } else if (millis() - sequenceTimer > 15000) {
+        stopGoalie();
+        Serial.println("[SECUENCIA] ERROR: Timeout buscando límite izquierdo en P2.");
+        seqState = SEQ_IDLE;
+      }
+      break;
+      
+    case SEQ_P2_CAL_R:
+      if (digitalRead(GOALIE_LIMIT_R_PIN) == LOW) {
+        travelTimeRightMs = millis() - sequenceTimer;
+        stopGoalie();
+        delay(300);
+        Serial.print("[SECUENCIA] P2 Cal: Límite derecho alcanzado. Tiempo de ida: ");
+        Serial.print(travelTimeRightMs);
+        Serial.println(" ms.");
+        seqState = SEQ_P2_CAL_L2;
+        moveLeft(calibrationSpeed);
+        sequenceTimer = millis();
+      } else if (millis() - sequenceTimer > 15000) {
+        stopGoalie();
+        Serial.println("[SECUENCIA] ERROR: Timeout buscando límite derecho en P2.");
+        seqState = SEQ_IDLE;
+      }
+      break;
+      
+    case SEQ_P2_CAL_L2:
+      if (digitalRead(GOALIE_LIMIT_L_PIN) == LOW) {
+        travelTimeLeftMs = millis() - sequenceTimer;
+        stopGoalie();
+        isCalibrated = true;
+        currentPositionPercent = 0.0;
+        Serial.print("[SECUENCIA] P2 Cal: Retorno izquierdo alcanzado. Tiempo de vuelta: ");
+        Serial.print(travelTimeLeftMs);
+        Serial.println(" ms.");
+        seqState = SEQ_P2_LOOP_START;
+      } else if (millis() - sequenceTimer > 15000) {
+        stopGoalie();
+        Serial.println("[SECUENCIA] ERROR: Timeout buscando retorno izquierdo en P2.");
+        seqState = SEQ_IDLE;
+      }
+      break;
+      
+    case SEQ_P2_LOOP_START:
+      Serial.println("[SECUENCIA] P2 Loop: Iniciando 10 viajes entre 20% y 80%.");
+      sequenceLoopCount = 0;
+      startMoveToPosition(20.0); // Posicionamiento inicial al 20%
+      seqState = SEQ_P2_LOOP_MOVE;
+      break;
+      
+    case SEQ_P2_LOOP_MOVE:
+      if (motorState == GOALIE_IDLE) {
+        if (sequenceLoopCount >= 10) {
+          Serial.println("[SECUENCIA] P2 Loop: 10 viajes completados.");
+          seqState = SEQ_P2_STOP_40;
+          break;
+        }
+        float target = (sequenceLoopCount % 2 == 0) ? 80.0 : 20.0;
+        Serial.print("[SECUENCIA] Viaje ");
+        Serial.print(sequenceLoopCount + 1);
+        Serial.print(" hacia ");
+        Serial.print(target);
+        Serial.println("%...");
+        startMoveToPosition(target);
+        sequenceLoopCount++;
+      }
+      break;
+      
+    case SEQ_P2_STOP_40:
+      if (motorState == GOALIE_IDLE) {
+        Serial.println("[SECUENCIA] Desplazando al 40%...");
+        startMoveToPosition(40.0);
+        seqState = SEQ_P2_WAIT_40;
+      }
+      break;
+      
+    case SEQ_P2_WAIT_40:
+      if (motorState == GOALIE_IDLE) {
+        stopGoalie();
+        Serial.println("[SECUENCIA] Detenido en 40% por 2 segundos...");
+        sequenceTimer = millis();
+        seqState = SEQ_P2_STOP_60;
+      }
+      break;
+      
+    case SEQ_P2_STOP_60:
+      if (millis() - sequenceTimer >= 2000) {
+        Serial.println("[SECUENCIA] Desplazando al 60%...");
+        startMoveToPosition(60.0);
+        seqState = SEQ_P2_WAIT_60;
+      }
+      break;
+      
+    case SEQ_P2_WAIT_60:
+      if (motorState == GOALIE_IDLE) {
+        stopGoalie();
+        Serial.println("[SECUENCIA] Detenido en 60% por 2 segundos...");
+        sequenceTimer = millis();
+        seqState = SEQ_P2_FINAL_START;
+      }
+      break;
+      
+    case SEQ_P2_FINAL_START:
+      if (millis() - sequenceTimer >= 2000) {
+        Serial.println("[SECUENCIA] Iniciando 5 viajes finales entre 30% y 70%.");
+        sequenceLoopCount = 0;
+        startMoveToPosition(30.0);
+        seqState = SEQ_P2_FINAL_MOVE;
+      }
+      break;
+      
+    case SEQ_P2_FINAL_MOVE:
+      if (motorState == GOALIE_IDLE) {
+        if (sequenceLoopCount >= 5) {
+          Serial.println("[SECUENCIA] Secuencia finalizada.");
+          seqState = SEQ_DONE;
+          break;
+        }
+        float target = (sequenceLoopCount % 2 == 0) ? 70.0 : 30.0;
+        Serial.print("[SECUENCIA] Viaje final ");
+        Serial.print(sequenceLoopCount + 1);
+        Serial.print(" hacia ");
+        Serial.print(target);
+        Serial.println("%...");
+        startMoveToPosition(target);
+        sequenceLoopCount++;
+      }
+      break;
+      
+    case SEQ_DONE:
+      stopGoalie();
+      seqState = SEQ_IDLE;
+      Serial.println("[SECUENCIA] === SECUENCIA COMPLETA FINALIZADA CON ÉXITO ===");
+      break;
+  }
+}
+
 // =========================================================================
 // INTERFAZ DASHBOARD EN VIVO (HTML/JS)
 // =========================================================================
@@ -445,6 +746,16 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <input type="range" id="input-loop-max" min="55" max="95" value="80" oninput="updateVal('loop-max', this.value + '%')">
             </div>
         </div>
+
+        <!-- SECUENCIA DE PRUEBA -->
+        <div class="section">
+            <div class="section-title">Secuencia de Prueba Automatizada</div>
+            <div style="margin-bottom:12px">
+                <span>Estado Secuencia:</span>
+                <span id="seq-status" class="badge badge-free">INACTIVO</span>
+            </div>
+            <button class="btn-primary" style="width:100%; background:linear-gradient(135deg, #f59e0b, #d97706)" onclick="startSequence()">🚀 EJECUTAR SECUENCIA DE PRUEBA</button>
+        </div>
     </div>
 
     <script>
@@ -505,6 +816,16 @@ const char index_html[] PROGMEM = R"rawliteral(
                     inputLoop.checked = data.loopActive === 1;
                 }
 
+                // Actualizar estado de secuencia de prueba
+                const seqStatus = document.getElementById('seq-status');
+                if (data.seqState > 0) {
+                    seqStatus.className = 'badge badge-pressed';
+                    seqStatus.textContent = 'EJECUTANDO (Paso ' + data.seqState + ')';
+                } else {
+                    seqStatus.className = 'badge badge-free';
+                    seqStatus.textContent = 'INACTIVO';
+                }
+
             } catch(e) {
                 console.error("Error leyendo estado del arquero:", e);
             }
@@ -547,6 +868,12 @@ const char index_html[] PROGMEM = R"rawliteral(
             await fetch(`/action?cmd=loop&active=${active}&min=${min}&max=${max}`);
         }
 
+        async function startSequence() {
+            if (confirm("¿Deseas iniciar la secuencia de prueba completa? (Velocidad 40 y 70 con paradas dinámicas)")) {
+                await fetch('/action?cmd=sequence');
+            }
+        }
+
         // Leer estado
         setInterval(loadStatus, 500);
     </script>
@@ -572,6 +899,7 @@ void handleStatus() {
   json += ",\"loopActive\":" + String(loopActive ? 1 : 0);
   json += ",\"loopMin\":" + String(loopMinPercent);
   json += ",\"loopMax\":" + String(loopMaxPercent);
+  json += ",\"seqState\":" + String(seqState);
   json += "}";
   server.send(200, "application/json", json);
 }
@@ -585,11 +913,13 @@ void handleAction() {
     
     if (cmd == "stop") {
       loopActive = false;
+      seqState = SEQ_IDLE;
       stopGoalie();
       motorState = GOALIE_IDLE;
     }
     else if (cmd == "move" && server.hasArg("dir")) {
       loopActive = false;
+      seqState = SEQ_IDLE;
       motorState = GOALIE_IDLE;
       String dir = server.arg("dir");
       Serial.print("[WEB] -> Dirección de movimiento: ");
@@ -604,6 +934,7 @@ void handleAction() {
     }
     else if (cmd == "pos" && server.hasArg("val")) {
       loopActive = false;
+      seqState = SEQ_IDLE;
       motorState = GOALIE_IDLE;
       float val = server.arg("val").toFloat();
       Serial.print("[WEB] -> Solicitando ir a posición: ");
@@ -615,6 +946,7 @@ void handleAction() {
       calibrateGoalie();
     }
     else if (cmd == "loop") {
+      seqState = SEQ_IDLE;
       if (server.hasArg("active")) {
         loopActive = (server.arg("active").toInt() == 1);
       }
@@ -638,6 +970,12 @@ void handleAction() {
         stopGoalie();
         motorState = GOALIE_IDLE;
       }
+    }
+    else if (cmd == "sequence") {
+      loopActive = false;
+      motorState = GOALIE_IDLE;
+      seqState = SEQ_P1_INIT; // Iniciar secuencia
+      Serial.println("[WEB] -> Solicitando inicio de secuencia de prueba automatizada.");
     }
   }
   server.send(200, "text/plain", "OK");
@@ -707,6 +1045,9 @@ void loop() {
 
   // Actualizar la máquina de estados del movimiento del arquero (No-bloqueante)
   updateGoalieStateMachine();
+
+  // Actualizar la secuencia de prueba automatizada (No-bloqueante)
+  updateTestSequence();
 
   // Control de seguridad por hardware adicional en caso de fallo
   if (currentL == LOW && motorState == GOALIE_IDLE) {
