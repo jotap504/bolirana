@@ -541,12 +541,29 @@ void setup() {
 void loop() {
   server.handleClient();
 
+  static bool lastL = HIGH;
+  static bool lastR = HIGH;
+  bool currentL = digitalRead(GOALIE_LIMIT_L_PIN);
+  bool currentR = digitalRead(GOALIE_LIMIT_R_PIN);
+
+  // Informar por consola serial si el estado físico de los sensores cambia
+  if (currentL != lastL) {
+    lastL = currentL;
+    Serial.print("[SENSOR] Límite Izquierdo cambió a: ");
+    Serial.println(currentL == LOW ? "DETECTADO (LOW)" : "LIBRE (HIGH)");
+  }
+  if (currentR != lastR) {
+    lastR = currentR;
+    Serial.print("[SENSOR] Límite Derecho cambió a: ");
+    Serial.println(currentR == LOW ? "DETECTADO (LOW)" : "LIBRE (HIGH)");
+  }
+
   // Control de seguridad por hardware: si se está moviendo y toca un switch, frenar al instante
-  if (digitalRead(GOALIE_LIMIT_L_PIN) == LOW) {
+  if (currentL == LOW) {
     // Si toca izquierda, asegurar que se anule el giro a la izquierda
     analogWrite(GOALIE_LPWM_PIN, 0);
   }
-  if (digitalRead(GOALIE_LIMIT_R_PIN) == LOW) {
+  if (currentR == LOW) {
     // Si toca derecha, asegurar que se anule el giro a la derecha
     analogWrite(GOALIE_RPWM_PIN, 0);
   }
