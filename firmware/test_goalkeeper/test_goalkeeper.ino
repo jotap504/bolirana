@@ -696,9 +696,13 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <span>Estado Calibración:</span>
                 <span id="cal-status" class="badge badge-pressed">SIN CALIBRAR</span>
             </div>
-            <div style="margin-bottom:15px">
+            <div style="margin-bottom:12px">
                 <span>Tiempo Recorrido:</span>
                 <span id="cal-time" class="val-display" style="float:none">0 ms</span>
+            </div>
+            <div style="margin-bottom:15px">
+                <label>Velocidad Calibración (PWM)<span id="val-cal-speed" class="val-display">60</span></label>
+                <input type="range" id="input-cal-speed" min="30" max="150" value="60" onchange="updateCalSpeed(this.value)">
             </div>
             <button class="btn-primary" style="width:100%" onclick="calibrate()">📐 INICIAR AUTO-CALIBRACIÓN</button>
         </div>
@@ -805,6 +809,13 @@ const char index_html[] PROGMEM = R"rawliteral(
 
                 document.getElementById('cal-time').textContent = data.travelTime + ' ms';
                 
+                // Actualizar velocidad de calibración desde el estado
+                const inputCalSpeed = document.getElementById('input-cal-speed');
+                if (document.activeElement !== inputCalSpeed) {
+                    inputCalSpeed.value = data.calSpeed;
+                    updateVal('cal-speed', data.calSpeed);
+                }
+
                 // Si no se está arrastrando el slider de posición, actualizar valor
                 if (document.activeElement !== inputPos) {
                     inputPos.value = Math.round(data.currentPos);
@@ -861,6 +872,11 @@ const char index_html[] PROGMEM = R"rawliteral(
             await fetch('/action?cmd=calibrate');
         }
 
+        async function updateCalSpeed(val) {
+            updateVal('cal-speed', val);
+            await fetch(`/action?cmd=calSpeed&val=${val}`);
+        }
+
         async function toggleLoop(checked) {
             const min = document.getElementById('input-loop-min').value;
             const max = document.getElementById('input-loop-max').value;
@@ -900,6 +916,7 @@ void handleStatus() {
   json += ",\"loopMin\":" + String(loopMinPercent);
   json += ",\"loopMax\":" + String(loopMaxPercent);
   json += ",\"seqState\":" + String(seqState);
+  json += ",\"calSpeed\":" + String(calibrationSpeed);
   json += "}";
   server.send(200, "application/json", json);
 }
@@ -931,6 +948,11 @@ void handleAction() {
       motorSpeed = server.arg("val").toInt();
       Serial.print("[WEB] -> Cambiando velocidad PWM a: ");
       Serial.println(motorSpeed);
+    }
+    else if (cmd == "calSpeed" && server.hasArg("val")) {
+      calibrationSpeed = server.arg("val").toInt();
+      Serial.print("[WEB] -> Cambiando velocidad de calibración a: ");
+      Serial.println(calibrationSpeed);
     }
     else if (cmd == "pos" && server.hasArg("val")) {
       loopActive = false;
