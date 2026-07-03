@@ -34,7 +34,17 @@ bool isCalibrated = false;
 bool loopActive = false;
 float loopMinPercent = 20.0;
 float loopMaxPercent = 80.0;
-int gameLoopStep = 0;
+
+enum LoopState {
+  LOOP_TRAVELING,
+  LOOP_PAUSING_MID,
+  LOOP_GOING_MID
+};
+LoopState gameLoopState = LOOP_TRAVELING;
+int loopPhase = 1;
+int loopTravelCount = 0;
+int loopTargetTravels = 6;
+bool currentLoopDirection = true;
 unsigned long gameLoopTimer = 0;
 
 // Variables de Secuencia de Prueba Automatizada
@@ -533,111 +543,66 @@ void updateTestSequence() {
   }
 }
 
-// Máquina de estados no-bloqueante para el Bucle de Juego Automático (Doble Secuencia)
+// Máquina de estados no-bloqueante para el Bucle de Juego Automático (Multifase fin-a-fin)
 void updateGameLoopState() {
   if (!loopActive) return;
   
-  switch(gameLoopStep) {
-    case 0:
-      Serial.println("[BUCLE JUEGO] Iniciando viaje a 20%...");
-      startMoveToPosition(20.0);
-      gameLoopStep = 1;
-      break;
-    case 1:
+  switch(gameLoopState) {
+    case LOOP_TRAVELING:
       if (motorState == GOALIE_IDLE) {
-        Serial.println("[BUCLE JUEGO] Llegó a 20%. Pausa de 0.5s.");
-        gameLoopTimer = millis();
-        gameLoopStep = 2;
+        if (loopTravelCount >= loopTargetTravels) {
+          Serial.print("[BUCLE JUEGO] Fase ");
+          Serial.print(loopPhase);
+          Serial.println(" completada. Desplazando al centro (50%)...");
+          startMoveToPosition(50.0);
+          gameLoopState = LOOP_GOING_MID;
+        } else {
+          float target = currentLoopDirection ? 100.0 : 0.0;
+          Serial.print("[BUCLE JUEGO] Viaje ");
+          Serial.print(loopTravelCount + 1);
+          Serial.print("/");
+          Serial.print(loopTargetTravels);
+          Serial.print(" en Fase ");
+          Serial.print(loopPhase);
+          Serial.print(" hacia ");
+          Serial.print(target);
+          Serial.println("%...");
+          
+          startMoveToPosition(target);
+          currentLoopDirection = !currentLoopDirection;
+          loopTravelCount++;
+        }
       }
       break;
-    case 2:
-      if (millis() - gameLoopTimer >= 500) {
-        gameLoopStep = 3;
-      }
-      break;
-    case 3:
-      Serial.println("[BUCLE JUEGO] Iniciando viaje a 80%...");
-      startMoveToPosition(80.0);
-      gameLoopStep = 4;
-      break;
-    case 4:
+      
+    case LOOP_GOING_MID:
       if (motorState == GOALIE_IDLE) {
-        Serial.println("[BUCLE JUEGO] Llegó a 80%. Pausa de 0.5s.");
+        Serial.println("[BUCLE JUEGO] Llegó al centro. Deteniendo 1 segundo...");
         gameLoopTimer = millis();
-        gameLoopStep = 5;
+        gameLoopState = LOOP_PAUSING_MID;
       }
       break;
-    case 5:
-      if (millis() - gameLoopTimer >= 500) {
-        gameLoopStep = 6;
-      }
-      break;
-    case 6:
-      Serial.println("[BUCLE JUEGO] Iniciando viaje al Centro (50%)...");
-      startMoveToPosition(50.0);
-      gameLoopStep = 7;
-      break;
-    case 7:
-      if (motorState == GOALIE_IDLE) {
-        Serial.println("[BUCLE JUEGO] Llegó a 50%. Pausa de 1.0s.");
-        gameLoopTimer = millis();
-        gameLoopStep = 8;
-      }
-      break;
-    case 8:
+      
+    case LOOP_PAUSING_MID:
       if (millis() - gameLoopTimer >= 1000) {
-        gameLoopStep = 9;
-      }
-      break;
-    case 9:
-      Serial.println("[BUCLE JUEGO] Iniciando viaje a 30%...");
-      startMoveToPosition(30.0);
-      gameLoopStep = 10;
-      break;
-    case 10:
-      if (motorState == GOALIE_IDLE) {
-        Serial.println("[BUCLE JUEGO] Llegó a 30%. Pausa de 0.5s.");
-        gameLoopTimer = millis();
-        gameLoopStep = 11;
-      }
-      break;
-    case 11:
-      if (millis() - gameLoopTimer >= 500) {
-        gameLoopStep = 12;
-      }
-      break;
-    case 12:
-      Serial.println("[BUCLE JUEGO] Iniciando viaje a 70%...");
-      startMoveToPosition(70.0);
-      gameLoopStep = 13;
-      break;
-    case 13:
-      if (motorState == GOALIE_IDLE) {
-        Serial.println("[BUCLE JUEGO] Llegó a 70%. Pausa de 0.5s.");
-        gameLoopTimer = millis();
-        gameLoopStep = 14;
-      }
-      break;
-    case 14:
-      if (millis() - gameLoopTimer >= 500) {
-        gameLoopStep = 15;
-      }
-      break;
-    case 15:
-      Serial.println("[BUCLE JUEGO] Iniciando viaje al Centro (50%)...");
-      startMoveToPosition(50.0);
-      gameLoopStep = 16;
-      break;
-    case 16:
-      if (motorState == GOALIE_IDLE) {
-        Serial.println("[BUCLE JUEGO] Llegó a 50%. Pausa de 1.0s.");
-        gameLoopTimer = millis();
-        gameLoopStep = 17;
-      }
-      break;
-    case 17:
-      if (millis() - gameLoopTimer >= 1000) {
-        gameLoopStep = 0;
+        loopPhase++;
+        if (loopPhase > 3) {
+          loopPhase = 1;
+        }
+        
+        loopTravelCount = 0;
+        if (loopPhase == 1) {
+          loopTargetTravels = 6; // 3 ida y vuelta
+          Serial.println("\n[BUCLE JUEGO] === INICIANDO FASE 1 (3 viajes de ida y vuelta) ===");
+        } else if (loopPhase == 2) {
+          loopTargetTravels = 4; // 2 ida y vuelta
+          Serial.println("\n[BUCLE JUEGO] === INICIANDO FASE 2 (2 viajes de ida y vuelta) ===");
+        } else if (loopPhase == 3) {
+          loopTargetTravels = 10; // 5 ida y vuelta
+          Serial.println("\n[BUCLE JUEGO] === INICIANDO FASE 3 (5 viajes de ida y vuelta) ===");
+        }
+        
+        gameLoopState = LOOP_TRAVELING;
       }
       break;
   }
@@ -825,7 +790,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
         <!-- BUCLE AUTOMÁTICO -->
         <div class="section">
-            <div class="section-title">Bucle de Juego (Secuencias 20-80 y 30-70)</div>
+            <div class="section-title">Bucle de Juego (Secuencia Dinámica Fin-a-Fin)</div>
             <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center">
                 <span>Activar Bucle Infinito:</span>
                 <label class="switch">
@@ -834,10 +799,11 @@ const char index_html[] PROGMEM = R"rawliteral(
                 </label>
             </div>
             <div style="font-size:0.85em; color:var(--muted); line-height:1.4">
-                <strong>Secuencia activa:</strong><br>
-                1. Ir a 20% (pausa 0.5s) → 80% (pausa 0.5s) → Centro 50% (pausa 1s).<br>
-                2. Ir a 30% (pausa 0.5s) → 70% (pausa 0.5s) → Centro 50% (pausa 1s).<br>
-                3. Repetir bucle indefinidamente.
+                <strong>Secuencia activa (Fin a Fin):</strong><br>
+                1. 3 viajes de ida y vuelta → Detener en el medio 1s.<br>
+                2. 2 viajes de ida y vuelta → Detener en el medio 1s.<br>
+                3. 5 viajes de ida y vuelta → Detener en el medio 1s.<br>
+                4. Repetir bucle de forma infinita.
             </div>
         </div>
 
@@ -1065,7 +1031,12 @@ void handleAction() {
       Serial.println(loopActive);
       
       if (loopActive) {
-        gameLoopStep = 0; // Iniciar secuencia del bucle de juego
+        gameLoopState = LOOP_TRAVELING;
+        loopPhase = 1;
+        loopTravelCount = 0;
+        loopTargetTravels = 6;       // Fase 1: 3 ida y vuelta = 6 viajes sencillos
+        currentLoopDirection = true; // Empezar viajando a la derecha (100.0%)
+        Serial.println("\n[BUCLE JUEGO] === INICIANDO FASE 1 (3 viajes de ida y vuelta) ===");
       } else {
         stopGoalie();
         motorState = GOALIE_IDLE;
