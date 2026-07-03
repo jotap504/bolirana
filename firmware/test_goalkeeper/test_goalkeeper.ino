@@ -23,8 +23,8 @@ const char* password = "corsa000";
 // =========================================================================
 // ESTADO Y VARIABLES DE CALIBRACIÓN
 // =========================================================================
-int motorSpeed = 150;           // Velocidad PWM para control manual/desplazamiento (0-255)
-int calibrationSpeed = 60;      // Velocidad PWM para la autocalibración (lenta para no pasarse del sensor)
+int motorSpeed = 70;            // Velocidad PWM para control manual/desplazamiento (0-255)
+int calibrationSpeed = 70;      // Velocidad PWM para la autocalibración (lenta para no pasarse del sensor)
 unsigned long travelTimeRightMs = 0; // Tiempo de Izquierda a Derecha (ms)
 unsigned long travelTimeLeftMs = 0;  // Tiempo de Derecha a Izquierda (ms)
 float currentPositionPercent = 0.0; // Posición estimada (0% a 100%)
@@ -34,6 +34,8 @@ bool isCalibrated = false;
 bool loopActive = false;
 float loopMinPercent = 20.0;
 float loopMaxPercent = 80.0;
+int gameLoopStep = 0;
+unsigned long gameLoopTimer = 0;
 
 // Variables de Secuencia de Prueba Automatizada
 enum SeqState {
@@ -199,14 +201,6 @@ void startMoveToPosition(float targetPercent) {
   
   float diff = targetPercent - currentPositionPercent;
   if (abs(diff) < 2.0) {
-    // Si ya llegamos a la posición objetivo y el bucle está activo, alternar de inmediato
-    if (loopActive) {
-      if (abs(targetPercent - loopMinPercent) < 5.0) {
-        startMoveToPosition(loopMaxPercent);
-      } else {
-        startMoveToPosition(loopMinPercent);
-      }
-    }
     return;
   }
   
@@ -240,9 +234,6 @@ void updateGoalieStateMachine() {
       currentPositionPercent = 0.0;
       motorState = GOALIE_IDLE;
       Serial.println("[MOTOR] Límite Izquierdo alcanzado físicamente.");
-      if (loopActive) {
-        startMoveToPosition(loopMaxPercent);
-      }
     }
     // Caso 2: Se completa el tiempo calculado
     else if (millis() - movementStartTime >= movementDuration) {
@@ -250,9 +241,6 @@ void updateGoalieStateMachine() {
       currentPositionPercent = targetPositionPercent;
       motorState = GOALIE_IDLE;
       Serial.println("[MOTOR] Movimiento Izquierda completado por tiempo.");
-      if (loopActive) {
-        startMoveToPosition(loopMaxPercent);
-      }
     }
   }
   else if (motorState == GOALIE_MOVING_RIGHT) {
@@ -262,9 +250,6 @@ void updateGoalieStateMachine() {
       currentPositionPercent = 100.0;
       motorState = GOALIE_IDLE;
       Serial.println("[MOTOR] Límite Derecho alcanzado físicamente.");
-      if (loopActive) {
-        startMoveToPosition(loopMinPercent);
-      }
     }
     // Caso 2: Se completa el tiempo calculado
     else if (millis() - movementStartTime >= movementDuration) {
@@ -272,9 +257,6 @@ void updateGoalieStateMachine() {
       currentPositionPercent = targetPositionPercent;
       motorState = GOALIE_IDLE;
       Serial.println("[MOTOR] Movimiento Derecha completado por tiempo.");
-      if (loopActive) {
-        startMoveToPosition(loopMinPercent);
-      }
     }
   }
 }
@@ -551,6 +533,116 @@ void updateTestSequence() {
   }
 }
 
+// Máquina de estados no-bloqueante para el Bucle de Juego Automático (Doble Secuencia)
+void updateGameLoopState() {
+  if (!loopActive) return;
+  
+  switch(gameLoopStep) {
+    case 0:
+      Serial.println("[BUCLE JUEGO] Iniciando viaje a 20%...");
+      startMoveToPosition(20.0);
+      gameLoopStep = 1;
+      break;
+    case 1:
+      if (motorState == GOALIE_IDLE) {
+        Serial.println("[BUCLE JUEGO] Llegó a 20%. Pausa de 0.5s.");
+        gameLoopTimer = millis();
+        gameLoopStep = 2;
+      }
+      break;
+    case 2:
+      if (millis() - gameLoopTimer >= 500) {
+        gameLoopStep = 3;
+      }
+      break;
+    case 3:
+      Serial.println("[BUCLE JUEGO] Iniciando viaje a 80%...");
+      startMoveToPosition(80.0);
+      gameLoopStep = 4;
+      break;
+    case 4:
+      if (motorState == GOALIE_IDLE) {
+        Serial.println("[BUCLE JUEGO] Llegó a 80%. Pausa de 0.5s.");
+        gameLoopTimer = millis();
+        gameLoopStep = 5;
+      }
+      break;
+    case 5:
+      if (millis() - gameLoopTimer >= 500) {
+        gameLoopStep = 6;
+      }
+      break;
+    case 6:
+      Serial.println("[BUCLE JUEGO] Iniciando viaje al Centro (50%)...");
+      startMoveToPosition(50.0);
+      gameLoopStep = 7;
+      break;
+    case 7:
+      if (motorState == GOALIE_IDLE) {
+        Serial.println("[BUCLE JUEGO] Llegó a 50%. Pausa de 1.0s.");
+        gameLoopTimer = millis();
+        gameLoopStep = 8;
+      }
+      break;
+    case 8:
+      if (millis() - gameLoopTimer >= 1000) {
+        gameLoopStep = 9;
+      }
+      break;
+    case 9:
+      Serial.println("[BUCLE JUEGO] Iniciando viaje a 30%...");
+      startMoveToPosition(30.0);
+      gameLoopStep = 10;
+      break;
+    case 10:
+      if (motorState == GOALIE_IDLE) {
+        Serial.println("[BUCLE JUEGO] Llegó a 30%. Pausa de 0.5s.");
+        gameLoopTimer = millis();
+        gameLoopStep = 11;
+      }
+      break;
+    case 11:
+      if (millis() - gameLoopTimer >= 500) {
+        gameLoopStep = 12;
+      }
+      break;
+    case 12:
+      Serial.println("[BUCLE JUEGO] Iniciando viaje a 70%...");
+      startMoveToPosition(70.0);
+      gameLoopStep = 13;
+      break;
+    case 13:
+      if (motorState == GOALIE_IDLE) {
+        Serial.println("[BUCLE JUEGO] Llegó a 70%. Pausa de 0.5s.");
+        gameLoopTimer = millis();
+        gameLoopStep = 14;
+      }
+      break;
+    case 14:
+      if (millis() - gameLoopTimer >= 500) {
+        gameLoopStep = 15;
+      }
+      break;
+    case 15:
+      Serial.println("[BUCLE JUEGO] Iniciando viaje al Centro (50%)...");
+      startMoveToPosition(50.0);
+      gameLoopStep = 16;
+      break;
+    case 16:
+      if (motorState == GOALIE_IDLE) {
+        Serial.println("[BUCLE JUEGO] Llegó a 50%. Pausa de 1.0s.");
+        gameLoopTimer = millis();
+        gameLoopStep = 17;
+      }
+      break;
+    case 17:
+      if (millis() - gameLoopTimer >= 1000) {
+        gameLoopStep = 0;
+      }
+      break;
+  }
+}
+
 // =========================================================================
 // INTERFAZ DASHBOARD EN VIVO (HTML/JS)
 // =========================================================================
@@ -733,21 +825,19 @@ const char index_html[] PROGMEM = R"rawliteral(
 
         <!-- BUCLE AUTOMÁTICO -->
         <div class="section">
-            <div class="section-title">Bucle Automático (Simulación Juego)</div>
+            <div class="section-title">Bucle de Juego (Secuencias 20-80 y 30-70)</div>
             <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center">
-                <span>Activar Bucle de Movimiento:</span>
+                <span>Activar Bucle Infinito:</span>
                 <label class="switch">
                     <input type="checkbox" id="input-loop" disabled onchange="toggleLoop(this.checked)">
                     <span class="slider"></span>
                 </label>
             </div>
-            <div class="form-row">
-                <label>Límite Mínimo (Izquierda)<span id="val-loop-min" class="val-display">20%</span></label>
-                <input type="range" id="input-loop-min" min="5" max="45" value="20" oninput="updateVal('loop-min', this.value + '%')">
-            </div>
-            <div class="form-row">
-                <label>Límite Máximo (Derecha)<span id="val-loop-max" class="val-display">80%</span></label>
-                <input type="range" id="input-loop-max" min="55" max="95" value="80" oninput="updateVal('loop-max', this.value + '%')">
+            <div style="font-size:0.85em; color:var(--muted); line-height:1.4">
+                <strong>Secuencia activa:</strong><br>
+                1. Ir a 20% (pausa 0.5s) → 80% (pausa 0.5s) → Centro 50% (pausa 1s).<br>
+                2. Ir a 30% (pausa 0.5s) → 70% (pausa 0.5s) → Centro 50% (pausa 1s).<br>
+                3. Repetir bucle indefinidamente.
             </div>
         </div>
 
@@ -878,10 +968,8 @@ const char index_html[] PROGMEM = R"rawliteral(
         }
 
         async function toggleLoop(checked) {
-            const min = document.getElementById('input-loop-min').value;
-            const max = document.getElementById('input-loop-max').value;
             const active = checked ? 1 : 0;
-            await fetch(`/action?cmd=loop&active=${active}&min=${min}&max=${max}`);
+            await fetch(`/action?cmd=loop&active=${active}`);
         }
 
         async function startSequence() {
@@ -972,22 +1060,12 @@ void handleAction() {
       if (server.hasArg("active")) {
         loopActive = (server.arg("active").toInt() == 1);
       }
-      if (server.hasArg("min")) {
-        loopMinPercent = server.arg("min").toFloat();
-      }
-      if (server.hasArg("max")) {
-        loopMaxPercent = server.arg("max").toFloat();
-      }
       
-      Serial.print("[WEB] -> Configurando bucle. Activo: ");
-      Serial.print(loopActive);
-      Serial.print(" | Min: ");
-      Serial.print(loopMinPercent);
-      Serial.print(" | Max: ");
-      Serial.println(loopMaxPercent);
+      Serial.print("[WEB] -> Configurando bucle de juego. Activo: ");
+      Serial.println(loopActive);
       
       if (loopActive) {
-        startMoveToPosition(loopMinPercent); // Iniciar bucle
+        gameLoopStep = 0; // Iniciar secuencia del bucle de juego
       } else {
         stopGoalie();
         motorState = GOALIE_IDLE;
@@ -1070,6 +1148,9 @@ void loop() {
 
   // Actualizar la secuencia de prueba automatizada (No-bloqueante)
   updateTestSequence();
+
+  // Actualizar el bucle de juego infinito (No-bloqueante)
+  updateGameLoopState();
 
   // Control de seguridad por hardware adicional en caso de fallo
   if (currentL == LOW && motorState == GOALIE_IDLE) {
