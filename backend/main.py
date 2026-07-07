@@ -113,6 +113,9 @@ async def lifespan(app: FastAPI):
     async def _handle_hw_status(connected: bool) -> None:
         await app.state.ws.broadcast({"type": "hw_status", "connected": connected})
 
+    async def _handle_hw_raw_line(line: str) -> None:
+        await app.state.ws.send_admin({"type": "serial_log", "line": line})
+
     is_cloud = get_config().get("cloud_mode")
     app.state.ws     = WSManager()
     app.state.engine = GameEngine(
@@ -121,7 +124,8 @@ async def lifespan(app: FastAPI):
     )
     app.state.bridge = SerialBridge(
         on_event=_handle_hw_event(app),
-        on_status_change=_handle_hw_status
+        on_status_change=_handle_hw_status,
+        on_raw_line=_handle_hw_raw_line
     )
     await app.state.bridge.start()
     

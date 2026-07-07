@@ -11,9 +11,10 @@ EventHandler = Callable[[dict], Awaitable[None]]
 
 
 class SerialBridge:
-    def __init__(self, on_event: EventHandler, on_status_change: Callable[[bool], Awaitable[None]] = None):
+    def __init__(self, on_event: EventHandler, on_status_change: Callable[[bool], Awaitable[None]] = None, on_raw_line: Callable[[str], Awaitable[None]] = None):
         self._on_event  = on_event
         self._on_status_change = on_status_change
+        self._on_raw_line = on_raw_line
         self._serial    = None
         self._running   = False
         self.hardware_ws = None  # Para el modo híbrido en la nube
@@ -26,6 +27,9 @@ class SerialBridge:
         if cfg.get("serial", {}).get("mock"):
             return True
         return self._serial is not None and self._serial.is_open
+
+    def is_mock(self) -> bool:
+        return get_config().get("serial", {}).get("mock", False)
 
     async def _update_status(self, connected: bool) -> None:
         if connected != self._last_connected:
@@ -61,6 +65,8 @@ class SerialBridge:
     async def send(self, cmd: dict) -> None:
         """Envía comando al ESP32."""
         data = json.dumps(cmd)
+        if self._on_raw_line:
+            await self._on_raw_line(f"[TX (Enviado)] {data}")
         if self.hardware_ws:
             try:
                 await self.hardware_ws.send_text(data)
@@ -103,18 +109,26 @@ class SerialBridge:
                     active_port = detected
                 else:
                     await self._update_status(False)
+                    if self._on_raw_line:
+                        await self._on_raw_line("[SYSTEM] Buscando puerto ESP32 (CP210x/CH340)...")
                     # Si no se encontró el ESP32, esperar antes de volver a buscar
                     await asyncio.sleep(3)
                     continue
                 self._serial = serial.Serial(active_port, baud, timeout=1)
                 log.info("Serial abierto con éxito: %s @ %d", active_port, baud)
+                if self._on_raw_line:
+                    await self._on_raw_line(f"[SYSTEM] Puerto serie abierto: {active_port} @ {baud}")
                 await self._update_status(True)
                 try:
                     while self._running:
                         line = await asyncio.get_event_loop().run_in_executor(
                             None, self._serial.readline)
                         if line:
-                            await self._parse(line.decode().strip())
+                            decoded = line.decode('utf-8', errors='replace').strip()
+                            if decoded:
+                                if self._on_raw_line:
+                                    await self._on_raw_line(decoded)
+                                await self._parse(decoded)
                 finally:
                     # Asegurar que el puerto se cierre siempre al salir del loop interno
                     try:
@@ -123,8 +137,12 @@ class SerialBridge:
                         pass
                     self._serial = None
                     await self._update_status(False)
+                    if self._on_raw_line:
+                        await self._on_raw_line("[SYSTEM] Puerto serie cerrado.")
             except Exception as e:
                 log.error("Serial error (Puerto: %s): %s — reintentando en 3s", active_port, e)
+                if self._on_raw_line:
+                    await self._on_raw_line(f"[SYSTEM] Error de puerto serie ({active_port}): {str(e)}")
                 if self._serial:
                     try:
                         self._serial.close()
@@ -146,14 +164,20 @@ class SerialBridge:
         cfg = get_config()
         zones = [s["id"] for s in cfg["sensors"] if s.get("enabled")]
         import os
+        if self._on_raw_line:
+            await self._on_raw_line("[MOCK] Bucle de simulación iniciado. No hay hardware físico conectado.")
         while self._running:
             sleep_time = random.uniform(60, 120) if os.getenv("SLOW_MOCK") else random.uniform(4, 8)
             await asyncio.sleep(sleep_time)
             if zones:
                 zone = random.choice(zones)
                 # 1. Simular impacto en sensor
+                if self._on_raw_line:
+                    await self._on_raw_line(f"[MOCK (RX)] Impacto en sensor: {zone}")
                 await self._on_event({"t": "sensor", "id": zone})
                 
                 # 2. Esperar 1.8 segundos y simular salida de bola del campo (consume ball / cambio de turno)
                 await asyncio.sleep(1.8)
+                if self._on_raw_line:
+                    await self._on_raw_line("[MOCK (RX)] Bola salida del campo.")
                 await self._on_event({"t": "ball"})

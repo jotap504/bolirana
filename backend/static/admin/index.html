@@ -740,6 +740,22 @@
       <div class="card-title">ESTADO EN TIEMPO REAL</div>
       <div class="stat-grid" id="stat-grid"></div>
     </div>
+
+    <!-- MONITOR SERIAL ESP32 -->
+    <div class="card" style="border-color: #00f0ff;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0; color:#00f0ff; border-left-color:#00f0ff;">MONITOR SERIAL ESP32</div>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="console-autoscroll" checked style="width:16px; height:16px; cursor:pointer;">
+            <label for="console-autoscroll" style="font-size:11px; margin-bottom:0; text-transform:none; cursor:pointer; user-select:none;">Auto-scroll</label>
+          </div>
+          <button class="btn btn-sim" onclick="clearSerialConsole()" style="padding:6px 12px; font-size:11px; font-weight:bold; border:1px solid var(--border); background:rgba(0, 240, 255, 0.05); color:#00f0ff;">Limpiar</button>
+        </div>
+      </div>
+      <div id="serial-console" style="background:#020208; border:1px solid var(--border); border-radius:8px; padding:12px; font-family:'Share Tech Mono', monospace; font-size:12px; color:#00ffaa; overflow-y:auto; height:300px; white-space:pre-wrap; box-shadow:inset 0 0 15px rgba(0,0,0,0.9); scrollbar-width:thin;"></div>
+    </div>
+
     <div class="card">
       <div class="card-title">ESTADO JSON</div>
       <pre id="state-json" style="font-size:11px;color:var(--muted);overflow:auto;max-height:300px"></pre>
@@ -1388,6 +1404,8 @@ function connectAdminWS() {
       const msg = JSON.parse(data);
       if (msg.type === "sensor_test") {
         handleSensorTestEvent(msg.sensor_id);
+      } else if (msg.type === "serial_log") {
+        handleSerialLogEvent(msg.line);
       }
     } catch(e) {
       console.error("Error parsing admin WS message", e);
@@ -1406,6 +1424,43 @@ function handleSensorTestEvent(sensorId) {
       led.classList.remove("active");
     }, 300);
   }
+}
+
+function handleSerialLogEvent(line) {
+  const consoleEl = document.getElementById("serial-console");
+  if (!consoleEl) return;
+  
+  const div = document.createElement("div");
+  const now = new Date();
+  const timeStr = now.toTimeString().split(' ')[0] + "." + String(now.getMilliseconds()).padStart(3, '0');
+  
+  if (line.startsWith("[SYSTEM]")) {
+    div.innerHTML = `<span style="color:#8b9bb4;">[${timeStr}]</span> <span style="color:#00f0ff; font-weight:bold;">${line}</span>`;
+  } else if (line.startsWith("[MOCK")) {
+    div.innerHTML = `<span style="color:#8b9bb4;">[${timeStr}]</span> <span style="color:#f0e000;">${line}</span>`;
+  } else if (line.startsWith("[TX")) {
+    div.innerHTML = `<span style="color:#8b9bb4;">[${timeStr}]</span> <span style="color:#ff0055;">${line}</span>`;
+  } else if (line.includes("ERROR") || line.includes("FAILED")) {
+    div.innerHTML = `<span style="color:#8b9bb4;">[${timeStr}]</span> <span style="color:#ff3366; font-weight:bold;">${line}</span>`;
+  } else {
+    div.innerHTML = `<span style="color:#8b9bb4;">[${timeStr}]</span> <span>${line}</span>`;
+  }
+  
+  consoleEl.appendChild(div);
+  
+  while (consoleEl.childNodes.length > 200) {
+    consoleEl.removeChild(consoleEl.firstChild);
+  }
+  
+  const autoscroll = document.getElementById("console-autoscroll")?.checked;
+  if (autoscroll) {
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+}
+
+window.clearSerialConsole = function() {
+  const consoleEl = document.getElementById("serial-console");
+  if (consoleEl) consoleEl.innerHTML = "";
 }
 
 window.toggleTestMode = function(btn) {
