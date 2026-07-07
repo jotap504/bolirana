@@ -40,10 +40,10 @@ const char* password = "corsa000";
 #define I2C_SCL      22
 #define MCP_ADDRESS  0x20 // Dirección I2C por defecto (A0, A1, A2 a GND)
 
-// Botones físicos locales dedicados del ESP32
-#define BTN_START_PIN 19
-#define BTN_PAUSE_PIN 27
-#define COIN_PIN 18
+// Pines de botones físicos en el Expansor MCP23017 (Puerto B)
+#define BTN_START_PIN 11  // PB3 (index 11)
+#define BTN_PAUSE_PIN 12  // PB4 (index 12)
+#define COIN_PIN 18       // Sigue en GPIO directo del ESP32 por soporte de interrupción/rapidez
 
 // Sensor de proximidad radar HLK-LD2410 (Caso A: salida digital en GPIO 16/RX2)
 #define PROXIMITY_PIN 16
@@ -692,10 +692,6 @@ void setup() {
   // Inicialización del bus I2C manual con pines custom
   Wire.begin(I2C_SDA, I2C_SCL);
   
-  // Configuración de botones físicos locales (Pullup interno)
-  pinMode(BTN_START_PIN, INPUT_PULLUP);
-  pinMode(BTN_PAUSE_PIN, INPUT_PULLUP);
-  
   // Configuración del monedero (PULLUP interno)
   pinMode(COIN_PIN, INPUT_PULLUP);
   
@@ -728,6 +724,10 @@ void setup() {
     for (int i = 0; i < NUM_SENSORS; i++) {
       mcp.pinMode(SENSOR_PINS[i], SENSOR_PIN_MODE);
     }
+    
+    // Configurar los botones físicos en el expansor
+    mcp.pinMode(BTN_START_PIN, INPUT_PULLUP);
+    mcp.pinMode(BTN_PAUSE_PIN, INPUT_PULLUP);
   }
 
   // Configurar pin de ENABLE del driver A4988 como salida y apagarlo
@@ -814,8 +814,8 @@ const unsigned long BTN_DEBOUNCE_MS = 250;
 void readButtons() {
   unsigned long now = millis();
   
-  // Leer botón Start (GPIO 19)
-  bool startVal = digitalRead(BTN_START_PIN);
+  // Leer botón Start desde MCP23017
+  bool startVal = mcp.digitalRead(BTN_START_PIN);
   if (startVal == LOW && lastStartBtnState == HIGH) { // Flanco de bajada (Presión)
     if (now - lastStartBtnTime > BTN_DEBOUNCE_MS) {
       lastStartBtnTime = now;
@@ -824,8 +824,8 @@ void readButtons() {
   }
   lastStartBtnState = startVal;
   
-  // Leer botón Pause (GPIO 27)
-  bool pauseVal = digitalRead(BTN_PAUSE_PIN);
+  // Leer botón Pause/Select desde MCP23017
+  bool pauseVal = mcp.digitalRead(BTN_PAUSE_PIN);
   if (pauseVal == LOW && lastPauseBtnState == HIGH) { // Flanco de bajada (Presión)
     if (now - lastPauseBtnTime > BTN_DEBOUNCE_MS) {
       lastPauseBtnTime = now;
