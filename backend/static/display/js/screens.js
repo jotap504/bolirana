@@ -114,15 +114,19 @@ const Screens = (() => {
     _buildHexGrid("player-hex-grid-a", count);
 
     // Costo
-    const req = data.credits_required || 1;
     const costEl = document.getElementById("cost-preview-val");
     if (costEl) {
-      try {
-        const res = await fetch(`/api/payment/cost?players=${count}&mode=${data.mode || 'classic'}`);
-        const costData = await res.json();
-        costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${costData.pesos}`;
-      } catch (e) {
-        costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${req * 200}`;
+      if (data.free_play) {
+        costEl.textContent = "MODO JUEGO LIBRE";
+      } else {
+        const req = data.credits_required || 1;
+        try {
+          const res = await fetch(`/api/payment/cost?players=${count}&mode=${data.mode || 'classic'}`);
+          const costData = await res.json();
+          costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${costData.pesos}`;
+        } catch (e) {
+          costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${req * 200}`;
+        }
       }
     }
   }
@@ -168,15 +172,19 @@ const Screens = (() => {
     }
 
     // Costo
-    const req = data.credits_required || 1;
     const costEl = document.getElementById("mode-cost-val");
     if (costEl) {
-      try {
-        const res = await fetch(`/api/payment/cost?players=${count}&mode=${data.mode || 'classic'}`);
-        const costData = await res.json();
-        costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${costData.pesos}`;
-      } catch (e) {
-        costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${req * 200}`;
+      if (data.free_play) {
+        costEl.textContent = "MODO JUEGO LIBRE";
+      } else {
+        const req = data.credits_required || 1;
+        try {
+          const res = await fetch(`/api/payment/cost?players=${count}&mode=${data.mode || 'classic'}`);
+          const costData = await res.json();
+          costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${costData.pesos}`;
+        } catch (e) {
+          costEl.textContent = `${req} ficha${req !== 1 ? "s" : ""} · $${req * 200}`;
+        }
       }
     }
   }

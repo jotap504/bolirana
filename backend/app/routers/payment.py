@@ -28,6 +28,13 @@ async def mp_webhook(request: Request):
 async def get_cost(players: int = 1, mode: str = "classic"):
     cfg = get_config()
     pricing = cfg["pricing"]
+    if pricing.get("free_play", False):
+        return {
+            "players":  players,
+            "mode":     mode,
+            "credits":  0,
+            "pesos":    0,
+        }
     base     = pricing["base_credits_per_player"] * players
     extra    = pricing["mode_extra"].get(mode, 0)
     discount = pricing["group_discount"].get(str(players), 0)
