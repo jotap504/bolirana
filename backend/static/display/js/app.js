@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const persistentCredsVal = document.getElementById("persistent-credits-val");
     if (persistentCredsVal && msg.credits !== undefined) {
-      persistentCredsVal.textContent = msg.credits;
+      persistentCredsVal.textContent = msg.free_play ? "FREE PLAY" : msg.credits;
     }
 
     switch (msg.state) {
@@ -127,12 +127,12 @@ document.addEventListener("DOMContentLoaded", () => {
     prevCredits = msg.total;
 
     const gcred = document.getElementById("game-credits");
-    if (gcred) gcred.textContent = msg.total;
+    if (gcred) gcred.textContent = msg.free_play ? "FREE" : msg.total;
     const pcred = document.getElementById("pause-credits");
-    if (pcred) pcred.textContent = msg.total;
+    if (pcred) pcred.textContent = msg.free_play ? "FREE PLAY" : msg.total;
 
     const persistentCredsVal = document.getElementById("persistent-credits-val");
-    if (persistentCredsVal) persistentCredsVal.textContent = msg.total;
+    if (persistentCredsVal) persistentCredsVal.textContent = msg.free_play ? "FREE PLAY" : msg.total;
   });
 
   WS.on("timer", (msg) => {

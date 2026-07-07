@@ -453,6 +453,17 @@
   <div id="panel-precios" class="panel">
     <div class="card">
       <div class="card-title">SISTEMA DE CRÉDITOS</div>
+      
+      <div class="form-row" style="margin-bottom: 20px; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px;">
+        <div style="flex: 2;">
+          <label style="font-weight: bold; color: #00e5ff;">Modo Juego Libre (FREE PLAY)</label>
+          <span style="font-size: 11px; color: var(--muted); display: block; margin-top: 4px;">Permite iniciar partidas directamente desde la máquina sin requerir insertar fichas ni escanear QR.</span>
+        </div>
+        <div>
+          <button class="toggle" id="cfg-freeplay" onclick="this.classList.toggle('on'); this.textContent = this.classList.contains('on') ? 'ON' : 'OFF';">OFF</button>
+        </div>
+      </div>
+
       <div class="form-row">
         <div><label>Créditos por ficha</label>
           <input type="number" id="pr-coin" min="1" max="10" value="1"></div>
@@ -859,6 +870,10 @@ async function loadConfig() {
   document.getElementById("pr-goleador").value = p.mode_extra?.goleador || 0;
   document.getElementById("pr-team").value    = p.mode_extra?.team || 0;
 
+  const freeplayBtn = document.getElementById("cfg-freeplay");
+  freeplayBtn.classList.toggle("on", !!p.free_play);
+  freeplayBtn.textContent = p.free_play ? "ON" : "OFF";
+
   // Cargar configuración de MercadoPago
   const mp = cfg.mercadopago || {};
   document.getElementById("cfg-mp-enabled").classList.toggle("on", !!mp.enabled);
@@ -957,6 +972,7 @@ document.getElementById("save-game").addEventListener("click", async () => {
 
 document.getElementById("save-pricing").addEventListener("click", async () => {
   await api("/api/admin/config/pricing", "PATCH", {
+    free_play:             document.getElementById("cfg-freeplay").classList.contains("on"),
     coin_to_credits:       +document.getElementById("pr-coin").value,
     pesos_per_credit:      +document.getElementById("pr-pesos").value,
     base_credits_per_player:+document.getElementById("pr-base").value,

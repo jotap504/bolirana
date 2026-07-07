@@ -22,6 +22,7 @@ DEFAULT_CONFIG = {
         "volume": 80,
     },
     "pricing": {
+        "free_play": False,
         "base_credits_per_player": 1,
         "mode_extra": {"classic": 0, "timed": 0, "team": 0, "goleador": 0},
         "coin_to_credits": 1,

@@ -210,4 +210,5 @@ class Session:
             "current_round":     self.current_round,
             "total_rounds":      self.total_rounds,
             "balls_per_round":   self.balls_per_round,
+            "free_play":         get_config().get("pricing", {}).get("free_play", False),
         }

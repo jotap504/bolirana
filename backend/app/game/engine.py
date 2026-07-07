@@ -226,7 +226,8 @@ class GameEngine:
         self.session.credits += credits_added
         await self._broadcast({"type": "credits", "total": self.session.credits,
                                "required": self.session.credits_required,
-                               "added": credits_added})
+                               "added": credits_added,
+                               "free_play": cfg.get("pricing", {}).get("free_play", False)})
 
         if self.session.state == GameState.ATTRACT:
             await self._transition(GameState.SELECT_PLAYERS)
@@ -354,7 +355,8 @@ class GameEngine:
         self.session.credits += credits
         await self._broadcast({"type": "credits", "total": self.session.credits,
                                "required": self.session.credits_required,
-                               "added": credits, "reference": reference})
+                               "added": credits, "reference": reference,
+                               "free_play": get_config().get("pricing", {}).get("free_play", False)})
         if self.session.state == GameState.PAYMENT:
             await self._check_payment_complete()
 
@@ -440,6 +442,8 @@ class GameEngine:
 
     def _calc_credits(self, count: int, mode: GameMode) -> int:
         cfg      = get_config()["pricing"]
+        if cfg.get("free_play", False):
+            return 0
         base     = cfg["base_credits_per_player"] * count
         extra    = cfg["mode_extra"].get(mode, 0)
         discount = cfg["group_discount"].get(str(count), 0)
