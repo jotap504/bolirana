@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Futsapo - Panel de Diagnóstico de Motores</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    :root {
+      --bg: #070714;
+      --card: rgba(18, 18, 38, 0.7);
+      --border: rgba(0, 240, 255, 0.15);
+      --border-focus: rgba(0, 240, 255, 0.6);
+      --neon-cyan: #00f0ff;
+      --neon-gold: #f0e000;
+      --neon-green: #00ffaa;
+      --neon-red: #ff0055;
+      --text: #e2e2ff;
+      --muted: #8493a8;
+      --terminal-bg: #020206;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at 50% 50%, #11112b 0%, var(--bg) 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding: 24px;
+    }
+    header {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto 24px auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 16px;
+    }
+    .logo {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--neon-cyan);
+      letter-spacing: 5px;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+    }
+    .logo span {
+      color: var(--neon-gold);
+    }
+    .badge {
+      font-size: 11px;
+      color: var(--neon-gold);
+      letter-spacing: 2px;
+      border: 1px solid rgba(240, 224, 0, 0.3);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: rgba(240, 224, 0, 0.05);
+    }
+    main {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      flex-grow: 1;
+    }
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+    .col-left, .col-right {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      border-color: rgba(0, 240, 255, 0.3);
+      box-shadow: 0 8px 32px rgba(0, 240, 255, 0.05);
+    }
+    .card-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: var(--neon-gold);
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      border-left: 4px solid var(--neon-gold);
+      padding-left: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title.cyan {
+      color: var(--neon-cyan);
+      border-left-color: var(--neon-cyan);
+    }
+    .card-title.green {
+      color: var(--neon-green);
+      border-left-color: var(--neon-green);
+    }
+    .btn {
+      font-family: 'Outfit', sans-serif;
+      padding: 12px 20px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+    }
+    .btn:hover {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: var(--neon-cyan);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 240, 255, 0.2);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--neon-cyan) 0%, #00a8ff 100%);
+      color: #000;
+      border: none;
+      box-shadow: 0 4px 15px rgba(0, 240, 255, 0.25);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #00f0ff 0%, #00c0ff 100%);
+      color: #000;
+      box-shadow: 0 6px 20px rgba(0, 240, 255, 0.45);
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, var(--neon-red) 0%, #cc0044 100%);
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 15px rgba(255, 0, 85, 0.2);
+    }
+    .btn-danger:hover {
+      box-shadow: 0 6px 20px rgba(255, 0, 85, 0.4);
+      background: linear-gradient(135deg, #ff1a66 0%, #cc0044 100%);
+    }
+    .btn-success {
+      background: rgba(0, 255, 170, 0.08);
+      border-color: rgba(0, 255, 170, 0.3);
+      color: var(--neon-green);
+    }
+    .btn-success:hover {
+      background: var(--neon-green);
+      color: #000;
+      border-color: var(--neon-green);
+      box-shadow: 0 4px 15px rgba(0, 255, 170, 0.3);
+    }
+    .btn-success.active {
+      background: var(--neon-green);
+      color: #000;
+      border-color: var(--neon-green);
+      box-shadow: 0 0 15px var(--neon-green);
+    }
+    .grid-balls {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .btn-ball {
+      font-size: 18px;
+      padding: 16px 0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      color: var(--neon-cyan);
+      transition: all 0.2s;
+    }
+    .btn-ball:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+    .grid-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .control-group {
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .control-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .control-label span {
+      color: var(--neon-cyan);
+      font-family: 'Share Tech Mono', monospace;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type=range] {
+      flex-grow: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      cursor: pointer;
+      accent-color: var(--neon-cyan);
+    }
+    .input-num {
+      width: 80px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #fff;
+      padding: 6px 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      text-align: center;
+      outline: none;
+    }
+    .input-num:focus {
+      border-color: var(--neon-cyan);
+    }
+    .terminal {
+      background: var(--terminal-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      color: var(--neon-green);
+      overflow-y: auto;
+      height: 400px;
+      white-space: pre-wrap;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9);
+      flex-grow: 1;
+      scrollbar-width: thin;
+    }
+    .terminal div {
+      line-height: 1.5;
+    }
+    .terminal-input-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .terminal-input {
+      flex-grow: 1;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      padding: 10px 14px;
+      font-family: 'Share Tech Mono', monospace;
+      outline: none;
+    }
+    .terminal-input:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.25);
+    }
+    .info-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      align-items: center;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--neon-red);
+      box-shadow: 0 0 8px var(--neon-red);
+      display: inline-block;
+      transition: all 0.3s;
+    }
+    .status-dot.connected {
+      background: var(--neon-green);
+      box-shadow: 0 0 8px var(--neon-green);
+    }
+    .status-text {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .webserial-warning {
+      background: rgba(255, 0, 85, 0.1);
+      border: 1px solid rgba(255, 0, 85, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      display: none;
+      color: #ff99bb;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">BOLIRANA <span>DIAGS</span></div>
+    <div class="badge">Consola de Motores v2.0</div>
+  </header>
+
+  <div class="webserial-warning" id="browser-warning">
+    <strong>⚠️ Navegador no compatible:</strong> Tu navegador actual no soporta la API Web Serial. 
+    Por favor, abrí este archivo usando <strong>Google Chrome</strong> o <strong>Microsoft Edge</strong> para poder conectarte directamente a la placa ESP32 por USB.
+  </div>
+
+  <main>
+    <div class="col-left">
+      <!-- CONEXIÓN DEL PUERTO -->
+      <div class="card">
+        <div class="card-title cyan">Conexión de Puerto Serie</div>
+        <div class="info-bar">
+          <span class="status-dot" id="status-dot"></span>
+          <span>Estado: <span class="status-text" id="status-text">Desconectado</span></span>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <button class="btn btn-primary" id="btn-connect" onclick="toggleConnect()" style="flex-grow: 1;">
+            🔌 Conectar Placa USB
+          </button>
+        </div>
+      </div>
+
+      <!-- PANEL DE DISPENSACIÓN -->
+      <div class="card">
+        <div class="card-title green">Dispensación de Bolas</div>
+        
+        <label class="control-label" style="margin-bottom: 6px;">Cantidad a soltar</label>
+        <div class="grid-balls">
+          <button class="btn-ball" onclick="sendBallCmd(1)">1</button>
+          <button class="btn-ball" onclick="sendBallCmd(2)">2</button>
+          <button class="btn-ball" onclick="sendBallCmd(3)">3</button>
+          <button class="btn-ball" onclick="sendBallCmd(4)">4</button>
+          <button class="btn-ball" onclick="sendBallCmd(5)">5</button>
+        </div>
+
+        <div class="grid-actions">
+          <button class="btn btn-success" id="btn-monitor-ir" onclick="sendCustom('T')">
+            🔍 Monitor IR: OFF
+          </button>
+          <button class="btn" onclick="sendCustom('I')" style="color: var(--neon-gold); border-color: rgba(240, 224, 0, 0.3);">
+            🔄 Invertir Giro
+          </button>
+          <button class="btn" onclick="sendCustom('H')" style="grid-column: span 2; background: rgba(0,240,255,0.05);">
+            🏠 Auto-Alinear Hélice (Homing)
+          </button>
+          <button class="btn btn-danger" onclick="sendCustom('S')" style="grid-column: span 2;">
+            🚨 Parada de Emergencia (STOP)
+          </button>
+        </div>
+      </div>
+
+      <!-- CONFIGURACIÓN DE PARÁMETROS -->
+      <div class="card">
+        <div class="card-title">Configuración de Parámetros</div>
+
+        <!-- Velocidad (V) -->
+        <div class="control-group">
+          <div class="control-label">Velocidad Máxima <span id="lbl-speed">800 pasos/s</span></div>
+          <div class="slider-row">
+            <input type="range" id="sld-speed" min="50" max="2000" value="800" oninput="updateVal('speed', this.value)">
+            <input type="number" id="num-speed" class="input-num" min="50" max="2000" value="800" onchange="updateVal('speed', this.value)">
+            <button class="btn" onclick="sendParam('V', 'speed')" style="padding: 6px 12px;">Enviar</button>
+          </div>
+        </div>
+
+        <!-- Aceleración (A) -->
+        <div class="control-group">
+          <div class="control-label">Aceleración <span id="lbl-accel">400 pasos/s²</span></div>
+          <div class="slider-row">
+            <input type="range" id="sld-accel" min="10" max="1000" value="400" oninput="updateVal('accel', this.value)">
+            <input type="number" id="num-accel" class="input-num" min="10" max="1000" value="400" onchange="updateVal('accel', this.value)">
+            <button class="btn" onclick="sendParam('A', 'accel')" style="padding: 6px 12px;">Enviar</button>
+          </div>
+        </div>
+
+        <!-- Pasos Extras (P) -->
+        <div class="control-group">
+          <div class="control-label">Pasos Extras Post-Detección <span id="lbl-steps">150 pasos</span></div>
+          <div class="slider-row">
+            <input type="range" id="sld-steps" min="0" max="3000" value="150" oninput="updateVal('steps', this.value)">
+            <input type="number" id="num-steps" class="input-num" min="0" max="3000" value="150" onchange="updateVal('steps', this.value)">
+            <button class="btn" onclick="sendParam('P', 'steps')" style="padding: 6px 12px;">Enviar</button>
+          </div>
+        </div>
+
+        <!-- Traba en Reposo (L) -->
+        <div class="control-group">
+          <div class="control-label">Traba de Retención (Reposo)</div>
+          <div style="display: flex; gap: 12px;">
+            <button class="btn" id="btn-lock-off" onclick="sendLock(0)" style="flex: 1;" class="active">🔓 Libre y Silencioso (L0)</button>
+            <button class="btn" id="btn-lock-on" onclick="sendLock(1)" style="flex: 1;">🔒 Frenado con Torque (L1)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TERMINAL DE MONITORIZACIÓN -->
+    <div class="col-right" style="height: 100%;">
+      <div class="card" style="display: flex; flex-direction: column; height: 100%; flex-grow: 1;">
+        <div class="card-title cyan" style="margin-bottom: 12px;">
+          Consola Serial ESP32
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="checkbox" id="chk-autoscroll" checked style="width: auto; cursor: pointer;">
+            <span style="font-size: 11px; color: var(--muted); font-family: sans-serif; text-transform: none; user-select: none;">Auto-scroll</span>
+            <button class="btn" onclick="clearTerminal()" style="padding: 4px 10px; font-size: 11px;">Limpiar</button>
+          </div>
+        </div>
+        
+        <div class="terminal" id="terminal-screen"></div>
+
+        <div class="terminal-input-row">
+          <input type="text" id="term-input" class="terminal-input" placeholder="Escribí un comando manual (ej. V600)..." onkeydown="handleTermEnter(event)">
+          <button class="btn btn-primary" onclick="sendManualTerm()">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Validar compatibilidad del navegador
+    if (!('serial' in navigator)) {
+      document.getElementById('browser-warning').style.display = 'block';
+      document.getElementById('btn-connect').disabled = true;
+    }
+
+    let port = null;
+    let reader = null;
+    let writer = null;
+    let keepReading = true;
+    let irMonitorActive = false;
+
+    // Actualizar campos sincronizados (Sliders & Números)
+    function updateVal(type, val) {
+      document.getElementById(`sld-${type}`).value = val;
+      document.getElementById(`num-${type}`).value = val;
+      
+      let unit = "pasos";
+      if (type === 'speed') unit = "pasos/s";
+      else if (type === 'accel') unit = "pasos/s²";
+      
+      document.getElementById(`lbl-${type}`).textContent = `${val} ${unit}`;
+    }
+
+    // Cambiar estado de conexión
+    async function toggleConnect() {
+      if (port) {
+        // Desconectar
+        keepReading = false;
+        if (reader) {
+          await reader.cancel();
+        }
+        if (writer) {
+          writer.releaseLock();
+        }
+        await port.close();
+        port = null;
+        reader = null;
+        writer = null;
+        
+        document.getElementById("btn-connect").innerHTML = "🔌 Conectar Placa USB";
+        document.getElementById("btn-connect").className = "btn btn-primary";
+        document.getElementById("status-dot").className = "status-dot";
+        document.getElementById("status-text").textContent = "Desconectado";
+        appendLog("\n[SYSTEM] Puerto serie desconectado.\n", "system");
+      } else {
+        // Conectar
+        try {
+          port = await navigator.serial.requestPort();
+          await port.open({ baudRate: 115200 });
+          
+          keepReading = true;
+          
+          const textDecoder = new TextDecoderStream();
+          port.readable.pipeTo(textDecoder.writable);
+          reader = textDecoder.readable.getReader();
+          
+          const textEncoder = new TextEncoderStream();
+          textEncoder.readable.pipeTo(port.writable);
+          writer = textEncoder.writable.getWriter();
+          
+          document.getElementById("btn-connect").innerHTML = "🔌 Desconectar Puerto";
+          document.getElementById("btn-connect").className = "btn btn-danger";
+          document.getElementById("status-dot").className = "status-dot connected";
+          document.getElementById("status-text").textContent = "Conectado";
+          appendLog("[SYSTEM] Puerto serie abierto correctamente a 115200 baudios.\n", "system");
+          
+          // Iniciar bucle de lectura
+          readLoop();
+        } catch (e) {
+          console.error(e);
+          appendLog(`[ERROR] No se pudo abrir el puerto: ${e.message}\n`, "error");
+        }
+      }
+    }
+
+    // Bucle de lectura de datos
+    async function readLoop() {
+      try {
+        let buffer = "";
+        while (keepReading && port && port.readable) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          
+          buffer += value;
+          let lines = buffer.split("\n");
+          // Guardar el residuo
+          buffer = lines.pop();
+          
+          for (let line of lines) {
+            line = line.trim();
+            if (line) {
+              appendLog(line + "\n", "rx");
+              
+              // Interceptar estado del monitor IR para sincronizar el botón de la UI
+              if (line.includes("Modo monitor INICIADO")) {
+                irMonitorActive = true;
+                const btn = document.getElementById("btn-monitor-ir");
+                btn.textContent = "🔍 Monitor IR: ON";
+                btn.className = "btn btn-success active";
+              } 
+              else if (line.includes("Modo monitor APAGADO")) {
+                irMonitorActive = false;
+                const btn = document.getElementById("btn-monitor-ir");
+                btn.textContent = "🔍 Monitor IR: OFF";
+                btn.className = "btn btn-success";
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        appendLog(`[ERROR] Excepción en lectura: ${e.message}\n`, "error");
+      }
+    }
+
+    // Enviar comandos directos
+    async function writeSerial(data) {
+      if (!writer) {
+        alert("Primero conectá el puerto serie haciendo clic en el botón de arriba.");
+        return false;
+      }
+      try {
+        await writer.write(data + "\n");
+        appendLog(`[TX] ${data}\n`, "tx");
+        return true;
+      } catch (e) {
+        console.error(e);
+        appendLog(`[ERROR] No se pudo transmitir: ${e.message}\n`, "error");
+        return false;
+      }
+    }
+
+    // Acciones rápidas
+    function sendBallCmd(count) {
+      writeSerial(String(count));
+    }
+
+    // Comandos directos
+    function sendCustom(cmd) {
+      writeSerial(cmd);
+    }
+
+    function sendParam(cmdChar, type) {
+      const val = document.getElementById(`num-${type}`).value;
+      writeSerial(`${cmdChar}${val}`);
+    }
+
+    function sendLock(val) {
+      writeSerial(`L${val}`);
+      
+      const btnOff = document.getElementById("btn-lock-off");
+      const btnOn = document.getElementById("btn-lock-on");
+      
+      if (val === 1) {
+        btnOn.style.background = "var(--neon-gold)";
+        btnOn.style.color = "#000";
+        btnOn.style.boxShadow = "0 0 10px var(--neon-gold)";
+        
+        btnOff.style.background = "";
+        btnOff.style.color = "";
+        btnOff.style.boxShadow = "";
+      } else {
+        btnOff.style.background = "var(--neon-cyan)";
+        btnOff.style.color = "#000";
+        btnOff.style.boxShadow = "0 0 10px var(--neon-cyan)";
+        
+        btnOn.style.background = "";
+        btnOn.style.color = "";
+        btnOn.style.boxShadow = "";
+      }
+    }
+
+    // Entrada manual desde el terminal
+    function handleTermEnter(e) {
+      if (e.key === 'Enter') {
+        sendManualTerm();
+      }
+    }
+
+    function sendManualTerm() {
+      const input = document.getElementById("term-input");
+      const cmd = input.value.trim();
+      if (cmd) {
+        writeSerial(cmd);
+        input.value = "";
+      }
+    }
+
+    // Agregar textos a la terminal
+    function appendLog(text, type) {
+      const screen = document.getElementById("terminal-screen");
+      const div = document.createElement("div");
+      
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0] + "." + String(now.getMilliseconds()).padStart(3, '0');
+      
+      let formattedText = `[${timeStr}] ${text}`;
+      
+      if (type === "system") {
+        div.style.color = "var(--neon-cyan)";
+        div.style.fontWeight = "bold";
+      } else if (type === "error") {
+        div.style.color = "var(--neon-red)";
+        div.style.fontWeight = "bold";
+      } else if (type === "tx") {
+        div.style.color = "var(--neon-gold)";
+      } else {
+        // RX (Verificar tipos de texto recibidos del firmware para colorear)
+        if (text.includes("DETECTADA") || text.includes("OBSTRUIDO")) {
+          div.style.color = "#ff3366";
+          div.style.fontWeight = "bold";
+        } else if (text.includes("[ HOMING ]") || text.includes("[TEST]")) {
+          div.style.color = "var(--neon-cyan)";
+        } else if (text.includes("[ OK ]") || text.includes("[ FIN ]")) {
+          div.style.color = "var(--neon-green)";
+          div.style.fontWeight = "bold";
+        } else {
+          div.style.color = "var(--neon-green)";
+        }
+      }
+      
+      div.textContent = formattedText;
+      screen.appendChild(div);
+      
+      // Limitar a 300 líneas
+      while (screen.childNodes.length > 300) {
+        screen.removeChild(screen.firstChild);
+      }
+      
+      // Auto-scroll
+      if (document.getElementById("chk-autoscroll").checked) {
+        screen.scrollTop = screen.scrollHeight;
+      }
+    }
+
+    function clearTerminal() {
+      document.getElementById("terminal-screen").innerHTML = "";
+    }
+  </script>
+</body>
+</html>
