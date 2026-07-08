@@ -8,9 +8,11 @@ NEMA 17 (dispensador de bolas con driver A4988) y el sensor de barrera IR (GPIO 
 Comportamiento:
 1. Al arrancar, calibra el dispensador (homing) girando en reversa hasta presionar
    el microswitch (GPIO 32) para alinear la hélice.
-2. Espera comandos interactivos ingresados en el Monitor Serial (115200 baudios).
-3. Escribir del '1' al '5' y dar Enter para soltar esa cantidad exacta de bolas.
-4. El motor se detendrá de inmediato al detectar la última bola.
+2. El motor se mantiene bloqueado (con torque/energizado) al estar detenido para
+   evitar que las bolas muevan la hélice por gravedad.
+3. Al pulsar del '1' al '5', el motor avanza hasta que la bola ingresa Y sale 
+   completamente del haz de luz (flanco de bajada / sensor libre), garantizando 
+   que la bola cayó y el sensor quedó despejado.
 =============================================================================
 */
 
@@ -43,7 +45,7 @@ int directionMultiplier = 1; // 1 = Giro normal, -1 = Giro invertido
 bool releasingActive = false;
 int targetBallCount = 0;
 int detectedBallCount = 0;
-bool lastIrState = !IR_ACTIVE_STATE;
+bool ballInSensor = false; // Indica si la bola está obstruyendo la barrera actualmente
 unsigned long lastBallDetectTime = 0;
 const unsigned long BALL_COOLDOWN_MS = 300; // Cooldown de 300ms para evitar falsas re-lecturas de la misma bola
 
@@ -58,7 +60,7 @@ void setup() {
                 MOTOR_STEP_PIN, MOTOR_DIR_PIN, MOTOR_EN_PIN, MOTOR_LIMIT_SWITCH_PIN, IR_SENSOR_PIN);
   Serial.println("-------------------------------------------------------");
   Serial.println("Comandos configurables (Escribilos y dale Enter):");
-  Serial.println("  '1' a '5' -> Soltar esa cantidad exacta de bolas");
+  Serial.println("  '1' a '5' -> Soltar esa cantidad exacta de bolas (sensor liberado)");
   Serial.println("  'H'       -> Iniciar calibración (Homing)");
   Serial.println("  'S'       -> Parada de Emergencia");
   Serial.println("  'I'       -> Invertir sentido de giro en caliente");
@@ -68,7 +70,7 @@ void setup() {
 
   // Configurar pines
   pinMode(MOTOR_EN_PIN, OUTPUT);
-  digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas inicialmente
+  digitalWrite(MOTOR_EN_PIN, LOW); // Bloquear motor desde el arranque
   
   pinMode(MOTOR_LIMIT_SWITCH_PIN, INPUT_PULLUP);
   pinMode(IR_SENSOR_PIN, INPUT_PULLUP);
@@ -91,42 +93,46 @@ void loop() {
       bool currentIrState = (digitalRead(IR_SENSOR_PIN) == IR_ACTIVE_STATE);
       unsigned long now = millis();
       
-      // Detectar flanco de subida (de inactivo a activo) con filtro de cooldown
-      if (currentIrState && lastIrState != IR_ACTIVE_STATE) {
+      // A. La bola ingresa al sensor (inactivo -> activo)
+      if (currentIrState && !ballInSensor) {
         if (now - lastBallDetectTime > BALL_COOLDOWN_MS) {
-          lastBallDetectTime = now;
-          detectedBallCount++;
-          
-          Serial.printf("\n[ DETECCIÓN ] ¡Bola %d detectada! (%d de %d)\n", 
-                        detectedBallCount, detectedBallCount, targetBallCount);
-          
+          ballInSensor = true;
           digitalWrite(LED_INDICATOR_PIN, HIGH);
-          
-          if (detectedBallCount >= targetBallCount) {
-            // ¡FRENAR EN SECO INMEDIATAMENTE!
-            stepper.moveTo(stepper.currentPosition()); // Cancela pasos pendientes
-            digitalWrite(MOTOR_EN_PIN, HIGH);        // Deshabilita el motor al instante (corta energía)
-            releasingActive = false;
-            
-            long stepsTaken = stepper.currentPosition();
-            Serial.println("\n=======================================================");
-            Serial.printf("[ FIN ] Se soltaron las %d bolas programadas.\n", targetBallCount);
-            Serial.printf("   -> Pasos avanzados totales: %ld\n", stepsTaken);
-            Serial.println("=======================================================\n");
-            
-            delay(1000);
-            digitalWrite(LED_INDICATOR_PIN, LOW);
-          } else {
-            // Aún faltan más bolas por soltar, apagamos el led de detección rápido
-            delay(80);
-            digitalWrite(LED_INDICATOR_PIN, LOW);
-          }
+          Serial.println(" [ SENSANDO ] Bola cruzando la barrera...");
         }
       }
-      lastIrState = currentIrState ? IR_ACTIVE_STATE : !IR_ACTIVE_STATE;
+      
+      // B. La bola sale y libera el sensor (activo -> inactivo)
+      if (!currentIrState && ballInSensor) {
+        ballInSensor = false;
+        lastBallDetectTime = now;
+        detectedBallCount++;
+        
+        Serial.printf("\n[ DETECCIÓN ] ¡Bola %d liberada! (%d de %d)\n", 
+                      detectedBallCount, detectedBallCount, targetBallCount);
+        
+        if (detectedBallCount >= targetBallCount) {
+          // ¡FRENAR EN SECO INMEDIATAMENTE! (La bola ya terminó de pasar)
+          stepper.moveTo(stepper.currentPosition()); // Cancela pasos pendientes
+          digitalWrite(MOTOR_EN_PIN, LOW);        // Mantiene el motor bloqueado (frenado)
+          releasingActive = false;
+          
+          long stepsTaken = stepper.currentPosition();
+          Serial.println("\n=======================================================");
+          Serial.printf("[ FIN ] Se soltaron las %d bolas programadas (sensor liberado).\n", targetBallCount);
+          Serial.printf("   -> Pasos avanzados totales: %ld\n", stepsTaken);
+          Serial.println("=======================================================\n");
+          
+          delay(1000);
+          digitalWrite(LED_INDICATOR_PIN, LOW);
+        } else {
+          // Aún faltan más bolas por soltar, apagamos el led de detección
+          digitalWrite(LED_INDICATOR_PIN, LOW);
+        }
+      }
     } else {
       // Llegó al límite de pasos de seguridad sin detectar todas las bolas
-      digitalWrite(MOTOR_EN_PIN, HIGH);
+      digitalWrite(MOTOR_EN_PIN, LOW); // Mantener bloqueado
       releasingActive = false;
       Serial.printf("\n[ ERROR ] Límite de recorrido alcanzado. Solo se detectaron %d de %d bolas.\n", 
                     detectedBallCount, targetBallCount);
@@ -199,7 +205,7 @@ void homeStepper() {
   if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
     Serial.println("[HOMING] Aspa ya alineada en switch de origen. Homing listo.");
     stepper.setCurrentPosition(0);
-    digitalWrite(MOTOR_EN_PIN, HIGH);
+    digitalWrite(MOTOR_EN_PIN, LOW); // Mantener bloqueado
     return;
   }
 
@@ -227,7 +233,7 @@ void homeStepper() {
   }
   
   stepper.setCurrentPosition(0);
-  digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas
+  digitalWrite(MOTOR_EN_PIN, LOW); // Mantener bloqueado al terminar
   
   if (stepsTaken >= safetyLimit) {
     Serial.println("[ ALERTA ] Homing falló por límite de seguridad. ¿Está bien cableado?");
@@ -243,13 +249,15 @@ void homeStepper() {
 void startBallRelease(int count) {
   targetBallCount = count;
   detectedBallCount = 0;
-  lastIrState = (digitalRead(IR_SENSOR_PIN) == IR_ACTIVE_STATE);
+  
+  // Si al arrancar el haz ya está obstruido por una bola anterior, asumimos que está en el sensor
+  ballInSensor = (digitalRead(IR_SENSOR_PIN) == IR_ACTIVE_STATE);
   lastBallDetectTime = 0;
   
   Serial.printf("[TEST] Soltando %d bola(s)... (Velocidad: %.1f | Aceleración: %.1f)\n", 
                 targetBallCount, releaseSpeed, releaseAccel);
   
-  digitalWrite(MOTOR_EN_PIN, LOW);
+  digitalWrite(MOTOR_EN_PIN, LOW); // Activar bobinas
   delay(50);
   
   stepper.setMaxSpeed(releaseSpeed);
@@ -269,7 +277,7 @@ void stopMotorEmergency() {
   if (releasingActive) {
     // Frenar en seco inmediatamente
     stepper.moveTo(stepper.currentPosition());
-    digitalWrite(MOTOR_EN_PIN, HIGH);
+    digitalWrite(MOTOR_EN_PIN, LOW); // Mantener bloqueado
     releasingActive = false;
     Serial.println("\n[!] DETENCIÓN DE EMERGENCIA EJECUTADA por el usuario.\n");
   }
