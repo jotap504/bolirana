@@ -665,3 +665,92 @@ void readSerialCommand() {
     }
   }
 }
+
+// ==========================================
+// CALIBRACIÓN (HOMING)
+// ==========================================
+void homeStepper() {
+  webLog("[HOMING] Iniciando calibración del dispensador...");
+  
+  if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
+    webLog("[HOMING] Aspa ya alineada. Posición puesta a CERO.");
+    stepper.setCurrentPosition(0);
+    stopMotorCoils();
+    return;
+  }
+
+  stepper.enableOutputs();
+  delay(50);
+  
+  stepper.setMaxSpeed(releaseSpeed * 0.5);
+  stepper.setAcceleration(releaseAccel * 0.5);
+  
+  // Buscar en reversa (un rango amplio ya que este motor da más pasos)
+  stepper.move(-12000 * directionMultiplier); 
+  
+  int stepsTaken = 0;
+  int safetyLimit = 12000;
+  
+  while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsTaken < safetyLimit && stepper.distanceToGo() != 0) {
+    stepper.run();
+    stepsTaken++;
+  }
+  
+  stepper.stop();
+  while (stepper.distanceToGo() != 0) {
+    stepper.run();
+  }
+  
+  stepper.setCurrentPosition(0);
+  stopMotorCoils();
+  
+  if (stepsTaken >= safetyLimit) {
+    webLog("[ ALERTA ] Homing falló por límite de seguridad.");
+  } else {
+    webLog("[HOMING] ¡Calibración exitosa! Aspa alineada en posición CERO.");
+  }
+}
+
+// ==========================================
+// INICIO DE AVANCE CONTINUO
+// ==========================================
+void startBallRelease(int count) {
+  targetBallCount = count;
+  detectedBallCount = 0;
+  finishingRelease = false;
+  
+  ballInSensor = (digitalRead(IR_SENSOR_PIN) == IR_ACTIVE_STATE);
+  lastBallDetectTime = 0;
+  
+  char buf[120];
+  sprintf(buf, "[TEST] Soltando %d bola(s)... (V=%.1f, A=%.1f, P=%d)", 
+          targetBallCount, releaseSpeed, releaseAccel, extraStepsAfterDetect);
+  webLog(buf);
+  
+  stepper.enableOutputs();
+  delay(20);
+  
+  stepper.setMaxSpeed(releaseSpeed);
+  stepper.setAcceleration(releaseAccel);
+  stepper.setCurrentPosition(0);
+  
+  // Le damos un rango amplio al motor incluyendo los pasos extras
+  // Este motor unipolar requiere muchos más pasos por revolución (4096 en HALF4WIRE)
+  long totalSteps = (12000 * targetBallCount) + extraStepsAfterDetect;
+  stepper.move(totalSteps * directionMultiplier); 
+  
+  releasingActive = true;
+}
+
+// ==========================================
+// PARADA DE EMERGENCIA
+// ==========================================
+void stopMotorEmergency() {
+  if (releasingActive) {
+    stepper.moveTo(stepper.currentPosition());
+    stopMotorCoils();
+    releasingActive = false;
+    finishingRelease = false;
+    webLog("[!] DETENCIÓN DE EMERGENCIA EJECUTADA por el usuario.");
+  }
+}

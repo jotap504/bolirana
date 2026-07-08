@@ -645,3 +645,93 @@ void readSerialCommand() {
     }
   }
 }
+
+// ==========================================
+// CALIBRACIÓN (HOMING)
+// ==========================================
+void homeStepper() {
+  webLog("[HOMING] Iniciando calibración del dispensador...");
+  
+  if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
+    webLog("[HOMING] Aspa ya alineada en switch de origen. Homing listo.");
+    stepper.setCurrentPosition(0);
+    digitalWrite(MOTOR_EN_PIN, keepLockedOnHalt ? LOW : HIGH); // Aplicar freno/libertad según config
+    return;
+  }
+
+  digitalWrite(MOTOR_EN_PIN, LOW); // Activar bobinas
+  delay(100);
+  
+  stepper.setMaxSpeed(releaseSpeed * 0.5);
+  stepper.setAcceleration(releaseAccel * 0.5);
+  
+  // Buscar en sentido contrario al sentido de avance
+  stepper.move(-3000 * directionMultiplier); 
+  
+  int stepsTaken = 0;
+  int safetyLimit = 3000;
+  
+  while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsTaken < safetyLimit && stepper.distanceToGo() != 0) {
+    stepper.run();
+    stepsTaken++;
+  }
+  
+  stepper.stop();
+  while (stepper.distanceToGo() != 0) {
+    stepper.run();
+  }
+  
+  stepper.setCurrentPosition(0);
+  digitalWrite(MOTOR_EN_PIN, keepLockedOnHalt ? LOW : HIGH); // Aplicar freno/libertad según config
+  
+  if (stepsTaken >= safetyLimit) {
+    webLog("[ ALERTA ] Homing falló por límite de seguridad. ¿Está bien cableado?");
+  } else {
+    webLog("[HOMING] ¡Calibración exitosa! Hélice en posición CERO.");
+  }
+}
+
+// ==========================================
+// INICIO DE AVANCE CONTINUO PARA N BOLAS
+// ==========================================
+void startBallRelease(int count) {
+  targetBallCount = count;
+  detectedBallCount = 0;
+  finishingRelease = false;
+  
+  // Si al arrancar el haz ya está obstruido por una bola anterior, asumimos que está en el sensor
+  ballInSensor = (digitalRead(IR_SENSOR_PIN) == IR_ACTIVE_STATE);
+  lastBallDetectTime = 0;
+  
+  char buf[120];
+  sprintf(buf, "[TEST] Soltando %d bola(s)... (V=%.1f, A=%.1f, P=%d)", 
+          targetBallCount, releaseSpeed, releaseAccel, extraStepsAfterDetect);
+  webLog(buf);
+  
+  digitalWrite(MOTOR_EN_PIN, LOW); // Activar bobinas
+  delay(50);
+  
+  stepper.setMaxSpeed(releaseSpeed);
+  stepper.setAcceleration(releaseAccel);
+  stepper.setCurrentPosition(0);
+  
+  // Le damos un rango amplio al motor incluyendo los pasos extras
+  long totalSteps = (8000 * targetBallCount) + extraStepsAfterDetect;
+  stepper.move(totalSteps * directionMultiplier); 
+  
+  releasingActive = true;
+}
+
+// ==========================================
+// PARADA DE EMERGENCIA
+// ==========================================
+void stopMotorEmergency() {
+  if (releasingActive) {
+    // Frenar en seco inmediatamente
+    stepper.moveTo(stepper.currentPosition());
+    digitalWrite(MOTOR_EN_PIN, keepLockedOnHalt ? LOW : HIGH); // Aplicar freno/libertad según config
+    releasingActive = false;
+    finishingRelease = false;
+    webLog("[!] DETENCIÓN DE EMERGENCIA EJECUTADA por el usuario.");
+  }
+}
