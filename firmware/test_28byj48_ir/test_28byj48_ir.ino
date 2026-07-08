@@ -56,6 +56,9 @@ bool ballInSensor = false;
 unsigned long lastBallDetectTime = 0;
 const unsigned long BALL_COOLDOWN_MS = 300;
 
+// Modo de monitoreo del sensor IR sin mover el motor
+bool sensorMonitorActive = false;
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -68,6 +71,7 @@ void setup() {
   Serial.println("-------------------------------------------------------");
   Serial.println("Comandos configurables (Escribilos y dale Enter):");
   Serial.println("  '1' a '5'  -> Soltar esa cantidad exacta de bolas");
+  Serial.println("  'T'        -> Monitorear sensor IR en vivo (sin mover el motor)");
   Serial.println("  'H'        -> Iniciar calibración (Homing)");
   Serial.println("  'S'        -> Parada de Emergencia");
   Serial.println("  'I'        -> Invertir sentido de giro en caliente");
@@ -169,6 +173,26 @@ void loop() {
       Serial.println("Revisa alineación o aumenta velocidad.\n");
     }
   }
+
+  // 3. Monitor del sensor IR en vivo (si está inactivo el motor)
+  if (sensorMonitorActive && !releasingActive) {
+    static unsigned long lastMonitorPrint = 0;
+    static int lastMonitorVal = -1;
+    int currentVal = digitalRead(IR_SENSOR_PIN);
+    
+    if (currentVal != lastMonitorVal || millis() - lastMonitorPrint > 200) {
+      lastMonitorVal = currentVal;
+      lastMonitorPrint = millis();
+      
+      bool isDetected = (currentVal == IR_ACTIVE_STATE);
+      digitalWrite(LED_INDICATOR_PIN, isDetected ? HIGH : LOW);
+      
+      Serial.printf("[MONITOR IR] Pin 15: %s (%s) | Haz: %s\n",
+                    currentVal == HIGH ? "HIGH (~3.3V)" : "LOW (0V / GND)",
+                    isDetected ? "OBSTRUIDO" : "LIBRE",
+                    isDetected ? "████████████" : "------------");
+    }
+  }
 }
 
 // ==========================================
@@ -201,6 +225,15 @@ void readSerialCommand() {
         startBallRelease(count);
       } else {
         Serial.println("[!] El motor ya está girando.");
+      }
+    }
+    else if (cmd == 'T') {
+      sensorMonitorActive = !sensorMonitorActive;
+      if (sensorMonitorActive) {
+        Serial.println("\n[MONITOR IR] Modo monitor INICIADO. Pasá un objeto por el haz para probar. (Mandá 'T' para apagar)\n");
+      } else {
+        Serial.println("\n[MONITOR IR] Modo monitor APAGADO.\n");
+        digitalWrite(LED_INDICATOR_PIN, LOW);
       }
     }
     else if (cmd == 'H') {
@@ -250,7 +283,7 @@ void readSerialCommand() {
                     keepLockedOnHalt ? "ACTIVADA (Con consumo)" : "DESACTIVADA (Libre, frío y silencioso)");
     }
     else {
-      Serial.println("[?] Comando no reconocido. Usá: 1-5, H, S, I, V<num>, A<num>, P<num>, L<0 o 1>.");
+      Serial.println("[?] Comando no reconocido. Usá: 1-5, T, H, S, I, V<num>, A<num>, P<num>, L<0 o 1>.");
     }
   }
 }
