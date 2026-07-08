@@ -16,7 +16,12 @@ Comportamiento:
 =============================================================================
 */
 
+#include <WiFi.h>
 #include <AccelStepper.h>
+
+// Credenciales WiFi
+const char* ssid     = "Fibrasky";
+const char* password = "corsa000";
 
 // Pines del Driver A4988 para el motor NEMA 17 (Dispensador)
 #define MOTOR_STEP_PIN 26
@@ -81,6 +86,24 @@ void setup() {
   pinMode(IR_SENSOR_PIN, INPUT_PULLUP);
   pinMode(LED_INDICATOR_PIN, OUTPUT);
   digitalWrite(LED_INDICATOR_PIN, LOW);
+
+  // Conectar WiFi (para probar estabilidad de corriente del módulo de radio)
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando a WiFi Fibrasky...");
+  int wifiTimeout = 0;
+  while (WiFi.status() != WL_CONNECTED && wifiTimeout < 20) {
+    delay(500);
+    Serial.print(".");
+    wifiTimeout++;
+  }
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n[WiFi] ¡Conectado con éxito!");
+    Serial.print("[WiFi] IP local: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\n[WiFi] No se pudo conectar.");
+  }
+  Serial.println();
 
   // Calibración inicial automática
   homeStepper();

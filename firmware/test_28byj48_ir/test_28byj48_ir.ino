@@ -17,7 +17,12 @@ Conexiones recomendadas:
 =============================================================================
 */
 
+#include <WiFi.h>
 #include <AccelStepper.h>
+
+// Credenciales WiFi
+const char* ssid     = "Fibrasky";
+const char* password = "corsa000";
 
 // Pines para el motor unipolar 28BYJ-48 en la placa ULN2003
 #define MOTOR_IN1 13
@@ -85,6 +90,24 @@ void setup() {
   pinMode(IR_SENSOR_PIN, INPUT_PULLUP);
   pinMode(LED_INDICATOR_PIN, OUTPUT);
   digitalWrite(LED_INDICATOR_PIN, LOW);
+
+  // Conectar WiFi (para probar estabilidad de corriente del módulo de radio)
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando a WiFi Fibrasky...");
+  int wifiTimeout = 0;
+  while (WiFi.status() != WL_CONNECTED && wifiTimeout < 20) {
+    delay(500);
+    Serial.print(".");
+    wifiTimeout++;
+  }
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n[WiFi] ¡Conectado con éxito!");
+    Serial.print("[WiFi] IP local: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\n[WiFi] No se pudo conectar.");
+  }
+  Serial.println();
 
   // Calibración inicial automática
   homeStepper();
