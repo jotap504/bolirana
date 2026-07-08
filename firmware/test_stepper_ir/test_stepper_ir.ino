@@ -103,13 +103,9 @@ void loop() {
           digitalWrite(LED_INDICATOR_PIN, HIGH);
           
           if (detectedBallCount >= targetBallCount) {
-            // ¡Se alcanzó la cantidad de bolas deseadas! Frenar motor de inmediato
-            stepper.stop();
-            while(stepper.distanceToGo() != 0) {
-              stepper.run();
-            }
-            
-            digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas para enfriar
+            // ¡FRENAR EN SECO INMEDIATAMENTE!
+            stepper.moveTo(stepper.currentPosition()); // Cancela pasos pendientes
+            digitalWrite(MOTOR_EN_PIN, HIGH);        // Deshabilita el motor al instante (corta energía)
             releasingActive = false;
             
             long stepsTaken = stepper.currentPosition();
@@ -271,10 +267,8 @@ void startBallRelease(int count) {
 // ==========================================
 void stopMotorEmergency() {
   if (releasingActive) {
-    stepper.stop();
-    while(stepper.distanceToGo() != 0) {
-      stepper.run();
-    }
+    // Frenar en seco inmediatamente
+    stepper.moveTo(stepper.currentPosition());
     digitalWrite(MOTOR_EN_PIN, HIGH);
     releasingActive = false;
     Serial.println("\n[!] DETENCIÓN DE EMERGENCIA EJECUTADA por el usuario.\n");
