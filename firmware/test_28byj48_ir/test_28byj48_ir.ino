@@ -28,6 +28,15 @@ const char* password = "corsa000";
 // Instancia del servidor web en puerto 80
 WebServer server(80);
 
+// Prototipos de funciones para evitar errores de compilación del preprocesador de Arduino
+void processCommand(String cmd, String val);
+void homeStepper();
+void stopMotorEmergency();
+void startBallRelease(int count);
+void stopMotorCoils();
+void readSerialCommand();
+void webLog(String line);
+
 // Pines para el motor unipolar 28BYJ-48 en la placa ULN2003
 #define MOTOR_IN1 13
 #define MOTOR_IN2 12
