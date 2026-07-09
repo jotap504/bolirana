@@ -694,6 +694,9 @@ void readSensors(uint16_t gpioState) {
 // ==========================================
 void setup() {
   Serial.begin(115200);
+  Serial.println("\n=======================================================");
+  Serial.println("BOLIRANA ARCADE - FIRMWARE v1.4.0 (PROXIMITY DIAGS)");
+  Serial.println("=======================================================");
   
   // Inicialización del bus I2C manual con pines custom
   Wire.begin(I2C_SDA, I2C_SCL);
