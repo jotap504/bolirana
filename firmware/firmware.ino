@@ -14,6 +14,9 @@ DEPENDENCIAS (Instalar desde el Gestor de Librerías de Arduino):
 3. "ArduinoJson" (Compatible con v6 y v7)
 =============================================================================
 */
+// Prototipos de funciones optimizadas para I2C
+void readSensors(uint16_t gpioState);
+void readButtons(uint16_t gpioState);
 
 // ==========================================
 // CONFIGURACIÓN DE RED WIFI
@@ -56,7 +59,8 @@ const char* password = "corsa000";
 // Polaridad del Sensor: HIGH (activo al pasar bola, normalmente LOW) o LOW (activo en bajo)
 #define SENSOR_ACTIVE_STATE HIGH
 // Tiempo de enfriamiento / debounce por sensor (en milisegundos)
-#define SENSOR_COOLDOWN_MS 1000
+// Reducido a 250ms para permitir conteo rápido de bolas sucesivas
+#define SENSOR_COOLDOWN_MS 250
 
 // Cantidad de sensores
 #define NUM_SENSORS 12
@@ -110,6 +114,7 @@ String currentScoringZone = "";
 
 // Inicialización de componentes principales
 Adafruit_MCP23X17 mcp;
+bool mcpInitialized = false; // Bandera de estado para evitar llamadas colgadas de I2C
 Adafruit_NeoPixel strip(NUM_LEDS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 AccelStepper stepper(AccelStepper::DRIVER, MOTOR_STEP_PIN, MOTOR_DIR_PIN);
 WebServer server(80);
@@ -652,14 +657,15 @@ void readIncomingSerial() {
 }
 
 // ==========================================
-// LECTURA DE SENSORES CON DEBOUNCE INDEPENDIENTE
+// LECTURA DE SENSORES CON DEBOUNCE INDEPENDIENTE (LECTURA POR BLOQUE OPTIMIZADA)
 // ==========================================
-void readSensors() {
+void readSensors(uint16_t gpioState) {
   unsigned long now = millis();
   
   for (int i = 0; i < NUM_SENSORS; i++) {
-    // Lectura del pin correspondiente del MCP23017
-    bool pinReading = mcp.digitalRead(SENSOR_PINS[i]);
+    // Obtener la lectura del pin desde el estado completo leído (1 << pin)
+    // El MCP23017 activa en HIGH o LOW según configuración física
+    bool pinReading = (gpioState & (1 << SENSOR_PINS[i])) != 0;
     
     // Convertir a booleano de activación según polaridad
     bool activeState = (pinReading == SENSOR_ACTIVE_STATE);
@@ -691,6 +697,8 @@ void setup() {
   
   // Inicialización del bus I2C manual con pines custom
   Wire.begin(I2C_SDA, I2C_SCL);
+  Wire.setClock(400000); // Forzar reloj I2C a 400kHz para máxima rapidez en sensores
+
   
   // Configuración del monedero (PULLUP interno)
   pinMode(COIN_PIN, INPUT_PULLUP);
@@ -719,6 +727,7 @@ void setup() {
     // Continuar en bucle de error sin congelar completamente (para poder usar stepper o wifi si estuvieran ok)
   } else {
     Serial.println("MCP23017 Inicializado con éxito.");
+    mcpInitialized = true;
     
     // Configurar los pines de sensores en el expansor
     for (int i = 0; i < NUM_SENSORS; i++) {
@@ -811,11 +820,11 @@ bool lastStartBtnState = HIGH; // HIGH = Inactivo (Pull-up)
 bool lastPauseBtnState = HIGH;
 const unsigned long BTN_DEBOUNCE_MS = 250;
 
-void readButtons() {
+void readButtons(uint16_t gpioState) {
   unsigned long now = millis();
   
-  // Leer botón Start desde MCP23017
-  bool startVal = mcp.digitalRead(BTN_START_PIN);
+  // Leer botón Start desde el estado de pines (LOW = Presionado / Pull-up activo)
+  bool startVal = (gpioState & (1 << BTN_START_PIN)) != 0;
   if (startVal == LOW && lastStartBtnState == HIGH) { // Flanco de bajada (Presión)
     if (now - lastStartBtnTime > BTN_DEBOUNCE_MS) {
       lastStartBtnTime = now;
@@ -824,8 +833,8 @@ void readButtons() {
   }
   lastStartBtnState = startVal;
   
-  // Leer botón Pause/Select desde MCP23017
-  bool pauseVal = mcp.digitalRead(BTN_PAUSE_PIN);
+  // Leer botón Pause/Select (LOW = Presionado / Pull-up activo)
+  bool pauseVal = (gpioState & (1 << BTN_PAUSE_PIN)) != 0;
   if (pauseVal == LOW && lastPauseBtnState == HIGH) { // Flanco de bajada (Presión)
     if (now - lastPauseBtnTime > BTN_DEBOUNCE_MS) {
       lastPauseBtnTime = now;
@@ -893,15 +902,16 @@ void loop() {
   // 2. Lectura y procesamiento de comandos seriales JSON entrantes desde el backend
   readIncomingSerial();
 
-  // 3. Lectura periódica de sensores IR a través del Expansor I2C
-  readSensors();
+  // 3. Lectura periódica de sensores y botones a través de lectura rápida por bloque I2C
+  if (mcpInitialized) {
+    uint16_t gpioState = mcp.readGPIOAB();
+    readSensors(gpioState);
+    readButtons(gpioState);
+  }
 
   // 4. Lectura periódica del radar de proximidad anti-trampa
   readProximity();
   
-  // 5. Lectura de botones físicos locales (Start / Pause)
-  readButtons();
-  
-  // 6. Lectura del monedero (consolidación de pulsos)
+  // 5. Lectura del monedero (consolidación de pulsos)
   checkCoin();
 }
