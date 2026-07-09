@@ -263,6 +263,10 @@
       background: var(--green);
       box-shadow: 0 0 10px var(--green), 0 0 20px var(--green);
     }
+    #test-led-proximity.active {
+      background: #ff3366;
+      box-shadow: 0 0 10px #ff3366, 0 0 20px #ff3366;
+    }
     .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
     .stat-card{
       background:rgba(255,255,255,0.03);
@@ -409,6 +413,15 @@
         <span></span>
         <div style="display:flex; justify-content:center; align-items:center;">
           <span class="indicator-led" id="test-led-coin"></span>
+        </div>
+      </div>
+      <div class="sensor-row">
+        <span class="sensor-id">proximity</span>
+        <span style="color:#fff; font-size:14px; font-weight:600;">Sensor Proximidad (Anti-Trampa / GPIO 16)</span>
+        <span></span>
+        <span></span>
+        <div style="display:flex; justify-content:center; align-items:center;">
+          <span class="indicator-led" id="test-led-proximity" style="transition: all 0.2s;"></span>
         </div>
       </div>
     </div>
@@ -1404,6 +1417,8 @@ function connectAdminWS() {
       const msg = JSON.parse(data);
       if (msg.type === "sensor_test") {
         handleSensorTestEvent(msg.sensor_id);
+      } else if (msg.type === "proximity_status") {
+        handleProximityStatusEvent(msg.active);
       } else if (msg.type === "serial_log") {
         handleSerialLogEvent(msg.line);
       }
@@ -1411,6 +1426,17 @@ function connectAdminWS() {
       console.error("Error parsing admin WS message", e);
     }
   };
+}
+
+function handleProximityStatusEvent(active) {
+  const led = document.getElementById("test-led-proximity");
+  if (led) {
+    if (active) {
+      led.classList.add("active");
+    } else {
+      led.classList.remove("active");
+    }
+  }
 }
 
 function handleSensorTestEvent(sensorId) {

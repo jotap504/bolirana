@@ -210,7 +210,9 @@ def _handle_hw_event(app):
         elif t == "ball":
             await engine.handle_ball_consumed(from_hardware=True)
         elif t == "proximity":
-            await engine.handle_proximity(msg.get("active", False))
+            active = msg.get("active", False)
+            await app.state.ws.send_admin({"type": "proximity_status", "active": active})
+            await engine.handle_proximity(active)
     return _handler
 
 
