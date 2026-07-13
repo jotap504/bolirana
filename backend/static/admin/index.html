@@ -459,6 +459,30 @@
           <input type="number" id="cfg-prox-duration" min="1" max="10" value="3">
         </div>
       </div>
+      <div class="form-row" style="margin-top:16px">
+        <div>
+          <label>Distancia Mínima de Detección (cm)</label>
+          <input type="number" id="cfg-prox-min-dist" min="20" max="600" value="100">
+        </div>
+        <div>
+          <label>Distancia Máxima de Detección (cm)</label>
+          <input type="number" id="cfg-prox-max-dist" min="50" max="600" value="250">
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:16px">
+        <div>
+          <label>Umbral Movimiento (0-100, menor es más sensible)</label>
+          <input type="number" id="cfg-prox-moving-th" min="0" max="100" value="55">
+        </div>
+        <div>
+          <label>Umbral Estático (0-100, menor es más sensible)</label>
+          <input type="number" id="cfg-prox-static-th" min="0" max="100" value="35">
+        </div>
+        <div>
+          <label>Tiempo Continuo de Detección (ms)</label>
+          <input type="number" id="cfg-prox-trigger-delay" min="100" max="5000" step="100" value="1000">
+        </div>
+      </div>
       <button class="btn btn-save" id="save-anti-cheat" style="margin-top:12px">GUARDAR CONFIGURACIÓN</button>
     </div>
   </div>
@@ -922,6 +946,11 @@ async function loadConfig() {
   document.getElementById("cfg-prox-right").textContent = ac.right_enabled ? "ON" : "OFF";
   document.getElementById("cfg-prox-invalidate").value = ac.invalidate_throws ? "true" : "false";
   document.getElementById("cfg-prox-duration").value = ac.alert_duration_seconds || 3;
+  document.getElementById("cfg-prox-min-dist").value = ac.min_distance_cm || 100;
+  document.getElementById("cfg-prox-max-dist").value = ac.max_distance_cm || 250;
+  document.getElementById("cfg-prox-moving-th").value = ac.moving_threshold || 55;
+  document.getElementById("cfg-prox-static-th").value = ac.static_threshold || 35;
+  document.getElementById("cfg-prox-trigger-delay").value = ac.trigger_delay_ms || 1000;
 
   adminPromotions = cfg.promotions || [];
   renderAdminPromotions();
@@ -1037,6 +1066,11 @@ document.getElementById("save-anti-cheat").addEventListener("click", async () =>
       right_enabled: document.getElementById("cfg-prox-right").classList.contains("on"),
       invalidate_throws: document.getElementById("cfg-prox-invalidate").value === "true",
       alert_duration_seconds: +document.getElementById("cfg-prox-duration").value,
+      min_distance_cm: +document.getElementById("cfg-prox-min-dist").value,
+      max_distance_cm: +document.getElementById("cfg-prox-max-dist").value,
+      moving_threshold: +document.getElementById("cfg-prox-moving-th").value,
+      static_threshold: +document.getElementById("cfg-prox-static-th").value,
+      trigger_delay_ms: +document.getElementById("cfg-prox-trigger-delay").value,
     }
   };
   await api("/api/admin/config", "PATCH", patch);
