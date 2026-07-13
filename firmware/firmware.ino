@@ -254,8 +254,14 @@ int radarMovingThreshold = 55;  // Energía mínima para movimiento (ignora pelo
 int radarStaticThreshold = 35;  // Energía mínima estática (detecta persona quieta)
 int radarTriggerMs = 1000;      // Tiempo continuo requerido para disparar alarma (ms)
 
-// Variables para el parsing del HLK-LD2410
-uint8_t radarRxBuf[4] = {0};
+// Variables para el parsing del HLK-LD2410 (Máquina de estados no bloqueante)
+enum RadarState { RADAR_WAIT_HEADER, RADAR_READ_LEN, RADAR_READ_PAYLOAD };
+RadarState radarState = RADAR_WAIT_HEADER;
+uint16_t radarPayloadLen = 0;
+uint16_t radarBytesRead = 0;
+uint8_t radarHeaderCount = 0;
+uint8_t radarRxBuf[64] = {0};
+
 bool lastProximityState = false;
 unsigned long radarDetectionStart = 0;
 bool radarRawDetected = false;
@@ -526,7 +532,14 @@ uint32_t Wheel(byte WheelPos) {
 }
 
 void updateLeds() {
+  static unsigned long lastLedUpdate = 0;
   unsigned long now = millis();
+  
+  // Limitar la tasa de refresco a un máximo de 30 FPS (cada 33ms) para no ahogar el buffer de interrupción Serial
+  if (now - lastLedUpdate < 33) {
+    return;
+  }
+  lastLedUpdate = now;
   
   switch (currentLedState) {
     case LED_IDLE: {
@@ -865,53 +878,63 @@ void readProximity() {
   while (Serial2.available() > 0) {
     uint8_t c = Serial2.read();
     
-    // Registro de desplazamiento para buscar cabecera F4 F3 F2 F1
-    for (int i = 0; i < 3; i++) {
-      radarRxBuf[i] = radarRxBuf[i+1];
-    }
-    radarRxBuf[3] = c;
-    
-    if (radarRxBuf[0] == 0xF4 && radarRxBuf[1] == 0xF3 && radarRxBuf[2] == 0xF2 && radarRxBuf[3] == 0xF1) {
-      // Cabecera encontrada. Leer 2 bytes de longitud de carga útil (Little Endian)
-      uint8_t lenBuf[2];
-      int bytesRead = 0;
-      unsigned long startT = millis();
-      while (bytesRead < 2 && millis() - startT < 10) {
-        if (Serial2.available() > 0) {
-          lenBuf[bytesRead++] = Serial2.read();
+    switch (radarState) {
+      case RADAR_WAIT_HEADER: {
+        // Registro de desplazamiento para buscar cabecera F4 F3 F2 F1
+        if (radarHeaderCount == 0 && c == 0xF4) radarHeaderCount = 1;
+        else if (radarHeaderCount == 1 && c == 0xF3) radarHeaderCount = 2;
+        else if (radarHeaderCount == 2 && c == 0xF2) radarHeaderCount = 3;
+        else if (radarHeaderCount == 3 && c == 0xF1) {
+          radarState = RADAR_READ_LEN;
+          radarBytesRead = 0;
+          radarPayloadLen = 0;
+          radarHeaderCount = 0;
+        } else {
+          radarHeaderCount = 0;
         }
-      }
-      if (bytesRead < 2) continue;
-      
-      uint16_t payloadLen = lenBuf[0] | (lenBuf[1] << 8);
-      
-      // Leer el resto del frame: Carga útil + 4 bytes de cola (F8 F7 F6 F5)
-      uint8_t payload[64];
-      if (payloadLen + 4 > sizeof(payload)) {
-        continue; // Frame corrupto o demasiado largo, ignorar
+        break;
       }
       
-      bytesRead = 0;
-      startT = millis();
-      while (bytesRead < payloadLen + 4 && millis() - startT < 50) {
-        if (Serial2.available() > 0) {
-          payload[bytesRead++] = Serial2.read();
-        }
-      }
-      if (bytesRead < payloadLen + 4) continue;
-      
-      // Verificar cola de fin de frame (F8 F7 F6 F5)
-      if (payload[payloadLen] == 0xF8 && payload[payloadLen+1] == 0xF7 && payload[payloadLen+2] == 0xF6 && payload[payloadLen+3] == 0xF5) {
-        // Parsear datos de presencia (Tipo de dato 0x02)
-        if (payload[0] == 0x02) {
-          int targetState = payload[2];
-          int movingDist = payload[3] | (payload[4] << 8);
-          int movingEnergy = payload[5];
-          int staticDist = payload[6] | (payload[7] << 8);
-          int staticEnergy = payload[8];
+      case RADAR_READ_LEN: {
+        if (radarBytesRead == 0) {
+          radarPayloadLen = c;
+          radarBytesRead = 1;
+        } else {
+          radarPayloadLen |= (c << 8);
+          radarState = RADAR_READ_PAYLOAD;
+          radarBytesRead = 0;
           
-          processRadarData(movingDist, movingEnergy, staticDist, staticEnergy);
+          // Seguridad por tamaño de buffer
+          if (radarPayloadLen + 4 > sizeof(radarRxBuf)) {
+            radarState = RADAR_WAIT_HEADER;
+          }
         }
+        break;
+      }
+      
+      case RADAR_READ_PAYLOAD: {
+        radarRxBuf[radarBytesRead++] = c;
+        if (radarBytesRead >= radarPayloadLen + 4) {
+          // Frame completo recibido. Verificar cola (F8 F7 F6 F5)
+          if (radarRxBuf[radarPayloadLen] == 0xF8 && 
+              radarRxBuf[radarPayloadLen+1] == 0xF7 && 
+              radarRxBuf[radarPayloadLen+2] == 0xF6 && 
+              radarRxBuf[radarPayloadLen+3] == 0xF5) {
+            
+            // Parsear datos de presencia (Tipo de dato 0x02)
+            if (radarRxBuf[0] == 0x02) {
+              int targetState = radarRxBuf[2];
+              int movingDist = radarRxBuf[3] | (radarRxBuf[4] << 8);
+              int movingEnergy = radarRxBuf[5];
+              int staticDist = radarRxBuf[6] | (radarRxBuf[7] << 8);
+              int staticEnergy = radarRxBuf[8];
+              
+              processRadarData(movingDist, movingEnergy, staticDist, staticEnergy);
+            }
+          }
+          radarState = RADAR_WAIT_HEADER;
+        }
+        break;
       }
     }
   }
