@@ -248,14 +248,17 @@ bool lastSensorState[NUM_SENSORS] = {false};
 
 // Control del estado del sensor de proximidad (HLK-LD2410)
 // Configuración inteligente del Radar HLK-LD2410C por Puerto Serial2
-#define RADAR_MIN_DIST_CM  100    // Distancia mínima para detectar jugador (1 metro)
-#define RADAR_MAX_DIST_CM  250    // Distancia máxima para detectar jugador (2.5 metros)
-#define RADAR_MOVING_THRESHOLD 55  // Energía mínima para movimiento (ignora pelotas)
-#define RADAR_STATIC_THRESHOLD 35  // Energía mínima estática (detecta persona quieta)
+int radarMinDistCm = 100;       // Distancia mínima para detectar jugador (1 metro)
+int radarMaxDistCm = 250;       // Distancia máxima para detectar jugador (2.5 metros)
+int radarMovingThreshold = 55;  // Energía mínima para movimiento (ignora pelotas)
+int radarStaticThreshold = 35;  // Energía mínima estática (detecta persona quieta)
+int radarTriggerMs = 1000;      // Tiempo continuo requerido para disparar alarma (ms)
 
 // Variables para el parsing del HLK-LD2410
 uint8_t radarRxBuf[4] = {0};
 bool lastProximityState = false;
+unsigned long radarDetectionStart = 0;
+bool radarRawDetected = false;
 
 // ==========================================
 // INTERFAZ DASHBOARD ENRIQUECIDA (HTML / CSS / JS)
@@ -639,6 +642,13 @@ void readIncomingSerial() {
           } else if (strcmp(type, "proximity") == 0) {
             bool active = doc["active"];
             setProximityState(active);
+          } else if (strcmp(type, "config_proximity") == 0) {
+            if (doc.containsKey("min_dist")) radarMinDistCm = doc["min_dist"];
+            if (doc.containsKey("max_dist")) radarMaxDistCm = doc["max_dist"];
+            if (doc.containsKey("moving_th")) radarMovingThreshold = doc["moving_th"];
+            if (doc.containsKey("static_th")) radarStaticThreshold = doc["static_th"];
+            if (doc.containsKey("trigger_ms")) radarTriggerMs = doc["trigger_ms"];
+            Serial.println("[SYSTEM] Configuración de radar actualizada desde el Backend.");
           } else if (strcmp(type, "coin") == 0) {
             // Si el backend envía confirmación de ficha
             triggerEffect("goal", "fosa_2"); // Flash de rebote
@@ -796,15 +806,33 @@ void setup() {
 // LECTURA DEL SENSOR DE PROXIMIDAD (RADAR HLK-LD2410)
 // ==========================================
 void processRadarData(int movingDist, int movingEnergy, int staticDist, int staticEnergy) {
-  bool playerDetected = false;
+  bool currentRawState = false;
   
   // 1. Filtrado inteligente de presencia:
   // - Si es un objetivo estático (persona quieta en rango): evaluamos staticEnergy
   // - Si es un objetivo en movimiento: evaluamos movingEnergy para ignorar pelotas (baja energía)
-  if (staticDist >= RADAR_MIN_DIST_CM && staticDist <= RADAR_MAX_DIST_CM && staticEnergy >= RADAR_STATIC_THRESHOLD) {
-    playerDetected = true;
+  if (staticDist >= radarMinDistCm && staticDist <= radarMaxDistCm && staticEnergy >= radarStaticThreshold) {
+    currentRawState = true;
   }
-  else if (movingDist >= RADAR_MIN_DIST_CM && movingDist <= RADAR_MAX_DIST_CM && movingEnergy >= RADAR_MOVING_THRESHOLD) {
+  else if (movingDist >= radarMinDistCm && movingDist <= radarMaxDistCm && movingEnergy >= radarMovingThreshold) {
+    currentRawState = true;
+  }
+  
+  unsigned long now = millis();
+  
+  // 2. Control de tiempo de detección continua (debe persistir por radarTriggerMs)
+  if (currentRawState) {
+    if (!radarRawDetected) {
+      radarRawDetected = true;
+      radarDetectionStart = now;
+    }
+  } else {
+    radarRawDetected = false;
+    radarDetectionStart = 0;
+  }
+  
+  bool playerDetected = false;
+  if (radarRawDetected && (now - radarDetectionStart >= (unsigned long)radarTriggerMs)) {
     playerDetected = true;
   }
   
