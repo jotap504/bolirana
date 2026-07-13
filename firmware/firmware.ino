@@ -247,9 +247,15 @@ unsigned long lastTriggerTime[NUM_SENSORS] = {0};
 bool lastSensorState[NUM_SENSORS] = {false};
 
 // Control del estado del sensor de proximidad (HLK-LD2410)
+// Configuración inteligente del Radar HLK-LD2410C por Puerto Serial2
+#define RADAR_MIN_DIST_CM  100    // Distancia mínima para detectar jugador (1 metro)
+#define RADAR_MAX_DIST_CM  250    // Distancia máxima para detectar jugador (2.5 metros)
+#define RADAR_MOVING_THRESHOLD 55  // Energía mínima para movimiento (ignora pelotas)
+#define RADAR_STATIC_THRESHOLD 35  // Energía mínima estática (detecta persona quieta)
+
+// Variables para el parsing del HLK-LD2410
+uint8_t radarRxBuf[4] = {0};
 bool lastProximityState = false;
-unsigned long lastProximityCheckTime = 0;
-const unsigned long PROXIMITY_CHECK_INTERVAL = 100; // Intervalo de lectura en ms
 
 // ==========================================
 // INTERFAZ DASHBOARD ENRIQUECIDA (HTML / CSS / JS)
@@ -706,8 +712,9 @@ void setup() {
   // Configuración del monedero (PULLUP interno)
   pinMode(COIN_PIN, INPUT_PULLUP);
   
-  // Configuración del pin del radar de proximidad (con Pulldown para evitar ruido si se desconecta)
-  pinMode(PROXIMITY_PIN, INPUT_PULLDOWN);
+  // Iniciar UART2 para el radar HLK-LD2410 (Baud 256000, RX=GPIO 16, TX=GPIO 17)
+  Serial2.begin(256000, SERIAL_8N1, 16, 17);
+  Serial.println("[SYSTEM] UART2 para radar HLK-LD2410 configurado en 256000 baud.");
   
   // Inicialización de LEDs NeoPixel
   strip.begin();
@@ -788,27 +795,95 @@ void setup() {
 // ==========================================
 // LECTURA DEL SENSOR DE PROXIMIDAD (RADAR HLK-LD2410)
 // ==========================================
+void processRadarData(int movingDist, int movingEnergy, int staticDist, int staticEnergy) {
+  bool playerDetected = false;
+  
+  // 1. Filtrado inteligente de presencia:
+  // - Si es un objetivo estático (persona quieta en rango): evaluamos staticEnergy
+  // - Si es un objetivo en movimiento: evaluamos movingEnergy para ignorar pelotas (baja energía)
+  if (staticDist >= RADAR_MIN_DIST_CM && staticDist <= RADAR_MAX_DIST_CM && staticEnergy >= RADAR_STATIC_THRESHOLD) {
+    playerDetected = true;
+  }
+  else if (movingDist >= RADAR_MIN_DIST_CM && movingDist <= RADAR_MAX_DIST_CM && movingEnergy >= RADAR_MOVING_THRESHOLD) {
+    playerDetected = true;
+  }
+  
+  if (playerDetected != lastProximityState) {
+    lastProximityState = playerDetected;
+    
+    // 1. Enviar el evento JSON al backend por Serial
+    Serial.print("{\"event\":\"proximity\",\"active\":");
+    Serial.print(playerDetected ? "true" : "false");
+    Serial.println("}");
+    
+    // 2. Imprimir mensaje de depuración en el monitor serial
+    if (playerDetected) {
+      Serial.print("[DEBUG] Radar Proximidad: ¡PRESENCIA DETECTADA! (D_mov=");
+      Serial.print(movingDist);
+      Serial.print("cm, E_mov=");
+      Serial.print(movingEnergy);
+      Serial.print(" | D_est=");
+      Serial.print(staticDist);
+      Serial.print("cm, E_est=");
+      Serial.print(staticEnergy);
+      Serial.println(")");
+    } else {
+      Serial.println("[DEBUG] Radar Proximidad: Área despejada / Sin presencia.");
+    }
+  }
+}
+
 void readProximity() {
-  unsigned long now = millis();
-  if (now - lastProximityCheckTime >= PROXIMITY_CHECK_INTERVAL) {
-    lastProximityCheckTime = now;
+  while (Serial2.available() > 0) {
+    uint8_t c = Serial2.read();
     
-    // Leer el estado físico de presencia (HIGH cuando detecta movimiento/presencia)
-    bool currentReading = (digitalRead(PROXIMITY_PIN) == HIGH);
+    // Registro de desplazamiento para buscar cabecera F4 F3 F2 F1
+    for (int i = 0; i < 3; i++) {
+      radarRxBuf[i] = radarRxBuf[i+1];
+    }
+    radarRxBuf[3] = c;
     
-    if (currentReading != lastProximityState) {
-      lastProximityState = currentReading;
+    if (radarRxBuf[0] == 0xF4 && radarRxBuf[1] == 0xF3 && radarRxBuf[2] == 0xF2 && radarRxBuf[3] == 0xF1) {
+      // Cabecera encontrada. Leer 2 bytes de longitud de carga útil (Little Endian)
+      uint8_t lenBuf[2];
+      int bytesRead = 0;
+      unsigned long startT = millis();
+      while (bytesRead < 2 && millis() - startT < 10) {
+        if (Serial2.available() > 0) {
+          lenBuf[bytesRead++] = Serial2.read();
+        }
+      }
+      if (bytesRead < 2) continue;
       
-      // 1. Enviar el evento JSON al backend por Serial
-      Serial.print("{\"event\":\"proximity\",\"active\":");
-      Serial.print(currentReading ? "true" : "false");
-      Serial.println("}");
+      uint16_t payloadLen = lenBuf[0] | (lenBuf[1] << 8);
       
-      // 2. Imprimir mensaje de depuración en el monitor serial
-      if (currentReading) {
-        Serial.println("[DEBUG] Radar Proximidad: ¡PRESENCIA DETECTADA! (Alerta de trampa)");
-      } else {
-        Serial.println("[DEBUG] Radar Proximidad: Área despejada / Sin presencia.");
+      // Leer el resto del frame: Carga útil + 4 bytes de cola (F8 F7 F6 F5)
+      uint8_t payload[64];
+      if (payloadLen + 4 > sizeof(payload)) {
+        continue; // Frame corrupto o demasiado largo, ignorar
+      }
+      
+      bytesRead = 0;
+      startT = millis();
+      while (bytesRead < payloadLen + 4 && millis() - startT < 50) {
+        if (Serial2.available() > 0) {
+          payload[bytesRead++] = Serial2.read();
+        }
+      }
+      if (bytesRead < payloadLen + 4) continue;
+      
+      // Verificar cola de fin de frame (F8 F7 F6 F5)
+      if (payload[payloadLen] == 0xF8 && payload[payloadLen+1] == 0xF7 && payload[payloadLen+2] == 0xF6 && payload[payloadLen+3] == 0xF5) {
+        // Parsear datos de presencia (Tipo de dato 0x02)
+        if (payload[0] == 0x02) {
+          int targetState = payload[2];
+          int movingDist = payload[3] | (payload[4] << 8);
+          int movingEnergy = payload[5];
+          int staticDist = payload[6] | (payload[7] << 8);
+          int staticEnergy = payload[8];
+          
+          processRadarData(movingDist, movingEnergy, staticDist, staticEnergy);
+        }
       }
     }
   }
