@@ -331,9 +331,10 @@ class GameEngine:
                     # Todos sin bolas — ¿queda otra ronda?
                     if s.current_round < s.total_rounds:
                         s.current_round += 1
-                        # Reponer bolas a todos los jugadores para la nueva ronda
+                        # Reponer bolas y limpiar historial de tiros para todos los jugadores en la nueva ronda
                         for rp in s.players:
                             rp.balls_left = s.balls_per_round
+                            rp.shots = []
                         s.current_player = 0
                         log.info("Iniciando ronda %s/%s", s.current_round, s.total_rounds)
                         await self._broadcast({
