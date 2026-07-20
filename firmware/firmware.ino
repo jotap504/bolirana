@@ -28,10 +28,10 @@ const char* password = "corsa000";
 // ==========================================
 // CONFIGURACIÓN DE HARDWARE Y PINES (ESP32)
 // ==========================================
-// Pines para el motor unipolar 28BYJ-48 con placa ULN2003 (Dispensador)
-#define MOTOR_IN1 13
-#define MOTOR_IN2 12
-#define MOTOR_IN3 14
+// Pines para el motor unipolar 28BYJ-48 con placa ULN2003 (Dispensador en máquina de producción)
+#define MOTOR_IN1 26
+#define MOTOR_IN2 25
+#define MOTOR_IN3 33
 #define MOTOR_IN4 27
 #define MOTOR_LIMIT_SWITCH_PIN 32 // Pin del microswitch de tope/calibración de la hélice (INPUT_PULLUP)
 
