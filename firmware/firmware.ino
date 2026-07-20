@@ -704,8 +704,10 @@ void readIncomingSerial() {
           } else if (strcmp(type, "step") == 0) {
             int steps = doc["steps"];
             if (steps != 0) {
+              stepper.setMaxSpeed(motorSpeed);
+              stepper.setAcceleration(motorAccel);
               stepper.enableOutputs();
-              stepper.move(steps);
+              stepper.move(steps * motorDirection);
             }
           } else if (strcmp(type, "home") == 0 || strcmp(type, "home_stepper") == 0) {
             homeStepper();
