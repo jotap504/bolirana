@@ -693,7 +693,6 @@ void readIncomingSerial() {
             if (doc.containsKey("dir")) motorDirection = doc["dir"];
             if (doc.containsKey("extra_steps")) motorExtraSteps = doc["extra_steps"];
             Serial.println("[SYSTEM] Configuración de motor actualizada desde el Backend.");
-          }
           } else if (strcmp(type, "coin") == 0) {
             // Si el backend envía confirmación de ficha
             triggerEffect("goal", "fosa_2"); // Flash de rebote
