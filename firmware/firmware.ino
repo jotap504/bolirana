@@ -32,8 +32,8 @@ const char* password = "corsa000";
 #define MOTOR_IN1 26
 #define MOTOR_IN2 25
 #define MOTOR_IN3 33
-#define MOTOR_IN4 27
-#define MOTOR_LIMIT_SWITCH_PIN 32 // Pin del microswitch de tope/calibración de la hélice (INPUT_PULLUP)
+#define MOTOR_IN4 32
+#define MOTOR_LIMIT_SWITCH_PIN 27 // Pin del microswitch de tope/calibración si aplica (INPUT_PULLUP)
 
 // Pin físico dedicado a la Tira NeoPixel (WS2812B/W) en el ESP32
 #define NEOPIXEL_PIN 4
@@ -230,10 +230,10 @@ void releaseBalls(int count) {
   
   stopMotorCoils();
   
-  if (stepsTaken >= safetyLimit) {
-    Serial.println("{\"event\":\"motor_error\",\"reason\":\"switch_timeout\"}");
-  } else {
+  if (clicks >= count || stepper.distanceToGo() == 0) {
     Serial.println("{\"event\":\"motor_done\"}");
+  } else {
+    Serial.println("{\"event\":\"motor_error\",\"reason\":\"switch_timeout\"}");
   }
 }
 
