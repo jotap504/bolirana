@@ -125,6 +125,11 @@ WebServer server(80);
 // ==========================================
 // CONFIGURACIÓN DE DISPENSADOR DE BOLAS (MOTOR 28BYJ-48 / ULN2003)
 // ==========================================
+// Configuración dinámica del motor dispensador (recibida por JSON desde Backend)
+float motorSpeed = 800.0;
+float motorAccel = 400.0;
+int motorDirection = 1;       // 1 = Horario (Normal), -1 = Antihorario (Invertido)
+int motorExtraSteps = 150;     // Pasos adicionales a avanzar tras detectar el clic de tope
 
 void stopMotorCoils() {
   digitalWrite(MOTOR_IN1, LOW);
@@ -265,12 +270,6 @@ void checkMotorStatus() {
 // Control de debounce/estado de sensores
 unsigned long lastTriggerTime[NUM_SENSORS] = {0};
 bool lastSensorState[NUM_SENSORS] = {false};
-
-// Configuración dinámica del motor dispensador (recibida por JSON desde Backend)
-float motorSpeed = 800.0;
-float motorAccel = 400.0;
-int motorDirection = 1;       // 1 = Horario (Normal), -1 = Antihorario (Invertido)
-int motorExtraSteps = 150;     // Pasos adicionales a avanzar tras detectar el clic de tope
 
 // Control del estado del sensor de proximidad (HLK-LD2410)
 // Configuración inteligente del Radar HLK-LD2410C por Puerto Serial2
