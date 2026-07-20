@@ -28,10 +28,11 @@ const char* password = "corsa000";
 // ==========================================
 // CONFIGURACIÓN DE HARDWARE Y PINES (ESP32)
 // ==========================================
-// Pines del Driver A4988 para el motor paso a paso NEMA 17 (Dispensador)
-#define MOTOR_STEP_PIN 26
-#define MOTOR_DIR_PIN  25
-#define MOTOR_EN_PIN   33 // Activo en LOW. Deshabilita bobinas al estar en HIGH para evitar sobrecalentamiento.
+// Pines para el motor unipolar 28BYJ-48 con placa ULN2003 (Dispensador)
+#define MOTOR_IN1 13
+#define MOTOR_IN2 12
+#define MOTOR_IN3 14
+#define MOTOR_IN4 27
 #define MOTOR_LIMIT_SWITCH_PIN 32 // Pin del microswitch de tope/calibración de la hélice (INPUT_PULLUP)
 
 // Pin físico dedicado a la Tira NeoPixel (WS2812B/W) en el ESP32
@@ -116,12 +117,22 @@ String currentScoringZone = "";
 Adafruit_MCP23X17 mcp;
 bool mcpInitialized = false; // Bandera de estado para evitar llamadas colgadas de I2C
 Adafruit_NeoPixel strip(NUM_LEDS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-AccelStepper stepper(AccelStepper::DRIVER, MOTOR_STEP_PIN, MOTOR_DIR_PIN);
+// Inicialización del motor 28BYJ-48 en modo unipolar 4 hilos (HALF4WIRE)
+// Secuencia obligatoria de pines para este motor: IN1, IN3, IN2, IN4
+AccelStepper stepper(AccelStepper::HALF4WIRE, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
 WebServer server(80);
 
 // ==========================================
-// CONFIGURACIÓN DE DISPENSADOR DE BOLAS POR MICROSWITCH
+// CONFIGURACIÓN DE DISPENSADOR DE BOLAS (MOTOR 28BYJ-48 / ULN2003)
 // ==========================================
+
+void stopMotorCoils() {
+  digitalWrite(MOTOR_IN1, LOW);
+  digitalWrite(MOTOR_IN2, LOW);
+  digitalWrite(MOTOR_IN3, LOW);
+  digitalWrite(MOTOR_IN4, LOW);
+  stepper.disableOutputs();
+}
 
 void homeStepper() {
   Serial.println("{\"event\":\"homing_start\"}");
@@ -130,7 +141,7 @@ void homeStepper() {
   if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
     Serial.println("{\"event\":\"homing_done\",\"steps_taken\":0}");
     stepper.setCurrentPosition(0);
-    digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas
+    stopMotorCoils();
     return;
   }
 
@@ -139,15 +150,15 @@ void homeStepper() {
   delay(3000);
   
   // 3. Retroceder despacio buscando el microswitch
-  digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar driver (bobinas activas)
-  delay(100);
+  stepper.enableOutputs();
+  delay(50);
   
-  stepper.setMaxSpeed(150.0);
-  stepper.setAcceleration(80.0);
-  stepper.move(-2000); // Reversa
+  stepper.setMaxSpeed(400.0);
+  stepper.setAcceleration(200.0);
+  stepper.move(-12000); // Reversa (rango amplio para 28BYJ-48)
   
   int stepsTaken = 0;
-  int safetyLimit = 2000;
+  int safetyLimit = 12000;
   
   while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsTaken < safetyLimit && stepper.distanceToGo() != 0) {
     stepper.run();
@@ -161,7 +172,7 @@ void homeStepper() {
   
   long actualSteps = abs(stepper.currentPosition());
   stepper.setCurrentPosition(0);
-  digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas para enfriar
+  stopMotorCoils();
   
   if (stepsTaken >= safetyLimit) {
     Serial.println("{\"event\":\"homing_failed\",\"reason\":\"timeout\"}");
@@ -177,19 +188,20 @@ void releaseBalls(int count) {
   Serial.print(count);
   Serial.println("}");
   
-  digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor (bobinas activas)
+  stepper.enableOutputs();
   delay(50);
   
-  // En producción, usamos velocidades moderadas calibradas por defecto
-  stepper.setMaxSpeed(300.0);
-  stepper.setAcceleration(150.0);
-  stepper.move(2000 * count); // Dirección adelante (positivo)
+  stepper.setMaxSpeed(800.0);
+  stepper.setAcceleration(400.0);
   
   int clicks = 0;
   bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
   int stepsTaken = 0;
-  int stepsSinceLastClick = 20; // Inicializar alto para permitir detectar el primer click de inmediato
-  int safetyLimit = count * 300; // Límite de seguridad
+  int stepsSinceLastClick = 50; // Filtro de rebotes inicial
+  int safetyLimit = count * 12000; // Límite de seguridad para 28BYJ-48
+  
+  stepper.setCurrentPosition(0);
+  stepper.move(12000 * count); // Mover número suficiente de pasos adelante
   
   while (clicks < count && stepsTaken < safetyLimit && stepper.distanceToGo() != 0) {
     stepper.run();
@@ -200,7 +212,7 @@ void releaseBalls(int count) {
     
     // Detectar flanco de bajada (de HIGH a LOW -> microswitch presionado)
     if (lastState == HIGH && currentState == LOW) {
-      if (stepsSinceLastClick > 8) { // Filtro de rebotes (debounce)
+      if (stepsSinceLastClick > 100) { // Filtro de rebotes
         clicks++;
         stepsSinceLastClick = 0;
         Serial.print("[DEBUG] Clic de aspa detectado: ");
@@ -211,13 +223,12 @@ void releaseBalls(int count) {
     lastState = currentState;
   }
   
-  // Detener suavemente
   stepper.stop();
   while (stepper.distanceToGo() != 0) {
     stepper.run();
   }
   
-  digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas para enfriar
+  stopMotorCoils();
   
   if (stepsTaken >= safetyLimit) {
     Serial.println("{\"event\":\"motor_error\",\"reason\":\"switch_timeout\"}");
@@ -231,12 +242,12 @@ void checkMotorStatus() {
   if (stepper.distanceToGo() != 0) {
     if (!motorWasMoving) {
       motorWasMoving = true;
-      digitalWrite(MOTOR_EN_PIN, LOW); // Asegurar que el motor esté habilitado
+      stepper.enableOutputs();
     }
   } else {
     if (motorWasMoving) {
       motorWasMoving = false;
-      digitalWrite(MOTOR_EN_PIN, HIGH); // Apagar bobinas cuando llegó a su destino para enfriar
+      stopMotorCoils();
       Serial.println("{\"event\":\"motor_done\"}");
     }
   }
@@ -673,7 +684,7 @@ void readIncomingSerial() {
           } else if (strcmp(type, "step") == 0) {
             int steps = doc["steps"];
             if (steps != 0) {
-              digitalWrite(MOTOR_EN_PIN, LOW); // Habilitar motor
+              stepper.enableOutputs();
               stepper.move(steps);
             }
           } else if (strcmp(type, "home") == 0 || strcmp(type, "home_stepper") == 0) {
@@ -772,16 +783,15 @@ void setup() {
     mcp.pinMode(BTN_PAUSE_PIN, INPUT_PULLUP);
   }
 
-  // Configurar pin de ENABLE del driver A4988 como salida y apagarlo
-  pinMode(MOTOR_EN_PIN, OUTPUT);
-  digitalWrite(MOTOR_EN_PIN, HIGH); // Apagado por defecto para evitar sobrecalentamiento
+  // Apagar bobinas del motor 28BYJ-48 por defecto para evitar calentamiento
+  stopMotorCoils();
 
   // Configurar pin del microswitch de tope de la hélice con PULL-UP interno
   pinMode(MOTOR_LIMIT_SWITCH_PIN, INPUT_PULLUP);
 
-  // Configuración de velocidad y aceleración del motor paso a paso (Calibrados para motor con reductora)
-  stepper.setMaxSpeed(300.0);
-  stepper.setAcceleration(150.0);
+  // Configuración de velocidad y aceleración para el motor 28BYJ-48 (ULN2003 en HALF4WIRE)
+  stepper.setMaxSpeed(800.0);
+  stepper.setAcceleration(400.0);
 
   // Conexión WiFi
   WiFi.begin(ssid, password);
