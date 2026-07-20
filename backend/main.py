@@ -46,12 +46,29 @@ async def lifespan(app: FastAPI):
                 try:
                     patch = json.loads(entry.value)
                     
-                    # Asegurar que todos los sensores de DEFAULT_CONFIG existan en la BD
+                    modified = False
+                    
+                    # Garantizar que las nuevas propiedades de anti_cheat existan con valores por defecto
                     from app.config import DEFAULT_CONFIG
+                    if "anti_cheat" not in patch:
+                        patch["anti_cheat"] = {}
+                    for k, v in DEFAULT_CONFIG["anti_cheat"].items():
+                        if k not in patch["anti_cheat"]:
+                            patch["anti_cheat"][k] = v
+                            modified = True
+
+                    if "motor" not in patch:
+                        patch["motor"] = {}
+                    for k, v in DEFAULT_CONFIG["motor"].items():
+                        if k not in patch["motor"]:
+                            patch["motor"][k] = v
+                            modified = True
+
+                    
+                    # Asegurar que todos los sensores de DEFAULT_CONFIG existan en la BD
                     db_sensors = patch.get("sensors", [])
                     db_sensor_ids = {s["id"] for s in db_sensors}
                     
-                    modified = False
                     for default_s in DEFAULT_CONFIG["sensors"]:
                         if default_s["id"] not in db_sensor_ids:
                             # Insertar antes de 'cero' si es posible para mantener el orden
@@ -112,6 +129,13 @@ async def lifespan(app: FastAPI):
 
     async def _handle_hw_status(connected: bool) -> None:
         await app.state.ws.broadcast({"type": "hw_status", "connected": connected})
+        if connected:
+            try:
+                from app.routers.admin import push_radar_config_to_hardware, push_motor_config_to_hardware
+                await push_radar_config_to_hardware(app)
+                await push_motor_config_to_hardware(app)
+            except Exception as e:
+                log.warning("No se pudo enviar la configuración de hardware al conectar: %s", e)
 
     async def _handle_hw_raw_line(line: str) -> None:
         await app.state.ws.send_admin({"type": "serial_log", "line": line})

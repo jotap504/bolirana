@@ -48,6 +48,12 @@ DEFAULT_CONFIG = {
         "baud": 115200,
         "mock": False,
     },
+    "motor": {
+        "speed": 800.0,
+        "acceleration": 400.0,
+        "direction": 1,
+        "extra_steps": 150,
+    },
     "mercadopago": {
         "access_token": os.getenv("MP_ACCESS_TOKEN", ""),
         "enabled": False,
@@ -74,6 +80,11 @@ DEFAULT_CONFIG = {
         "right_enabled": False,
         "alert_duration_seconds": 3,
         "invalidate_throws": False,
+        "min_distance_cm": 100,
+        "max_distance_cm": 250,
+        "moving_threshold": 55,
+        "static_threshold": 35,
+        "trigger_delay_ms": 1000,
     },
     "promotions": [
         {

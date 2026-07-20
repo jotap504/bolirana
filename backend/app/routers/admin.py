@@ -27,6 +27,37 @@ async def read_config():
     return cfg
 
 
+async def push_radar_config_to_hardware(app) -> None:
+    """Envía la configuración de proximidad del radar al hardware (ESP32) si está conectado."""
+    cfg = get_config().get("anti_cheat", {})
+    cmd = {
+        "type": "config_proximity",
+        "min_dist": int(cfg.get("min_distance_cm", 100)),
+        "max_dist": int(cfg.get("max_distance_cm", 250)),
+        "moving_th": int(cfg.get("moving_threshold", 55)),
+        "static_th": int(cfg.get("static_threshold", 35)),
+        "trigger_ms": int(cfg.get("trigger_delay_ms", 1000))
+    }
+    if hasattr(app, "state") and hasattr(app.state, "bridge") and app.state.bridge.is_connected():
+        await app.state.bridge.send(cmd)
+        log.info("Configuración de radar enviada al hardware: %s", cmd)
+
+
+async def push_motor_config_to_hardware(app) -> None:
+    """Envía la configuración del motor dispensador al hardware (ESP32) si está conectado."""
+    cfg = get_config().get("motor", {})
+    cmd = {
+        "type": "config_motor",
+        "speed": float(cfg.get("speed", 800.0)),
+        "accel": float(cfg.get("acceleration", 400.0)),
+        "dir": int(cfg.get("direction", 1)),
+        "extra_steps": int(cfg.get("extra_steps", 150))
+    }
+    if hasattr(app, "state") and hasattr(app.state, "bridge") and app.state.bridge.is_connected():
+        await app.state.bridge.send(cmd)
+        log.info("Configuración de motor enviada al hardware: %s", cmd)
+
+
 @router.patch("/config")
 async def patch_config(request: Request, db: AsyncSession = Depends(get_db)):
     body = await request.json()
@@ -55,6 +86,20 @@ async def patch_config(request: Request, db: AsyncSession = Depends(get_db)):
 
     update_config(body)
     await save_config_to_db(db)
+    
+    # Si se actualizó la configuración anti-trampas, enviarla al hardware (ESP32)
+    if "anti_cheat" in body:
+        try:
+            await push_radar_config_to_hardware(request.app)
+        except Exception as e:
+            log.warning("No se pudo enviar la configuración del radar al hardware: %s", e)
+
+    # Si se actualizó la configuración del motor dispensador, enviarla al hardware (ESP32)
+    if "motor" in body:
+        try:
+            await push_motor_config_to_hardware(request.app)
+        except Exception as e:
+            log.warning("No se pudo enviar la configuración del motor al hardware: %s", e)
     
     # Devolver respuesta con el token enmascarado
     import copy

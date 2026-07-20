@@ -153,9 +153,9 @@ void homeStepper() {
   stepper.enableOutputs();
   delay(50);
   
-  stepper.setMaxSpeed(400.0);
-  stepper.setAcceleration(200.0);
-  stepper.move(-12000); // Reversa (rango amplio para 28BYJ-48)
+  stepper.setMaxSpeed(motorSpeed * 0.5);
+  stepper.setAcceleration(motorAccel * 0.5);
+  stepper.move(-12000 * motorDirection); // Reversa
   
   int stepsTaken = 0;
   int safetyLimit = 12000;
@@ -191,8 +191,8 @@ void releaseBalls(int count) {
   stepper.enableOutputs();
   delay(50);
   
-  stepper.setMaxSpeed(800.0);
-  stepper.setAcceleration(400.0);
+  stepper.setMaxSpeed(motorSpeed);
+  stepper.setAcceleration(motorAccel);
   
   int clicks = 0;
   bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
@@ -201,7 +201,7 @@ void releaseBalls(int count) {
   int safetyLimit = count * 12000; // Límite de seguridad para 28BYJ-48
   
   stepper.setCurrentPosition(0);
-  stepper.move(12000 * count); // Mover número suficiente de pasos adelante
+  stepper.move(12000 * count * motorDirection); // Mover adelante
   
   while (clicks < count && stepsTaken < safetyLimit && stepper.distanceToGo() != 0) {
     stepper.run();
@@ -223,9 +223,18 @@ void releaseBalls(int count) {
     lastState = currentState;
   }
   
-  stepper.stop();
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
+  // Si detectó clics de final de carrera y hay pasos extra configurados, avanzar para despejar el canal
+  if (clicks > 0 && motorExtraSteps > 0) {
+    long extraTarget = stepper.currentPosition() + (motorExtraSteps * motorDirection);
+    stepper.moveTo(extraTarget);
+    while (stepper.distanceToGo() != 0) {
+      stepper.run();
+    }
+  } else {
+    stepper.stop();
+    while (stepper.distanceToGo() != 0) {
+      stepper.run();
+    }
   }
   
   stopMotorCoils();
@@ -256,6 +265,12 @@ void checkMotorStatus() {
 // Control de debounce/estado de sensores
 unsigned long lastTriggerTime[NUM_SENSORS] = {0};
 bool lastSensorState[NUM_SENSORS] = {false};
+
+// Configuración dinámica del motor dispensador (recibida por JSON desde Backend)
+float motorSpeed = 800.0;
+float motorAccel = 400.0;
+int motorDirection = 1;       // 1 = Horario (Normal), -1 = Antihorario (Invertido)
+int motorExtraSteps = 150;     // Pasos adicionales a avanzar tras detectar el clic de tope
 
 // Control del estado del sensor de proximidad (HLK-LD2410)
 // Configuración inteligente del Radar HLK-LD2410C por Puerto Serial2
@@ -673,6 +688,13 @@ void readIncomingSerial() {
             if (doc.containsKey("static_th")) radarStaticThreshold = doc["static_th"];
             if (doc.containsKey("trigger_ms")) radarTriggerMs = doc["trigger_ms"];
             Serial.println("[SYSTEM] Configuración de radar actualizada desde el Backend.");
+          } else if (strcmp(type, "config_motor") == 0) {
+            if (doc.containsKey("speed")) motorSpeed = doc["speed"];
+            if (doc.containsKey("accel")) motorAccel = doc["accel"];
+            if (doc.containsKey("dir")) motorDirection = doc["dir"];
+            if (doc.containsKey("extra_steps")) motorExtraSteps = doc["extra_steps"];
+            Serial.println("[SYSTEM] Configuración de motor actualizada desde el Backend.");
+          }
           } else if (strcmp(type, "coin") == 0) {
             // Si el backend envía confirmación de ficha
             triggerEffect("goal", "fosa_2"); // Flash de rebote

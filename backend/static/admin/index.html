@@ -485,6 +485,38 @@
       </div>
       <button class="btn btn-save" id="save-anti-cheat" style="margin-top:12px">GUARDAR CONFIGURACIÓN</button>
     </div>
+
+    <!-- ── CONFIGURACIÓN DEL MOTOR DISPENSADOR ── -->
+    <div class="card" style="margin-top:20px">
+      <div class="card-title" style="color:var(--cyan);border-left-color:var(--cyan)">CONFIGURACIÓN DEL DISPENSADOR (MOTOR PASO A PASO)</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        Ajusta la velocidad, aceleración, sentido de giro y pasos extra de frenado tras el final de carrera para calibrar la liberación física de bolas.
+      </p>
+      <div class="form-row">
+        <div>
+          <label>Velocidad Máxima (Pasos/seg)</label>
+          <input type="number" id="cfg-motor-speed" min="100" max="3000" step="50" value="800">
+        </div>
+        <div>
+          <label>Aceleración (Pasos/seg²)</label>
+          <input type="number" id="cfg-motor-accel" min="50" max="2000" step="50" value="400">
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:16px">
+        <div>
+          <label>Sentido de Giro</label>
+          <select id="cfg-motor-dir">
+            <option value="1">Horario (Giro Normal - Valor 1)</option>
+            <option value="-1">Antihorario (Giro Invertido - Valor -1)</option>
+          </select>
+        </div>
+        <div>
+          <label>Pasos Extra tras Clic de Carrera</label>
+          <input type="number" id="cfg-motor-extra-steps" min="0" max="1000" step="10" value="150">
+        </div>
+      </div>
+      <button class="btn btn-save" id="save-motor-config" style="margin-top:12px">GUARDAR CONFIGURACIÓN DE MOTOR</button>
+    </div>
   </div>
 
   <!-- ── PRECIOS ── -->
@@ -952,6 +984,12 @@ async function loadConfig() {
   document.getElementById("cfg-prox-static-th").value = ac.static_threshold || 35;
   document.getElementById("cfg-prox-trigger-delay").value = ac.trigger_delay_ms || 1000;
 
+  const mot = cfg.motor || {};
+  document.getElementById("cfg-motor-speed").value = mot.speed || 800;
+  document.getElementById("cfg-motor-accel").value = mot.acceleration || 400;
+  document.getElementById("cfg-motor-dir").value = mot.direction || 1;
+  document.getElementById("cfg-motor-extra-steps").value = mot.extra_steps || 150;
+
   adminPromotions = cfg.promotions || [];
   renderAdminPromotions();
 
@@ -1075,6 +1113,19 @@ document.getElementById("save-anti-cheat").addEventListener("click", async () =>
   };
   await api("/api/admin/config", "PATCH", patch);
   toast("Configuración anti-trampas guardada");
+});
+
+document.getElementById("save-motor-config").addEventListener("click", async () => {
+  const patch = {
+    motor: {
+      speed: +document.getElementById("cfg-motor-speed").value,
+      acceleration: +document.getElementById("cfg-motor-accel").value,
+      direction: +document.getElementById("cfg-motor-dir").value,
+      extra_steps: +document.getElementById("cfg-motor-extra-steps").value,
+    }
+  };
+  await api("/api/admin/config", "PATCH", patch);
+  toast("Configuración del motor dispensador guardada");
 });
 
 document.getElementById("save-attract-players").addEventListener("click", async () => {
