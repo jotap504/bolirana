@@ -124,6 +124,37 @@ async def get_crypto_key():
     return {"public_key": get_rsa_public_pem()}
 
 
+@router.post("/motor/release")
+async def admin_motor_release(request: Request):
+    """Envía orden al motor para dispensar N bolas en modo prueba."""
+    body = await request.json()
+    count = int(body.get("count", 1))
+    if hasattr(request.app.state, "bridge") and request.app.state.bridge.is_connected():
+        await request.app.state.bridge.send({"type": "release_balls", "count": count})
+        return {"status": "ok", "message": f"Orden enviada: dispensar {count} bola(s)"}
+    raise HTTPException(status_code=400, detail="Hardware no conectado")
+
+
+@router.post("/motor/home")
+async def admin_motor_home(request: Request):
+    """Envía orden al motor para realizar homing/calibración del final de carrera."""
+    if hasattr(request.app.state, "bridge") and request.app.state.bridge.is_connected():
+        await request.app.state.bridge.send({"type": "home_stepper"})
+        return {"status": "ok", "message": "Orden enviada: calibración / homing"}
+    raise HTTPException(status_code=400, detail="Hardware no conectado")
+
+
+@router.post("/motor/step")
+async def admin_motor_step(request: Request):
+    """Envía orden al motor para avanzar/retroceder N pasos manuales."""
+    body = await request.json()
+    steps = int(body.get("steps", 500))
+    if hasattr(request.app.state, "bridge") and request.app.state.bridge.is_connected():
+        await request.app.state.bridge.send({"type": "step", "steps": steps})
+        return {"status": "ok", "message": f"Orden enviada: mover {steps} pasos"}
+    raise HTTPException(status_code=400, detail="Hardware no conectado")
+
+
 @router.post("/config/rename-machine")
 async def rename_machine(request: Request, db: AsyncSession = Depends(get_db)):
     from datetime import datetime

@@ -1048,6 +1048,18 @@ void checkCoin() {
   }
 }
 
+bool lastLimitSwitchReportState = false;
+
+void readLimitSwitch() {
+  bool currentLimitSwitchState = (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW); // LOW = Presionado (Pull-up)
+  if (currentLimitSwitchState != lastLimitSwitchReportState) {
+    lastLimitSwitchReportState = currentLimitSwitchState;
+    Serial.print("{\"event\":\"limit_switch\",\"active\":");
+    Serial.print(currentLimitSwitchState ? "true" : "false");
+    Serial.println("}");
+  }
+}
+
 // ==========================================
 // LOOP PRINCIPAL (Optimizado y no-bloqueante)
 // ==========================================
@@ -1068,8 +1080,9 @@ void loop() {
     readButtons(gpioState);
   }
 
-  // 4. Lectura periódica del radar de proximidad anti-trampa
+  // 4. Lectura periódica del radar de proximidad anti-trampa y final de carrera
   readProximity();
+  readLimitSwitch();
   
   // 5. Lectura del monedero (consolidación de pulsos)
   checkCoin();

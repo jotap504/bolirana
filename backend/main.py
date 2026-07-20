@@ -197,9 +197,16 @@ def _handle_hw_event(app):
             elif event == "proximity":
                 msg["t"] = "proximity"
                 msg["active"] = msg.get("active", False)
+            elif event == "limit_switch":
+                msg["t"] = "limit_switch"
+                msg["active"] = msg.get("active", False)
 
         t = msg.get("t")
-        if t == "sensor":
+        if t == "limit_switch":
+            active = msg.get("active", False)
+            await app.state.ws.send_admin({"type": "limit_switch_status", "active": active})
+            await app.state.ws.send_admin({"type": "sensor_test", "sensor_id": "limit_switch"})
+        elif t == "sensor":
             target = msg.get("target")
             # Enviar evento de diagnóstico a la consola admin
             await app.state.ws.send_admin({"type": "sensor_test", "sensor_id": target})
