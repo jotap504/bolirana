@@ -52,7 +52,7 @@ DEFAULT_CONFIG = {
         "speed": 450.0,
         "acceleration": 250.0,
         "direction": 1,
-        "extra_steps": 150,
+        "extra_steps": 50,
     },
     "mercadopago": {
         "access_token": os.getenv("MP_ACCESS_TOKEN", ""),

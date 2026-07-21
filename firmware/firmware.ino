@@ -129,7 +129,7 @@ WebServer server(80);
 float motorSpeed = 800.0;
 float motorAccel = 400.0;
 int motorDirection = 1;       // 1 = Horario (Normal), -1 = Antihorario (Invertido)
-int motorExtraSteps = 150;     // Pasos adicionales a avanzar tras detectar el clic de tope
+int motorExtraSteps = 50;     // Pasos adicionales a avanzar tras detectar el clic de tope (50 pasos)
 
 void stopMotorCoils() {
   digitalWrite(MOTOR_IN1, LOW);
@@ -251,15 +251,16 @@ void releaseBalls(int count) {
     stepper.run();
   }
   
-  // AVANZAR PASOS EXTRA HACIA ADELANTE PARA DESPEJAR EL ASPA DEL SENSOR Y HACER CAER LA ÚLTIMA BOLA
-  int extraStepsToRun = (motorExtraSteps > 0) ? motorExtraSteps : 350;
-  Serial.print("[DEBUG] Avanzando ");
-  Serial.print(extraStepsToRun);
-  Serial.println(" pasos extra hacia adelante para despejar el canal...");
-  
-  stepper.move(extraStepsToRun * motorDirection);
-  while (stepper.distanceToGo() != 0) {
-    stepper.run();
+  // AVANZAR PASOS EXTRA SOLO SI ESTÁN CONFIGURADOS EN /ADMIN (0 a 100 PASOS)
+  if (motorExtraSteps > 0) {
+    Serial.print("[DEBUG] Avanzando ");
+    Serial.print(motorExtraSteps);
+    Serial.println(" pasos extra configurados hacia adelante...");
+    
+    stepper.move(motorExtraSteps * motorDirection);
+    while (stepper.distanceToGo() != 0) {
+      stepper.run();
+    }
   }
   
   stopMotorCoils(); // Apagar bobinas. QUEDA LIBRE EL CANAL Y LISTO PARA EL PRÓXIMO TURNO.
