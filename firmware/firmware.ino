@@ -198,6 +198,15 @@ void releaseBalls(int count) {
   stepper.setMaxSpeed(motorSpeed);
   stepper.setAcceleration(motorAccel);
   
+  // Si el microswitch arranca presionado (LOW), avanzar despacio hasta despejarlo (HIGH)
+  if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
+    long clearTarget = stepper.currentPosition() + (300 * motorDirection);
+    stepper.moveTo(clearTarget);
+    while (stepper.distanceToGo() != 0 && digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
+      stepper.run();
+    }
+  }
+  
   int clicks = 0;
   bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
   int stepsSinceLastClick = 50; // Filtro de rebotes inicial
@@ -206,7 +215,7 @@ void releaseBalls(int count) {
   unsigned long maxDurationMs = (unsigned long)count * 15000;
   
   stepper.setCurrentPosition(0);
-  stepper.move(12000 * count * motorDirection); // Mover adelante (rango de pasos para 28BYJ-48 en HALF4WIRE)
+  stepper.move(12000 * count * motorDirection); // Mover adelante siempre en el sentido de giro
   
   while (clicks < count && (millis() - releaseStartTime < maxDurationMs) && stepper.distanceToGo() != 0) {
     if (stepper.run()) {
@@ -215,9 +224,9 @@ void releaseBalls(int count) {
     
     bool currentState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
     
-    // Detectar flanco de bajada (de HIGH a LOW -> microswitch presionado)
+    // Detectar flanco de bajada (de HIGH a LOW -> microswitch presionado por el aspa)
     if (lastState == HIGH && currentState == LOW) {
-      if (stepsSinceLastClick > 100) { // Filtro de rebotes
+      if (stepsSinceLastClick > 80) { // Filtro de rebotes
         clicks++;
         stepsSinceLastClick = 0;
         Serial.print("[DEBUG] Clic de aspa detectado: ");
@@ -228,8 +237,8 @@ void releaseBalls(int count) {
     lastState = currentState;
   }
   
-  // Si detectó clics de final de carrera y hay pasos extra configurados, avanzar para despejar el canal
-  if (clicks > 0 && motorExtraSteps > 0) {
+  // Avanzar pasos extra hacia ADELANTE tras la última bola para despejar el microswitch y quedar listo
+  if (motorExtraSteps > 0) {
     long extraTarget = stepper.currentPosition() + (motorExtraSteps * motorDirection);
     stepper.moveTo(extraTarget);
     while (stepper.distanceToGo() != 0) {
@@ -242,7 +251,7 @@ void releaseBalls(int count) {
     }
   }
   
-  stopMotorCoils();
+  stopMotorCoils(); // Apagar bobinas y QUEDARSE EN LA POSICIÓN ACTUAL (sin retroceder)
   
   if (clicks >= count || stepper.distanceToGo() == 0) {
     Serial.println("{\"event\":\"motor_done\"}");

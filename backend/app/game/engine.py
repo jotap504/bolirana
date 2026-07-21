@@ -492,12 +492,14 @@ class GameEngine:
             # Hay empate → preparar desempate
             s.tiebreak_players = tied
             s.tiebreak_cursor = 0
-            # Dar 1 bola extra a cada empatado
+            # Dar 1 bola extra a cada empatado y limpiar tiros previos
             for idx in tied:
                 s.players[idx].balls_left = 1
+                s.players[idx].shots = []
             # Poner al primero en el cursor
             s.current_player = tied[0]
             await self._transition(GameState.TIEBREAK)
+            await self._release_balls_for_turn(1)
             await self._broadcast({
                 "type":           "tiebreak",
                 "tied_players":   tied,
@@ -526,7 +528,10 @@ class GameEngine:
             # Turno del siguiente jugador empatado
             s.current_player = s.tiebreak_players[s.tiebreak_cursor]
             next_p = s.current()
+            if next_p:
+                next_p.shots = []
             log.info("[TIEBREAK] Next tiebreak player is index %s (name: %s)", s.current_player, next_p.name if next_p else "?")
+            await self._release_balls_for_turn(1)
             await self._broadcast({
                 "type":         "turn",
                 "current_player": s.current_player,
@@ -548,8 +553,10 @@ class GameEngine:
                 s.tiebreak_cursor = 0
                 for idx in still_tied:
                     s.players[idx].balls_left = 1
+                    s.players[idx].shots = []
                 s.current_player = still_tied[0]
                 log.info("[TIEBREAK] Tie continues. Initiating new round. tied_players: %s", still_tied)
+                await self._release_balls_for_turn(1)
                 await self._sync_state()
                 await self._broadcast({
                     "type":           "tiebreak",
