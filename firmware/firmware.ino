@@ -204,8 +204,8 @@ void releaseBalls(int count) {
   
   int clicks = 0;
   
-  // Si el microswitch arranca presionado (LOW) por el aspa del turno anterior:
-  // Avanzar hasta que el aspa libre el switch (HIGH). Esto libera la 1ra bola y suma click = 1.
+  // Si el microswitch/IR arranca en LOW por la bola anterior:
+  // Avanzar hasta que el aspa libre el sensor (HIGH). Esto libera la 1ra bola y suma click = 1.
   if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
     Serial.println("[DEBUG] Aspa inicialmente sobre el sensor. Despejando primera bola...");
     stepper.setCurrentPosition(0);
@@ -218,7 +218,7 @@ void releaseBalls(int count) {
   }
   
   bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN); // Garantizado en HIGH
-  int stepsSinceLastClick = 50;
+  int stepsSinceLastClick = 0; // Iniciar en 0 para requerir 400 pasos mínimos antes del próximo clic
   
   unsigned long releaseStartTime = millis();
   unsigned long maxDurationMs = (unsigned long)count * 15000;
@@ -233,9 +233,9 @@ void releaseBalls(int count) {
     
     bool currentState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
     
-    // Flanco de bajada: de HIGH a LOW (aspa presiona el microswitch)
+    // Flanco de bajada: de HIGH a LOW (aspa interrumpe el haz IR o presiona microswitch)
     if (lastState == HIGH && currentState == LOW) {
-      if (stepsSinceLastClick > 40) { // Filtro de rebotes
+      if (stepsSinceLastClick > 400) { // Filtro de rebotes óptico: exige mínimo 400 pasos entre aspas reales
         clicks++;
         stepsSinceLastClick = 0;
         Serial.print("[DEBUG] Clic de bola/aspa detectado: ");
