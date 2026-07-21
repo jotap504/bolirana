@@ -126,8 +126,8 @@ WebServer server(80);
 // CONFIGURACIÓN DE DISPENSADOR DE BOLAS (MOTOR 28BYJ-48 / ULN2003)
 // ==========================================
 // Configuración dinámica del motor dispensador (recibida por JSON desde Backend)
-float motorSpeed = 800.0;
-float motorAccel = 400.0;
+float motorSpeed = 450.0;
+float motorAccel = 250.0;
 int motorDirection = 1;       // 1 = Horario (Normal), -1 = Antihorario (Invertido)
 int motorExtraSteps = 150;     // Pasos adicionales a avanzar tras detectar el clic de tope
 

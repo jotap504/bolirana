@@ -49,8 +49,8 @@ DEFAULT_CONFIG = {
         "mock": False,
     },
     "motor": {
-        "speed": 800.0,
-        "acceleration": 400.0,
+        "speed": 450.0,
+        "acceleration": 250.0,
         "direction": 1,
         "extra_steps": 150,
     },
