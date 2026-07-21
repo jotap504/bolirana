@@ -188,6 +188,10 @@ void homeStepper() {
 }
 
 void releaseBalls(int count) {
+  Serial.print("[COMMAND] Dispensando ");
+  Serial.print(count);
+  Serial.println(" bola(s)...");
+  
   Serial.print("{\"event\":\"motor_start\",\"balls\":");
   Serial.print(count);
   Serial.println("}");
@@ -198,10 +202,10 @@ void releaseBalls(int count) {
   stepper.setMaxSpeed(motorSpeed);
   stepper.setAcceleration(motorAccel);
   
-  // Si el microswitch arranca presionado (LOW), avanzar despacio hasta despejarlo (HIGH)
+  // Si el microswitch arranca presionado (LOW), avanzar despacio hacia adelante hasta despejarlo (HIGH)
   if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
-    long clearTarget = stepper.currentPosition() + (300 * motorDirection);
-    stepper.moveTo(clearTarget);
+    stepper.setCurrentPosition(0);
+    stepper.move(500 * motorDirection);
     while (stepper.distanceToGo() != 0 && digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
       stepper.run();
     }
@@ -209,13 +213,13 @@ void releaseBalls(int count) {
   
   int clicks = 0;
   bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
-  int stepsSinceLastClick = 50; // Filtro de rebotes inicial
+  int stepsSinceLastClick = 50;
   
   unsigned long releaseStartTime = millis();
   unsigned long maxDurationMs = (unsigned long)count * 15000;
   
   stepper.setCurrentPosition(0);
-  stepper.move(12000 * count * motorDirection); // Mover adelante siempre en el sentido de giro
+  stepper.move(15000 * count * motorDirection); // Mover adelante
   
   while (clicks < count && (millis() - releaseStartTime < maxDurationMs) && stepper.distanceToGo() != 0) {
     if (stepper.run()) {
@@ -224,12 +228,12 @@ void releaseBalls(int count) {
     
     bool currentState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
     
-    // Detectar flanco de bajada (de HIGH a LOW -> microswitch presionado por el aspa)
+    // Flanco de bajada: de HIGH a LOW (aspa presiona el microswitch)
     if (lastState == HIGH && currentState == LOW) {
-      if (stepsSinceLastClick > 80) { // Filtro de rebotes
+      if (stepsSinceLastClick > 40) { // Filtro de rebotes
         clicks++;
         stepsSinceLastClick = 0;
-        Serial.print("[DEBUG] Clic de aspa detectado: ");
+        Serial.print("[DEBUG] Clic de bola/aspa detectado: ");
         Serial.println(clicks);
       }
     }
@@ -237,21 +241,24 @@ void releaseBalls(int count) {
     lastState = currentState;
   }
   
-  // Avanzar pasos extra hacia ADELANTE tras la última bola para despejar el microswitch y quedar listo
-  if (motorExtraSteps > 0) {
-    long extraTarget = stepper.currentPosition() + (motorExtraSteps * motorDirection);
-    stepper.moveTo(extraTarget);
-    while (stepper.distanceToGo() != 0) {
-      stepper.run();
-    }
-  } else {
-    stepper.stop();
+  // FRENO SUAVE EN EL SENTIDO DE GIRO (sin invertir dirección)
+  stepper.stop();
+  while (stepper.distanceToGo() != 0) {
+    stepper.run();
+  }
+  
+  // SI HAY PASOS EXTRA CONFIGURADOS, AVANZAR HACIA ADELANTE EN EL MISMO SENTIDO DE GIRO
+  if (clicks > 0 && motorExtraSteps > 0) {
+    stepper.move(motorExtraSteps * motorDirection);
     while (stepper.distanceToGo() != 0) {
       stepper.run();
     }
   }
   
-  stopMotorCoils(); // Apagar bobinas y QUEDARSE EN LA POSICIÓN ACTUAL (sin retroceder)
+  stopMotorCoils(); // Apagar bobinas. QUEDA EXACTAMENTE EN LA POSICIÓN FINAL SIN NINGÚN RETROCESO.
+  
+  Serial.print("[DEBUG] Dispensación finalizada. Clics contados: ");
+  Serial.println(clicks);
   
   if (clicks >= count || stepper.distanceToGo() == 0) {
     Serial.println("{\"event\":\"motor_done\"}");
