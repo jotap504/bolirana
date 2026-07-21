@@ -203,23 +203,7 @@ void releaseBalls(int count) {
   stepper.setAcceleration(motorAccel);
   
   int clicks = 0;
-  
-  // Si el microswitch/IR arranca en LOW por la bola anterior:
-  // Avanzar hasta que el aspa libre el sensor (HIGH). Esto libera la 1ra bola y suma click = 1.
-  if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
-    Serial.println("[DEBUG] Aspa inicialmente sobre el sensor. Despejando primera bola...");
-    stepper.setCurrentPosition(0);
-    stepper.move(1000 * motorDirection);
-    while (stepper.distanceToGo() != 0 && digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
-      stepper.run();
-    }
-    clicks = 1; // La primera bola se cuenta al despejar el aspa
-    Serial.println("[DEBUG] Clic de bola 1 registrado al despejar inicio.");
-  }
-  
-  bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN); // Garantizado en HIGH
-  int stepsSinceLastClick = 0; // Iniciar en 0 para requerir 400 pasos mínimos antes del próximo clic
-  
+  bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
   unsigned long lastClickTime = millis();
   unsigned long releaseStartTime = millis();
   unsigned long maxDurationMs = (unsigned long)count * 15000;
@@ -232,38 +216,35 @@ void releaseBalls(int count) {
     
     bool currentState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
     
-    // Flanco de bajada: de HIGH a LOW (aspa interrumpe el haz IR o presiona microswitch)
+    // Flanco de bajada: de HIGH a LOW (aspa entra al haz del sensor IR)
     if (lastState == HIGH && currentState == LOW) {
       if (millis() - lastClickTime >= 450) { // Filtro de tiempo real: exige mínimo 450ms entre aspas
         clicks++;
         lastClickTime = millis();
-        Serial.print("[DEBUG] Clic de bola/aspa detectado: ");
-        Serial.println(clicks);
+        Serial.print("[DEBUG] Aspa ");
+        Serial.print(clicks);
+        Serial.println(" posicionada sobre el sensor IR");
       }
     }
     
     lastState = currentState;
   }
   
-  // FRENO SUAVE EN EL SENTIDO DE GIRO (sin invertir dirección)
+  // Freno suave inmediato apenas el aspa presiona/tapa el sensor (LOW)
   stepper.stop();
   while (stepper.distanceToGo() != 0) {
     stepper.run();
   }
   
-  // AVANZAR PASOS EXTRA SOLO SI ESTÁN CONFIGURADOS EN /ADMIN (0 a 100 PASOS)
-  if (motorExtraSteps > 0) {
-    Serial.print("[DEBUG] Avanzando ");
-    Serial.print(motorExtraSteps);
-    Serial.println(" pasos extra configurados hacia adelante...");
-    
+  // Si hay pasos extra configurados en /admin, avanzarlos
+  if (clicks > 0 && motorExtraSteps > 0) {
     stepper.move(motorExtraSteps * motorDirection);
     while (stepper.distanceToGo() != 0) {
       stepper.run();
     }
   }
   
-  stopMotorCoils(); // Apagar bobinas. QUEDA LIBRE EL CANAL Y LISTO PARA EL PRÓXIMO TURNO.
+  stopMotorCoils(); // Apagar bobinas. Queda posicionado exactamente sobre el sensor IR.
   
   Serial.print("[DEBUG] Dispensación finalizada. Clics contados: ");
   Serial.println(clicks);
