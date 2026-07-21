@@ -117,9 +117,9 @@ String currentScoringZone = "";
 Adafruit_MCP23X17 mcp;
 bool mcpInitialized = false; // Bandera de estado para evitar llamadas colgadas de I2C
 Adafruit_NeoPixel strip(NUM_LEDS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-// Inicialización del motor 28BYJ-48 en modo unipolar 4 hilos (HALF4WIRE)
+// Inicialización del motor 28BYJ-48 en modo unipolar FULL4WIRE (máximo torque de 2 fases)
 // Secuencia obligatoria de pines para este motor: IN1, IN3, IN2, IN4
-AccelStepper stepper(AccelStepper::HALF4WIRE, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
+AccelStepper stepper(AccelStepper::FULL4WIRE, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
 WebServer server(80);
 
 // ==========================================
@@ -160,7 +160,7 @@ void homeStepper() {
   
   stepper.setMaxSpeed(motorSpeed * 0.5);
   stepper.setAcceleration(motorAccel * 0.5);
-  stepper.move(-12000 * motorDirection); // Reversa
+  stepper.move(-4096 * motorDirection); // Reversa
   
   unsigned long startTime = millis();
   unsigned long timeoutMs = 15000;
@@ -206,7 +206,7 @@ void releaseBalls(int count) {
   unsigned long maxDurationMs = (unsigned long)count * 15000;
   
   stepper.setCurrentPosition(0);
-  stepper.move(12000 * count * motorDirection); // Mover adelante
+  stepper.move(4096 * count * motorDirection); // Mover adelante
   
   while (clicks < count && (millis() - releaseStartTime < maxDurationMs) && stepper.distanceToGo() != 0) {
     if (stepper.run()) {
