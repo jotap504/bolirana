@@ -117,17 +117,17 @@ String currentScoringZone = "";
 Adafruit_MCP23X17 mcp;
 bool mcpInitialized = false; // Bandera de estado para evitar llamadas colgadas de I2C
 Adafruit_NeoPixel strip(NUM_LEDS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-// Inicialización del motor 28BYJ-48 en modo unipolar FULL4WIRE (máximo torque de 2 fases)
-// Secuencia directa de pines para el controlador ULN2003: IN1 (D26), IN2 (D25), IN3 (D33), IN4 (D32)
-AccelStepper stepper(AccelStepper::FULL4WIRE, MOTOR_IN1, MOTOR_IN2, MOTOR_IN3, MOTOR_IN4);
+// Inicialización del motor 28BYJ-48 en modo unipolar HALF4WIRE (Idéntico a test_28byj48_ir.ino)
+// Secuencia requerida por AccelStepper: IN1, IN3, IN2, IN4
+AccelStepper stepper(AccelStepper::HALF4WIRE, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
 WebServer server(80);
 
 // ==========================================
 // CONFIGURACIÓN DE DISPENSADOR DE BOLAS (MOTOR 28BYJ-48 / ULN2003)
 // ==========================================
 // Configuración dinámica del motor dispensador (recibida por JSON desde Backend)
-float motorSpeed = 450.0;
-float motorAccel = 250.0;
+float motorSpeed = 800.0;
+float motorAccel = 400.0;
 int motorDirection = 1;       // 1 = Horario (Normal), -1 = Antihorario (Invertido)
 int motorExtraSteps = 150;     // Pasos adicionales a avanzar tras detectar el clic de tope
 
@@ -160,7 +160,7 @@ void homeStepper() {
   
   stepper.setMaxSpeed(motorSpeed * 0.5);
   stepper.setAcceleration(motorAccel * 0.5);
-  stepper.move(-4096 * motorDirection); // Reversa
+  stepper.move(-12000 * motorDirection); // Reversa (rango de pasos para 28BYJ-48 en HALF4WIRE)
   
   unsigned long startTime = millis();
   unsigned long timeoutMs = 15000;
@@ -206,7 +206,7 @@ void releaseBalls(int count) {
   unsigned long maxDurationMs = (unsigned long)count * 15000;
   
   stepper.setCurrentPosition(0);
-  stepper.move(4096 * count * motorDirection); // Mover adelante
+  stepper.move(12000 * count * motorDirection); // Mover adelante (rango de pasos para 28BYJ-48 en HALF4WIRE)
   
   while (clicks < count && (millis() - releaseStartTime < maxDurationMs) && stepper.distanceToGo() != 0) {
     if (stepper.run()) {
