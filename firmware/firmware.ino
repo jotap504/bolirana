@@ -118,8 +118,8 @@ Adafruit_MCP23X17 mcp;
 bool mcpInitialized = false; // Bandera de estado para evitar llamadas colgadas de I2C
 Adafruit_NeoPixel strip(NUM_LEDS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 // Inicialización del motor 28BYJ-48 en modo unipolar FULL4WIRE (máximo torque de 2 fases)
-// Secuencia obligatoria de pines para este motor: IN1, IN3, IN2, IN4
-AccelStepper stepper(AccelStepper::FULL4WIRE, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
+// Secuencia directa de pines para el controlador ULN2003: IN1 (D26), IN2 (D25), IN3 (D33), IN4 (D32)
+AccelStepper stepper(AccelStepper::FULL4WIRE, MOTOR_IN1, MOTOR_IN2, MOTOR_IN3, MOTOR_IN4);
 WebServer server(80);
 
 // ==========================================
