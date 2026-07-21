@@ -718,6 +718,23 @@ void readIncomingSerial() {
           } else if (strcmp(type, "home") == 0 || strcmp(type, "home_stepper") == 0) {
             Serial.println("[COMMAND] Recibida orden de calibracion / homing");
             homeStepper();
+          } else if (strcmp(type, "test_coil") == 0) {
+            int coil = doc["coil"];
+            stopMotorCoils();
+            stepper.disableOutputs();
+            
+            if (coil == 1) digitalWrite(MOTOR_IN1, HIGH);
+            else if (coil == 2) digitalWrite(MOTOR_IN2, HIGH);
+            else if (coil == 3) digitalWrite(MOTOR_IN3, HIGH);
+            else if (coil == 4) digitalWrite(MOTOR_IN4, HIGH);
+            
+            Serial.print("[TEST] Probando bobina IN");
+            Serial.print(coil);
+            Serial.println(" encendida por 5 segundos...");
+            
+            delay(5000);
+            stopMotorCoils();
+            Serial.println("[TEST] Bobina apagada.");
           }
         }
       }

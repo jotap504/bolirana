@@ -155,6 +155,17 @@ async def admin_motor_step(request: Request):
     raise HTTPException(status_code=400, detail="Hardware no conectado")
 
 
+@router.post("/motor/test-coil")
+async def admin_motor_test_coil(request: Request):
+    """Prueba individualmente la bobina IN1, IN2, IN3 o IN4 durante 5 segundos."""
+    body = await request.json()
+    coil = int(body.get("coil", 1))
+    if hasattr(request.app.state, "bridge") and request.app.state.bridge.is_connected():
+        await request.app.state.bridge.send({"type": "test_coil", "coil": coil})
+        return {"status": "ok", "message": f"Probando bobina IN{coil} por 5 segundos"}
+    raise HTTPException(status_code=400, detail="Hardware no conectado")
+
+
 @router.post("/config/rename-machine")
 async def rename_machine(request: Request, db: AsyncSession = Depends(get_db)):
     from datetime import datetime
