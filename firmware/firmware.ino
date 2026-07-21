@@ -202,17 +202,22 @@ void releaseBalls(int count) {
   stepper.setMaxSpeed(motorSpeed);
   stepper.setAcceleration(motorAccel);
   
-  // Si el microswitch arranca presionado (LOW), avanzar despacio hacia adelante hasta despejarlo (HIGH)
+  int clicks = 0;
+  
+  // Si el microswitch arranca presionado (LOW) por el aspa del turno anterior:
+  // Avanzar hasta que el aspa libre el switch (HIGH). Esto libera la 1ra bola y suma click = 1.
   if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
+    Serial.println("[DEBUG] Aspa inicialmente sobre el sensor. Despejando primera bola...");
     stepper.setCurrentPosition(0);
-    stepper.move(500 * motorDirection);
+    stepper.move(1000 * motorDirection);
     while (stepper.distanceToGo() != 0 && digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
       stepper.run();
     }
+    clicks = 1; // La primera bola se cuenta al despejar el aspa
+    Serial.println("[DEBUG] Clic de bola 1 registrado al despejar inicio.");
   }
   
-  int clicks = 0;
-  bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
+  bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN); // Garantizado en HIGH
   int stepsSinceLastClick = 50;
   
   unsigned long releaseStartTime = millis();
@@ -247,15 +252,18 @@ void releaseBalls(int count) {
     stepper.run();
   }
   
-  // SI HAY PASOS EXTRA CONFIGURADOS, AVANZAR HACIA ADELANTE EN EL MISMO SENTIDO DE GIRO
-  if (clicks > 0 && motorExtraSteps > 0) {
-    stepper.move(motorExtraSteps * motorDirection);
-    while (stepper.distanceToGo() != 0) {
-      stepper.run();
-    }
+  // AVANZAR PASOS EXTRA HACIA ADELANTE PARA DESPEJAR EL ASPA DEL SENSOR Y HACER CAER LA ÚLTIMA BOLA
+  int extraStepsToRun = (motorExtraSteps > 0) ? motorExtraSteps : 350;
+  Serial.print("[DEBUG] Avanzando ");
+  Serial.print(extraStepsToRun);
+  Serial.println(" pasos extra hacia adelante para despejar el canal...");
+  
+  stepper.move(extraStepsToRun * motorDirection);
+  while (stepper.distanceToGo() != 0) {
+    stepper.run();
   }
   
-  stopMotorCoils(); // Apagar bobinas. QUEDA EXACTAMENTE EN LA POSICIÓN FINAL SIN NINGÚN RETROCESO.
+  stopMotorCoils(); // Apagar bobinas. QUEDA LIBRE EL CANAL Y LISTO PARA EL PRÓXIMO TURNO.
   
   Serial.print("[DEBUG] Dispensación finalizada. Clics contados: ");
   Serial.println(clicks);
