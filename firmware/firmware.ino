@@ -150,9 +150,9 @@ void homeStepper() {
     return;
   }
 
-  // 2. Si no está activo, esperar 3 segundos antes de iniciar el movimiento
-  Serial.println("[HOMING] Sensor inactivo. Esperando 3 segundos de estabilizacion...");
-  delay(3000);
+  // 2. Si no está activo, esperar 1 segundo de estabilización
+  Serial.println("[HOMING] Buscando final de carrera...");
+  delay(1000);
   
   // 3. Retroceder despacio buscando el microswitch
   stepper.enableOutputs();
@@ -162,12 +162,11 @@ void homeStepper() {
   stepper.setAcceleration(motorAccel * 0.5);
   stepper.move(-12000 * motorDirection); // Reversa
   
-  int stepsTaken = 0;
-  int safetyLimit = 12000;
+  unsigned long startTime = millis();
+  unsigned long timeoutMs = 15000;
   
-  while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && stepsTaken < safetyLimit && stepper.distanceToGo() != 0) {
+  while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && (millis() - startTime < timeoutMs) && stepper.distanceToGo() != 0) {
     stepper.run();
-    stepsTaken++;
   }
   
   stepper.stop();
@@ -179,12 +178,12 @@ void homeStepper() {
   stepper.setCurrentPosition(0);
   stopMotorCoils();
   
-  if (stepsTaken >= safetyLimit) {
-    Serial.println("{\"event\":\"homing_failed\",\"reason\":\"timeout\"}");
-  } else {
+  if (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW) {
     Serial.print("{\"event\":\"homing_done\",\"steps_taken\":");
     Serial.print(actualSteps);
     Serial.println("}");
+  } else {
+    Serial.println("{\"event\":\"homing_failed\",\"reason\":\"timeout\"}");
   }
 }
 
@@ -201,17 +200,18 @@ void releaseBalls(int count) {
   
   int clicks = 0;
   bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
-  int stepsTaken = 0;
   int stepsSinceLastClick = 50; // Filtro de rebotes inicial
-  int safetyLimit = count * 12000; // Límite de seguridad para 28BYJ-48
+  
+  unsigned long releaseStartTime = millis();
+  unsigned long maxDurationMs = (unsigned long)count * 15000;
   
   stepper.setCurrentPosition(0);
   stepper.move(12000 * count * motorDirection); // Mover adelante
   
-  while (clicks < count && stepsTaken < safetyLimit && stepper.distanceToGo() != 0) {
-    stepper.run();
-    stepsTaken++;
-    stepsSinceLastClick++;
+  while (clicks < count && (millis() - releaseStartTime < maxDurationMs) && stepper.distanceToGo() != 0) {
+    if (stepper.run()) {
+      stepsSinceLastClick++;
+    }
     
     bool currentState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
     
