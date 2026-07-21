@@ -220,6 +220,7 @@ void releaseBalls(int count) {
   bool lastState = digitalRead(MOTOR_LIMIT_SWITCH_PIN); // Garantizado en HIGH
   int stepsSinceLastClick = 0; // Iniciar en 0 para requerir 400 pasos mínimos antes del próximo clic
   
+  unsigned long lastClickTime = millis();
   unsigned long releaseStartTime = millis();
   unsigned long maxDurationMs = (unsigned long)count * 15000;
   
@@ -227,17 +228,15 @@ void releaseBalls(int count) {
   stepper.move(15000 * count * motorDirection); // Mover adelante
   
   while (clicks < count && (millis() - releaseStartTime < maxDurationMs) && stepper.distanceToGo() != 0) {
-    if (stepper.run()) {
-      stepsSinceLastClick++;
-    }
+    stepper.run();
     
     bool currentState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
     
     // Flanco de bajada: de HIGH a LOW (aspa interrumpe el haz IR o presiona microswitch)
     if (lastState == HIGH && currentState == LOW) {
-      if (stepsSinceLastClick > 400) { // Filtro de rebotes óptico: exige mínimo 400 pasos entre aspas reales
+      if (millis() - lastClickTime >= 450) { // Filtro de tiempo real: exige mínimo 450ms entre aspas
         clicks++;
-        stepsSinceLastClick = 0;
+        lastClickTime = millis();
         Serial.print("[DEBUG] Clic de bola/aspa detectado: ");
         Serial.println(clicks);
       }
