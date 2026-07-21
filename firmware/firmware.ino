@@ -699,17 +699,24 @@ void readIncomingSerial() {
           } else if (strcmp(type, "release_balls") == 0) {
             int count = doc["count"];
             if (count > 0) {
+              Serial.print("[COMMAND] Recibida orden de dispensar ");
+              Serial.print(count);
+              Serial.println(" bola(s)");
               releaseBalls(count);
             }
           } else if (strcmp(type, "step") == 0) {
             int steps = doc["steps"];
             if (steps != 0) {
+              Serial.print("[COMMAND] Recibida orden de movimiento manual: ");
+              Serial.print(steps);
+              Serial.println(" pasos");
               stepper.setMaxSpeed(motorSpeed);
               stepper.setAcceleration(motorAccel);
               stepper.enableOutputs();
               stepper.move(steps * motorDirection);
             }
           } else if (strcmp(type, "home") == 0 || strcmp(type, "home_stepper") == 0) {
+            Serial.println("[COMMAND] Recibida orden de calibracion / homing");
             homeStepper();
           }
         }
@@ -1056,6 +1063,11 @@ void readLimitSwitch() {
   bool currentLimitSwitchState = (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == LOW); // LOW = Presionado (Pull-up)
   if (currentLimitSwitchState != lastLimitSwitchReportState) {
     lastLimitSwitchReportState = currentLimitSwitchState;
+    if (currentLimitSwitchState) {
+      Serial.println("[HARDWARE] Final de carrera ACTIVADO (GPIO 27 LOW)");
+    } else {
+      Serial.println("[HARDWARE] Final de carrera SOLTADO (GPIO 27 HIGH)");
+    }
     Serial.print("{\"event\":\"limit_switch\",\"active\":");
     Serial.print(currentLimitSwitchState ? "true" : "false");
     Serial.println("}");
