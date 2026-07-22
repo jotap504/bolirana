@@ -236,8 +236,11 @@ void releaseBalls(int count) {
     stepper.run();
   }
   
-  // Si hay pasos extra configurados en /admin, avanzarlos
-  if (clicks > 0 && motorExtraSteps > 0) {
+  // Si hay pasos extra configurados (+ avanzar / - retroceder)
+  if (clicks > 0 && motorExtraSteps != 0) {
+    Serial.print("[DEBUG] Ejecutando ");
+    Serial.print(motorExtraSteps);
+    Serial.println(" pasos extra de ajuste posicional...");
     stepper.move(motorExtraSteps * motorDirection);
     while (stepper.distanceToGo() != 0) {
       stepper.run();
