@@ -122,6 +122,9 @@ Adafruit_NeoPixel strip(NUM_LEDS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 AccelStepper stepper(AccelStepper::HALF4WIRE, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
 WebServer server(80);
 
+// Prototipo de función para multitarea no-bloqueante en segundo plano
+void yieldTasks();
+
 // ==========================================
 // CONFIGURACIÓN DE DISPENSADOR DE BOLAS (MOTOR 28BYJ-48 / ULN2003)
 // ==========================================
@@ -167,11 +170,13 @@ void homeStepper() {
   
   while (digitalRead(MOTOR_LIMIT_SWITCH_PIN) == HIGH && (millis() - startTime < timeoutMs) && stepper.distanceToGo() != 0) {
     stepper.run();
+    yieldTasks();
   }
   
   stepper.stop();
   while (stepper.distanceToGo() != 0) {
     stepper.run();
+    yieldTasks();
   }
   
   long actualSteps = abs(stepper.currentPosition());
@@ -213,6 +218,7 @@ void releaseBalls(int count) {
   
   while (clicks < count && (millis() - releaseStartTime < maxDurationMs) && stepper.distanceToGo() != 0) {
     stepper.run();
+    yieldTasks();
     
     bool currentState = digitalRead(MOTOR_LIMIT_SWITCH_PIN);
     
@@ -234,6 +240,7 @@ void releaseBalls(int count) {
   stepper.stop();
   while (stepper.distanceToGo() != 0) {
     stepper.run();
+    yieldTasks();
   }
   
   // Si hay pasos extra configurados (+ avanzar / - retroceder)
@@ -244,6 +251,7 @@ void releaseBalls(int count) {
     stepper.move(motorExtraSteps * motorDirection);
     while (stepper.distanceToGo() != 0) {
       stepper.run();
+      yieldTasks();
     }
   }
   
@@ -1100,29 +1108,35 @@ void readLimitSwitch() {
 }
 
 // ==========================================
-// LOOP PRINCIPAL (Optimizado y no-bloqueante)
+// TAREAS EN SEGUNDO PLANO (Multitarea No Bloqueante)
 // ==========================================
-void loop() {
-  // 1. Manejo de WebServer, Motor paso a paso y LEDs
-  server.handleClient();
-  stepper.run();
-  checkMotorStatus();
-  updateLeds();
+bool inYieldLoop = false;
+void yieldTasks() {
+  if (inYieldLoop) return; // Evitar re-entrada recursiva
+  inYieldLoop = true;
 
-  // 2. Lectura y procesamiento de comandos seriales JSON entrantes desde el backend
+  server.handleClient();
+  updateLeds();
   readIncomingSerial();
 
-  // 3. Lectura periódica de sensores y botones a través de lectura rápida por bloque I2C
   if (mcpInitialized) {
     uint16_t gpioState = mcp.readGPIOAB();
     readSensors(gpioState);
     readButtons(gpioState);
   }
 
-  // 4. Lectura periódica del radar de proximidad anti-trampa y final de carrera
   readProximity();
   readLimitSwitch();
-  
-  // 5. Lectura del monedero (consolidación de pulsos)
   checkCoin();
+
+  inYieldLoop = false;
+}
+
+// ==========================================
+// LOOP PRINCIPAL (Optimizado y no-bloqueante)
+// ==========================================
+void loop() {
+  stepper.run();
+  checkMotorStatus();
+  yieldTasks();
 }
