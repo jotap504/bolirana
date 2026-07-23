@@ -1,90 +1,88 @@
 /*
 =============================================================================
-SKETCH DE DIAGNÓSTICO: PRUEBA DE SENSOR IR (BARRERA / ACOPLADOR ÓPTICO)
+SKETCH DE DIAGNÓSTICO SIMPLIFICADO: PRUEBA DE SENSOR IR EN GPIO 27
 =============================================================================
-Este sketch permite probar un sensor infrarrojo (LED Emisor + LED Receptor)
-conectado directamente a un pin de la ESP32.
+Este código lee en tiempo real el estado del fotodiodo/fototransistor negro 
+conectado al GPIO 27 y muestra el resultado en el Monitor Serie (115200 baudios).
 
-Tipos de conexión comunes:
-1. MÓDULO CON COMPARADOR (ej. LM393, TCRT5000 con 3 o 4 pines):
-   - VCC -> 3.3V (o 5V si el módulo lo requiere)
-   - GND -> GND de la ESP32
-   - D0  -> GPIO_PIN de prueba (ej. GPIO 15)
-   
-2. LED EMISOR Y RECEPTOR SUELTOS (Fotodiodo/Fototransistor):
-   - Emisor IR (transmisor): Ánodo a 3.3V (mediante resistencia de 220 Ohm), Cátodo a GND.
-   - Receptor IR (receptor): Colector a 3.3V, Emisor al GPIO de prueba y a una
-     resistencia de 10k Ohm que va a GND (configuración pull-down externa).
+Conexiones necesarias:
+----------------------
+1. LED Transparente (Emisor IR):
+   - Pata Larga (+)  -> Resistencia 220 Ω -> 5V (o 3.3V)
+   - Pata Corta (-)  -> GND
+
+2. Diodo Negro (Receptor IR):
+   - Pata Larga (+)  -> GND
+   - Pata Corta (-)  -> GPIO 27 Y Resistencia 10 kΩ a 3.3V
 =============================================================================
 */
 
-// Pin de la ESP32 donde conectarás la salida de señal del receptor IR (D0)
-#define SENSOR_PIN 15  
+#define IR_SENSOR_PIN 27   // Pin asignado para el receptor infrarrojo
+#define LED_BUILTIN_PIN 2  // LED integrado en la placa ESP32 (opcional)
 
-// Led indicador de placa (Azul en la ESP32 DevKit, GPIO 2 por defecto)
-#define LED_INDICATOR_PIN 2
-
-// Configura la polaridad de tu sensor:
-// - true: El pin se pone en HIGH cuando pasa la pelota (Bloqueo/Reflexión)
-// - false: El pin se pone en LOW cuando pasa la pelota (Normal en barreras activas en bajo)
-const bool ACTIVE_STATE = HIGH; 
-
-// Variables de estado
-int lastSensorState = -1;
-unsigned long lastStateChangeTime = 0;
-const unsigned long DEBOUNCE_MS = 50; // Filtro de rebotes rápidos
+bool lastState = false;
+int triggerCount = 0;
+unsigned long lastPrintTime = 0;
 
 void setup() {
-  // Inicialización del Monitor Serial a 115200 baudios
+  // Inicializar comunicación serie a 115200 baudios
   Serial.begin(115200);
   delay(1000);
   
-  Serial.println("\n==================================================");
-  Serial.println("  INICIANDO DIAGNÓSTICO DE SENSOR INFRARROJO (IR) ");
-  Serial.println("==================================================");
-  Serial.printf("Monitoreando señal en GPIO: %d\n", SENSOR_PIN);
-  Serial.printf("Estado activo definido: %s\n", ACTIVE_STATE ? "HIGH" : "LOW");
-  Serial.println("Colocá un objeto delante del sensor para verificar lectura...");
-  Serial.println("==================================================\n");
-
-  // Configuración de pines
-  // Nota: Usamos INPUT_PULLUP por si estás usando un receptor directo sin circuito externo.
-  // Si tu módulo ya tiene pull-up (como las placas LM393), funcionará igual.
-  pinMode(SENSOR_PIN, INPUT_PULLUP);
+  Serial.println("\n========================================================");
+  Serial.println("   FUTSAPO / BOLIRANA - DIAGNÓSTICO DE SENSOR IR (GPIO 27)");
+  Serial.println("========================================================");
   
-  pinMode(LED_INDICATOR_PIN, OUTPUT);
-  digitalWrite(LED_INDICATOR_PIN, LOW);
+  // Configurar el GPIO 27 como entrada digital
+  pinMode(IR_SENSOR_PIN, INPUT);
+  
+  // Configurar LED integrado para indicación visual en la placa
+  pinMode(LED_BUILTIN_PIN, OUTPUT);
+  
+  // Leer estado inicial
+  lastState = digitalRead(IR_SENSOR_PIN);
+  
+  Serial.print("[INICIO] Estado actual del sensor en GPIO 27: ");
+  if (lastState == HIGH) {
+    Serial.println("1 (HIGH / BLOQUEADO - Haz de luz interrumpido)");
+    digitalWrite(LED_BUILTIN_PIN, HIGH);
+  } else {
+    Serial.println("0 (LOW / LIBRE - Haz de luz recibiéndose normalmente)");
+    digitalWrite(LED_BUILTIN_PIN, LOW);
+  }
+  Serial.println("--> Pasa un objeto o la mano entre los LEDs para probar...\n");
 }
 
 void loop() {
-  // 1. Leer el estado físico del pin
-  int currentReading = digitalRead(SENSOR_PIN);
-  unsigned long now = millis();
-
-  // 2. Filtro de rebotes
-  if (currentReading != lastSensorState) {
-    if (now - lastStateChangeTime > DEBOUNCE_MS) {
-      lastStateChangeTime = now;
-      lastSensorState = currentReading;
-
-      // Determinar si la barrera está interrumpida (Detección de bola)
-      bool isDetected = (currentReading == ACTIVE_STATE);
-
-      // 3. Encender el LED azul de la ESP32 cuando se detecta el objeto
-      digitalWrite(LED_INDICATOR_PIN, isDetected ? HIGH : LOW);
-
-      // 4. Imprimir el diagnóstico detallado en el monitor serial
-      if (isDetected) {
-        Serial.println(" [ DETECTADO ]  ██████████████████ (Haz de luz INTERRUMPIDO / Acierto)");
-      } else {
-        Serial.println(" [  LIBRE   ]  ------------------ (Haz de luz OK / Despejado)");
-      }
+  // Lectura del estado actual en el GPIO 27
+  bool currentState = digitalRead(IR_SENSOR_PIN);
+  
+  // Detectar cambios de estado
+  if (currentState != lastState) {
+    delay(20); // Filtro básico antirebotes de 20ms
+    currentState = digitalRead(IR_SENSOR_PIN);
+    
+    if (currentState != lastState) {
+      lastState = currentState;
       
-      // Imprimir el valor digital leído para diagnóstico rápido
-      Serial.printf("   -> Lectura cruda en pin %d: %s (Voltaje en pin: %s)\n\n", 
-                    SENSOR_PIN, 
-                    currentReading == HIGH ? "HIGH" : "LOW",
-                    currentReading == HIGH ? "~3.3V" : "0V (GND)");
+      if (currentState == HIGH) {
+        triggerCount++;
+        digitalWrite(LED_BUILTIN_PIN, HIGH);
+        Serial.print("  [X] ¡BLOQUEADO! Haz de luz interrumpido. Eventos contados: ");
+        Serial.println(triggerCount);
+      } else {
+        digitalWrite(LED_BUILTIN_PIN, LOW);
+        Serial.println("  [O] LIBRE - Luz IR recibida correctamente.");
+      }
     }
+  }
+  
+  // Imprimir resumen del estado cada 3 segundos
+  if (millis() - lastPrintTime >= 3000) {
+    lastPrintTime = millis();
+    Serial.print("[ESTADO VIVO] GPIO 27 = ");
+    Serial.print(currentState ? "1 (BLOQUEADO)" : "0 (LIBRE)");
+    Serial.print(" | Total interrupciones detectadas: ");
+    Serial.println(triggerCount);
   }
 }
