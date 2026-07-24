@@ -718,7 +718,7 @@ void readIncomingSerial() {
               Serial.print("[COMMAND] Recibida orden de dispensar ");
               Serial.print(count);
               Serial.println(" bola(s)");
-              releaseBalls(count);
+              pendingReleaseCount = count;
             }
           } else if (strcmp(type, "step") == 0) {
             int steps = doc["steps"];
@@ -733,7 +733,7 @@ void readIncomingSerial() {
             }
           } else if (strcmp(type, "home") == 0 || strcmp(type, "home_stepper") == 0) {
             Serial.println("[COMMAND] Recibida orden de calibracion / homing");
-            homeStepper();
+            pendingHome = true;
           } else if (strcmp(type, "test_coil") == 0) {
             int coil = doc["coil"];
             stopMotorCoils();
@@ -1110,26 +1110,44 @@ void readLimitSwitch() {
 // ==========================================
 // TAREAS EN SEGUNDO PLANO (Multitarea No Bloqueante)
 // ==========================================
-bool inYieldLoop = false;
-void yieldTasks() {
-  if (inYieldLoop) return; // Evitar re-entrada recursiva
-  inYieldLoop = true;
+int pendingReleaseCount = 0;
+bool pendingHome = false;
+bool inSerialReading = false;
 
+void yieldTasks() {
   server.handleClient();
   updateLeds();
-  readIncomingSerial();
 
+  // Lectura serial protegida para evitar re-entrada recursiva
+  if (!inSerialReading) {
+    inSerialReading = true;
+    readIncomingSerial();
+    inSerialReading = false;
+  }
+
+  // Lectura continua e inmediata de los 12 sensores de hoyos MCP23017
   if (mcpInitialized) {
     uint16_t gpioState = mcp.readGPIOAB();
     readSensors(gpioState);
     readButtons(gpioState);
   }
 
+  // Lectura continua del radar de proximidad, final de carrera y monedero
   readProximity();
   readLimitSwitch();
   checkCoin();
+}
 
-  inYieldLoop = false;
+void processPendingMotorCommands() {
+  if (pendingReleaseCount > 0) {
+    int count = pendingReleaseCount;
+    pendingReleaseCount = 0;
+    releaseBalls(count);
+  }
+  if (pendingHome) {
+    pendingHome = false;
+    homeStepper();
+  }
 }
 
 // ==========================================
@@ -1139,4 +1157,5 @@ void loop() {
   stepper.run();
   checkMotorStatus();
   yieldTasks();
+  processPendingMotorCommands();
 }
