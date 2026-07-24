@@ -125,6 +125,10 @@ WebServer server(80);
 // Prototipo de función para multitarea no-bloqueante en segundo plano
 void yieldTasks();
 
+// Variables globales para la cola asíncrona de comandos de motor
+int pendingReleaseCount = 0;
+bool pendingHome = false;
+
 // ==========================================
 // CONFIGURACIÓN DE DISPENSADOR DE BOLAS (MOTOR 28BYJ-48 / ULN2003)
 // ==========================================
@@ -1110,8 +1114,6 @@ void readLimitSwitch() {
 // ==========================================
 // TAREAS EN SEGUNDO PLANO (Multitarea No Bloqueante)
 // ==========================================
-int pendingReleaseCount = 0;
-bool pendingHome = false;
 bool inSerialReading = false;
 
 void yieldTasks() {
